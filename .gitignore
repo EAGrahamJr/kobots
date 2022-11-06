@@ -1,0 +1,8 @@
+.gradle
+build
+
+# Idea and other things
+.idea
+.vscode
+bin
+out
