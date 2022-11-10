@@ -4,7 +4,6 @@ plugins {
 
 dependencies {
     implementation(project(":operations"))
-    implementation(project(":utilities"))
 }
 
 application {
