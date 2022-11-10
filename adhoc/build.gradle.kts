@@ -1,0 +1,30 @@
+plugins {
+    id("application-conventions")
+}
+
+tasks {
+    shadowJar {
+        archiveBaseName.set("marvin-pi")
+        archiveVersion.set("")
+        archiveClassifier.set("")
+    }
+    create("deployMe") {
+        mustRunAfter("shadowJar")
+        doLast {
+            exec {
+                commandLine(
+                    "sh", "-c", """
+                    scp build/libs/marvin-pi.jar marvin.local:/home/crackers
+                    scp run.sh marvin.local:/home/crackers
+                    """.trimIndent()
+                )
+            }
+        }
+    }
+}
+
+application {
+    mainClass.set("MainKt")
+}
+
+defaultTasks("clean", "shadowJar", "deployMe")
