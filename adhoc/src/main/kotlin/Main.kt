@@ -1,12 +1,10 @@
 import crackers.kobots.utilities.piPins
-import java.lang.Thread.sleep
 
 fun main() {
-//    println("Name\tNumber\tPhysical")
-//    println("----\t------\t--------")
-//    piPins?.forEach {
-//        println("${it.name}\t${it.deviceNumber}\t${it.physicalPin}")
-//    }
-    doesItBounce()
-    sleep(60000)
+//    `pretty print pins`()
+//    `lesson 2`()
+//    `lession 2 with my stuff`()
+//    `lesson 2 - debounce`()
+//    `lesson 4`()
+    `lesson 5`()
 }
