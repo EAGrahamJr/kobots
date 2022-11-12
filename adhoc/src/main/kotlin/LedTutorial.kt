@@ -3,12 +3,13 @@ import com.diozero.devices.Button
 import com.diozero.devices.LED
 import com.diozero.devices.PwmLed
 import com.diozero.devices.RgbLed
-import crackers.kobots.utilities.DebouncedButton
+import crackers.kobots.devices.AnodeRgbPwmLed
+import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.utilities.byName
 import crackers.kobots.utilities.defaultPins
+import java.awt.Color
 import java.lang.Thread.sleep
 import java.time.Duration
-import kotlin.system.exitProcess
 
 /**
  * Tutorials from Freenove "ultimate" Raspberry Pi starter set
@@ -46,16 +47,54 @@ fun `lesson 2 - debounce`() {
 
 fun `lesson 4`() {
     PwmLed(17).apply {
-        pulse(2.0f,256,20,false)
-        exitProcess(0)
+        pulse(2.0f, 256, 20, false)
     }
 }
 
 fun `lesson 5`() {
-    RgbLed(17,18,27).use{
+    // my anode LED is backwards
+    RgbLed(17, 18, 27).use {
         it.setValues(false, true, false)
-        sleep(15000)
+        sleep(5000)
+        it.setValues(true, false, true)
+        sleep(5000)
         it.setValues(true, true, true)
-        exitProcess(0)
+        sleep(1000)
+    }
+}
+
+fun `lesson 5 with my stuff`() {
+    AnodeRgbPwmLed(17, 18, 27).let { led ->
+        (0..10 step 2).forEach { red ->
+            (0..10 step 2).forEach { green ->
+                (0..10 step 2).forEach { blue ->
+                    led.setValues(red / 10f, green / 10f, blue / 10f)
+                    sleep(500)
+                }
+            }
+        }
+        println("off-ish?")
+        led.off()
+        sleep(1000)
+    }
+}
+
+fun `rainbow because`() {
+    // awt colors do not translate to RGB led
+    val colors = listOf(
+        Color.red,
+//        Color(.8f,.2f,.2f),
+//        Color(.93f,.93f,0f),
+        Color.green,
+        Color.blue,
+//        Color(.58f,.83f, 0f)
+    )
+    AnodeRgbPwmLed(17, 18, 27).let { led ->
+        (1..10).forEach {
+            colors.forEach { color ->
+                led.setColor(color)
+                sleep(3000)
+            }
+        }
     }
 }

@@ -1,2 +1,3 @@
 #!/usr/bin/env sh
-java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -jar marvin-pi.jar
+[ "$1" = "-s" ] && SUSPEND="y" || SUSPEND="n"
+java -ea -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=*:5005 -jar marvin-pi.jar
