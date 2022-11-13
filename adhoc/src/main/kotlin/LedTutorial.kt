@@ -1,8 +1,5 @@
 import com.diozero.api.GpioPullUpDown
-import com.diozero.devices.Button
-import com.diozero.devices.LED
-import com.diozero.devices.PwmLed
-import com.diozero.devices.RgbLed
+import com.diozero.devices.*
 import crackers.kobots.devices.AnodeRgbPwmLed
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.utilities.byName
@@ -25,7 +22,7 @@ fun `lesson 2`() {
     }
 }
 
-fun `lession 2 with my stuff`() {
+fun `lesson 2 with my stuff`() {
     val ledPin = defaultPins.byName("GPIO17")
     val buttonPin = defaultPins.byName("GPIO18")
 
@@ -96,5 +93,37 @@ fun `rainbow because`() {
                 sleep(3000)
             }
         }
+    }
+}
+
+val lesson3Pins = listOf(17, 18, 27, 22, 23, 24, 25, 2, 3, 8)
+fun `lesson 3`() {
+    val leds = lesson3Pins.map { LED(it) }
+    (1..10).forEach {
+        leds[it - 1].on()
+        sleep(3000)
+        leds[it - 1].off()
+    }
+    LedBarGraph(leds).let { bg ->
+        (1..10).forEach {
+            bg.value = it / 10f
+            sleep(2000)
+        }
+        bg.off()
+    }
+}
+
+/**
+ * Because of the way the pulse is implemented, this has a
+ * really neat, flowing effect as more segments are added.
+ */
+fun `lesson 3 with pwm evil grin`() {
+    lesson3Pins.map { PwmLed(it) }.let { list ->
+        list.forEach {
+            it.pulse()
+            sleep(2000)
+        }
+        sleep(5000)
+        list.forEach { it.off() }
     }
 }
