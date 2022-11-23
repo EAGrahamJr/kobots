@@ -15,7 +15,7 @@ tasks {
                 commandLine(
                     "sh", "-c", """
                     scp build/libs/marvin-pi.jar marvin.local:/home/crackers
-                    scp run.sh marvin.local:/home/crackers
+                    scp *.sh marvin.local:/home/crackers
                     """.trimIndent()
                 )
             }
@@ -24,7 +24,7 @@ tasks {
 }
 
 application {
-    mainClass.set("MainKt")
+    mainClass.set("FreenoveKt")
 }
 
 defaultTasks("clean", "shadowJar", "deployMe")

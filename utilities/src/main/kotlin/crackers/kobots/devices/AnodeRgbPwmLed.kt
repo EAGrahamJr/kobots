@@ -26,8 +26,8 @@ import java.awt.Color
  * RGB LED with common anode - this is **inverted**
  * from [RgbPwmLed]. Provides the same interface.
  *
- * Basically, the anode is at +3.3v and when the RGB pins drive
- * **high**, the light is _off_.
+ * Basically, the LED pins are initially _high_ and when the
+ * anode is **high**, the light is _off_.
  */
 class AnodeRgbPwmLed @JvmOverloads constructor(
     redPin: Int,

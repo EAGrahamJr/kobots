@@ -3,6 +3,7 @@ build
 
 # Idea and other things
 .idea
+*.iml
 .vscode
 bin
 out

@@ -8,9 +8,6 @@ import java.awt.Color
 import java.lang.Thread.sleep
 import java.time.Duration
 
-/**
- * Tutorials from Freenove "ultimate" Raspberry Pi starter set
- */
 fun `lesson 2`() {
     val led = LED(17)
     val button = Button(18, GpioPullUpDown.PULL_UP)
@@ -77,16 +74,16 @@ fun `lesson 5 with my stuff`() {
 }
 
 fun `rainbow because`() {
-    // awt colors do not translate to RGB led
+    // awt colors do not translate to RGB LED because not enough juice?
     val colors = listOf(
         Color.red,
-//        Color(.8f,.2f,.2f),
-//        Color(.93f,.93f,0f),
-        Color.green,
-        Color.blue,
-//        Color(.58f,.83f, 0f)
+        Color(1f, .2f, 0f),
+        Color(1f, .33f, 0f),
+        Color(0f, .8f, 0f),
+        Color(0f, 0f, .8f),
+        Color(1f, 0f, .8f)
     )
-    AnodeRgbPwmLed(17, 18, 27).let { led ->
+    AnodeRgbPwmLed(17, 27, 22).let { led ->
         (1..10).forEach {
             colors.forEach { color ->
                 led.setColor(color)

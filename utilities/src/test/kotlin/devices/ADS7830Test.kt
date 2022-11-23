@@ -14,23 +14,17 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.utilities
+package devices
 
-import java.time.Duration
-import java.time.Instant
+import crackers.kobots.devices.ADS7830
+import kotlin.test.Test
+import kotlin.test.assertEquals
 
-/**
- * Ignore exceptions, for those occassions where you truly don't care.
- */
-fun <R> ignoreErrors(block: () -> R?): R? =
-    try {
-        block()
-    } catch (_: Throwable) {
-        // ignored
-        null
+internal class ADS7830Test {
+    @Test
+    fun `basic channel select for read`() {
+        listOf(0x84, 0xc4, 0x94, 0xd4, 0xa4, 0xe4, 0xb4, 0xf4).forEachIndexed { index, value ->
+            assertEquals(value, ADS7830.channelToRegister(index), "Channel $index did not match")
+        }
     }
-
-/**
- * Elapsed time.
- */
-fun Instant.elapsed() = Duration.between(this, Instant.now())
+}

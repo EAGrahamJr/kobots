@@ -2,7 +2,7 @@ package interop;
 
 import com.diozero.api.GpioPullUpDown;
 import com.diozero.sbc.DeviceFactoryHelper;
-import crackers.kobots.utilities.DebouncedButton;
+import crackers.kobots.devices.DebouncedButton;
 
 import java.time.Duration;
 
