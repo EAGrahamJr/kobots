@@ -28,6 +28,8 @@ crw-rw---- 1 root i2c 89, 1 Nov 23 12:24 /dev/i2c-1
 crw-rw---- 1 root i2c 89, 2 Nov 23 12:24 /dev/i2c-2
 ```
 
+This [pinout reference](https://pinout.xyz/) is also invaluable...
+
 # Building
 
 This project uses [Gradle](https://gradle.org), so the only thing you need is a compatible JDK<sup>**1**</sup>. Additionally, because the project is [Kotlin](https://kotlinlang.org) and uses the _Kotlin Gradle plugin_, a Kotlin installation is also not necessary.
