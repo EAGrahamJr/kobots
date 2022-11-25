@@ -17,7 +17,7 @@
 package crackers.kobots.devices
 
 import com.diozero.api.I2CDevice
-import java.lang.Math.log
+import java.util.*
 
 /**
  * Delegate to I2C Devices for the ADS7830 ([datasheet](https://cdn.datasheetspdf.com/pdf-down/A/D/S/ADS7830-etcTI.pdf)).
@@ -28,7 +28,11 @@ import java.lang.Math.log
 object ADS7830 {
     const val DEFAULT_ADDRESS = 0x4b
 
-    val defaultDevice by lazy { I2CDevice(1, DEFAULT_ADDRESS) }
+    val defaultDevice by lazy {
+        I2CDevice(1, DEFAULT_ADDRESS).also {
+            if (!it.probe()) throw IllegalStateException("Default I2C address is not available")
+        }
+    }
 
     /**
      * The default read command
@@ -45,7 +49,7 @@ object ADS7830 {
     }
 
     /**
-     * Read data from the []channel].
+     * Read data from the [channel] (0-7).
      */
     fun readFromChannel(channel: Int, i2CDevice: I2CDevice = defaultDevice): Short {
         if (channel !in (0..7)) throw IllegalArgumentException("Channel $channel is out of range (0 to 7)")
@@ -53,27 +57,34 @@ object ADS7830 {
     }
 
     /**
+     * Read data from the [channel] (0-7), without throwing an exception
+     */
+    fun readFromChannelSafely(channel: Int, i2CDevice: I2CDevice = defaultDevice): Optional<Short> {
+        if (channel !in (0..7)) throw IllegalArgumentException("Channel $channel is out of range (0 to 7)")
+        return try {
+            Optional.of(i2CDevice.readUByte(channelToRegister(channel)))
+        } catch (_: Throwable) {
+            Optional.empty()
+        }
+    }
+
+    /**
      * Returns a percentage value (0.0 to 1.0) for the given channel.
      */
     fun getValue(channel: Int, i2CDevice: I2CDevice = defaultDevice): Float = readFromChannel(channel, i2CDevice) / 255.0f
 
-    const val KELVIN = 273.15
+    /**
+     * Returns a percentage value (0.0 to 1.0) for the given channel, without throwing an exception.
+     */
+    fun getValueSafely(channel: Int, i2CDevice: I2CDevice = defaultDevice): Optional<Float> =
+        readFromChannelSafely(channel, i2CDevice).let { opt ->
+            if (opt.isPresent) Optional.of(opt.get() / 255.0f)
+            else Optional.empty()
+        }
 
     /**
      * A convenience function for a generic thermistor attached to a channel.
-     *
-     * The formula given is `T2 = 1/(1/T1 + ln(Rt/R)/B)`
      */
-    fun getTemperature(channel: Int, i2CDevice: I2CDevice = defaultDevice, referenceVoltage: Float = 3.3f): Float {
-        val voltage = referenceVoltage * getValue(channel, i2CDevice).toDouble()
-        // NOTE: this would normally be multiplied by the reference resistence, but that is divided back out in the formula
-        val voltageRatio = voltage / (referenceVoltage - voltage)
-        // 25 is the "reference" temperature
-        // 3950 is the "thermal index"
-        val k = 1 / (1 / (KELVIN + 25) + log(voltageRatio) / 3950.0)
-        println("V $voltage R $voltageRatio K $k")
-        return (k - KELVIN).toFloat()
-    }
-
-    fun Float.asDegreesF(): Float = (this * 9 / 5) + 32.0f
+    fun getTemperature(channel: Int, i2CDevice: I2CDevice = defaultDevice, referenceVoltage: Float = 3.3f): Float =
+        getTemperature(getValue(channel, i2CDevice).toDouble(), referenceVoltage)
 }

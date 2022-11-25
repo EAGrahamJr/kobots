@@ -20,6 +20,14 @@ So, yeah - I have a hobby now.
 
 - [diozero](https://www.diozero.com/) - a thorough and straigh-forward implementation of GPIO interface, with a **wide** range of standard devices to boot.
 
+:bangbang: Make sure the `i2c` controller is enabled on the Raspberry Pi and that your user is in the appropriate _group_ to access saiu devices:
+
+```shell
+$ ls -l /dev/i2c*
+crw-rw---- 1 root i2c 89, 1 Nov 23 12:24 /dev/i2c-1
+crw-rw---- 1 root i2c 89, 2 Nov 23 12:24 /dev/i2c-2
+```
+
 # Building
 
 This project uses [Gradle](https://gradle.org), so the only thing you need is a compatible JDK<sup>**1**</sup>. Additionally, because the project is [Kotlin](https://kotlinlang.org) and uses the _Kotlin Gradle plugin_, a Kotlin installation is also not necessary.

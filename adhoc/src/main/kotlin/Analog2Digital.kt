@@ -1,5 +1,7 @@
+import com.diozero.api.I2CDevice
 import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.AnodeRgbPwmLed
+import crackers.kobots.devices.asDegreesF
 import crackers.kobots.utilities.elapsed
 import java.lang.Thread.sleep
 import java.time.Instant
@@ -37,4 +39,13 @@ fun `lesson 11`() {
             println(getTemperature(0).asDegreesF())
         }
     }
+}
+
+
+fun `probe i2c`() {
+    ADS7830.defaultDevice.apply {
+        println("is it there? ${probe()}")
+    }
+    println("Other one there? ${I2CDevice(1, 0x48).probe()}")
+    sleep(100)
 }
