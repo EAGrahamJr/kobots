@@ -18,7 +18,7 @@ So, yeah - I have a hobby now.
 
 ## Libraries in Use
 
-- [diozero](https://www.diozero.com/) - a thorough and straigh-forward implementation of GPIO interface, with a **wide** range of standard devices to boot.
+- [diozero](https://www.diozero.com/) - a thorough and straight-forward implementation of GPIO interface, with a **wide** range of standard devices to boot.
 
 :bangbang: Make sure the `i2c` controller is enabled on the Raspberry Pi and that your user is in the appropriate _group_ to access saiu devices:
 
