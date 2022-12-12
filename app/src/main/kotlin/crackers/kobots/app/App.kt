@@ -4,5 +4,4 @@
 package crackers.kobots.app
 
 fun main() {
-
 }

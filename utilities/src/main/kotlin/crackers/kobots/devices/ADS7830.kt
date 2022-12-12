@@ -77,10 +77,7 @@ object ADS7830 {
      * Returns a percentage value (0.0 to 1.0) for the given channel, without throwing an exception.
      */
     fun getValueSafely(channel: Int, i2CDevice: I2CDevice = defaultDevice): Optional<Float> =
-        readFromChannelSafely(channel, i2CDevice).let { opt ->
-            if (opt.isPresent) Optional.of(opt.get() / 255.0f)
-            else Optional.empty()
-        }
+        readFromChannelSafely(channel, i2CDevice).let { opt -> if (opt.isPresent) Optional.of(opt.get() / 255.0f) else Optional.empty() }
 
     /**
      * A convenience function for a generic thermistor attached to a channel.

@@ -13,7 +13,6 @@ fun `lesson 6`() {
     }
 }
 
-
 /**
  * Motor rotor
  */
@@ -38,8 +37,7 @@ fun `lesson 13`() {
             adc.getValueSafely(0).ifPresent {
                 val data = 0.5f - it
                 println("Data $data - control ${motor.value}")
-                if (abs(data) > 0.05f) motor.value = data * 2f
-                else motor.stop()
+                if (abs(data) > 0.05f) motor.value = data * 2f else motor.stop()
             }
             sleep(50)
         }

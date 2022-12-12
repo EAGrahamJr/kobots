@@ -41,7 +41,6 @@ fun `lesson 11`() {
     }
 }
 
-
 fun `probe i2c`() {
     ADS7830.defaultDevice.apply {
         println("is it there? ${probe()}")
