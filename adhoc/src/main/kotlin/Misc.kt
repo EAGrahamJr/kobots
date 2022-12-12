@@ -1,8 +1,12 @@
+import com.diozero.api.DigitalOutputDevice
+import com.diozero.api.GpioPullUpDown
 import com.diozero.devices.Buzzer
 import crackers.kobots.devices.ADS7830
+import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
 import java.lang.Math.abs
 import java.lang.Thread.sleep
+import java.time.Duration
 
 /**
  * Super annoying.
@@ -40,6 +44,20 @@ fun `lesson 13`() {
                 if (abs(data) > 0.05f) motor.value = data * 2f else motor.stop()
             }
             sleep(50)
+        }
+    }
+}
+
+fun `lesson 14`() {
+    val button = DebouncedButton(18, Duration.ofMillis(50), GpioPullUpDown.PULL_UP)
+    val relayOut = DigitalOutputDevice(17)
+
+    run5minutes {
+        button.whenPressed {
+            println("Button pressed")
+            relayOut.apply {
+                if (isOn) off() else on()
+            }
         }
     }
 }
