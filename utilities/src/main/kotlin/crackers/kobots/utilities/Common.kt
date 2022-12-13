@@ -18,16 +18,17 @@ package crackers.kobots.utilities
 
 import java.time.Duration
 import java.time.Instant
+import java.util.*
 
 /**
- * Ignore exceptions, for those occassions where you truly don't care.
+ * Ignore exceptions, for those occasions where you truly don't care.
  */
-fun <R> ignoreErrors(block: () -> R?): R? =
+fun <R : Any> ignoreErrors(block: () -> R?): Optional<R> =
     try {
-        block()
+        Optional.ofNullable(block())
     } catch (_: Throwable) {
         // ignored
-        null
+        Optional.empty()
     }
 
 /**
