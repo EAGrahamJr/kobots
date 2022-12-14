@@ -18,7 +18,7 @@ So, yeah - I have a hobby now.
 
 ## Libraries in Use
 
-- [diozero](https://www.diozero.com/) - a thorough and straight-forward implementation of GPIO interface, with a **wide** range of standard devices to boot.
+- [diozero](https://www.diozero.com/) - a thorough and straight-forward implementation of GPIO interface, with a **wide** range of standard devices to boot.<sup>**1**</sup>
 
 :bangbang: Make sure the `i2c` controller is enabled on the Raspberry Pi and that your user is in the appropriate _group_ to access saiu devices:
 
@@ -32,6 +32,7 @@ This [pinout reference](https://pinout.xyz/) is also invaluable...
 
 # Building
 
-This project uses [Gradle](https://gradle.org), so the only thing you need is a compatible JDK<sup>**1**</sup>. Additionally, because the project is [Kotlin](https://kotlinlang.org) and uses the _Kotlin Gradle plugin_, a Kotlin installation is also not necessary.
+This project uses [Gradle](https://gradle.org), so the only thing you need is a compatible JDK<sup>**2**</sup>. Additionally, because the project is [Kotlin](https://kotlinlang.org) and uses the _Kotlin Gradle plugin_, a Kotlin installation is also not necessary.
 
-<sup>**1**</sup> Java 17 is currently the only one used
+<sup>**1**</sup> [MIT License](https://github.com/mattjlewis/diozero/blob/main/LICENSE.txt)<br/>
+<sup>**2**</sup> Java 17 is currently the only one used

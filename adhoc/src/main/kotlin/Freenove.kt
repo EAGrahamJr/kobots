@@ -25,7 +25,9 @@ fun main() {
 //        `lesson 11`()
 //        `probe i2c`()
 //        `lesson 13`()
-        `lesson 14`()
+//        `lesson 14`()
+//        `lesson 16`()
+        `lesson 16 with flair`()
     } catch (e: Throwable) {
         e.printStackTrace()
     }
@@ -33,9 +35,10 @@ fun main() {
     exitProcess(0)
 }
 
-fun run5minutes(block: () -> Unit) {
+infix fun Int.minutes(block: () -> Unit) {
     val start = Instant.now()
-    while (start.elapsed().seconds < 300) {
+    val end = this * 60
+    while (start.elapsed().seconds < end) {
         block()
     }
 }
