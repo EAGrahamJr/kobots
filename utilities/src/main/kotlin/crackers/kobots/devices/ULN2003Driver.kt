@@ -36,12 +36,11 @@ class ULN2003Driver(pins: Array<Int>) {
     private val counterClockwise = arrayOf(8, 4, 2, 1)
     private val clockwise = arrayOf(1, 2, 4, 8)
     private val pinOuts = if (pins.size != 4) throw IllegalArgumentException("Must specify 4 pins for ABCD") else pins.map { DigitalOutputDevice(it) }.toTypedArray()
-    private val defaultDuration = Duration.ofMillis(3)
 
     /**
      * Move clockwise one step.
      */
-    fun stepClockwise(duration: Duration = defaultDuration) {
+    fun stepClockwise(duration: Duration = DEFAULT_PAUSE) {
         for (j in 0..3) {
             pinOuts.forEachIndexed { i, it ->
                 if (clockwise[j] == (1 shl i)) it.on() else it.off()
@@ -53,7 +52,7 @@ class ULN2003Driver(pins: Array<Int>) {
     /**
      * Move counter-clockwise one step in this time period. Note that this must then _wait_ for a bit before the next pulse can be sent (default 3 ms).
      */
-    fun stepCounterClockwise(duration: Duration = defaultDuration) {
+    fun stepCounterClockwise(duration: Duration = DEFAULT_PAUSE) {
         for (j in 0..3) {
             pinOuts.forEachIndexed { i, it ->
                 if (counterClockwise[j] == (1 shl i)) it.on() else it.off()
@@ -66,7 +65,7 @@ class ULN2003Driver(pins: Array<Int>) {
      * Minimum 3ms pause between steps.
      */
     private fun pause(duration: Duration) {
-        sleep(max(duration.toMillis(), defaultDuration.toMillis()))
+        sleep(max(duration.toMillis(), DEFAULT_PAUSE.toMillis()))
     }
 
     /**
@@ -80,14 +79,15 @@ class ULN2003Driver(pins: Array<Int>) {
      * Rotate a certain number of degrees: positive is clockwise, negative is counter-clockwise.
      * Pauses between each "step" for the specified duration (default 3 ms).
      */
-    fun rotate(degrees: Int, duration: Duration = Duration.ofMillis(3)) {
+    fun rotate(degrees: Int, duration: Duration = DEFAULT_PAUSE) {
         val whichWay = if (degrees < 0) this::stepCounterClockwise else this::stepClockwise
         val steps = calculateSteps(degrees)
 
-        if (steps > 0) (1..steps).forEach { whichWay(duration) }
+        if (steps > 0) (1..steps).forEach { _ -> whichWay(duration) }
     }
 
     companion object {
+        val DEFAULT_PAUSE = Duration.ofMillis(3)
         private const val CIRCLE_STEPS = 512
         fun calculateSteps(degrees: Int) = (abs(degrees) * CIRCLE_STEPS) / 360
     }

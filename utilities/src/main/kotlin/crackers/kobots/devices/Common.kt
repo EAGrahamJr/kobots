@@ -65,7 +65,7 @@ class GenericMotor(forwardPin: Int, backwardPin: Int, enablePin: Int, frequency:
 const val KELVIN = 273.15f
 
 /**
- * A function that converts a percentage reading into temperature for a "generic" thermistor.
+ * A function that converts a percentage reading into Celsius temperature for a "generic" thermistor.
  *
  * The formula given is `T2 = 1/(1/T1 + ln(Rt/R1)/B)`
  */
