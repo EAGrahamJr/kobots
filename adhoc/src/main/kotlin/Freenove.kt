@@ -29,7 +29,8 @@ fun main() {
 //        `lesson 16`()
 //        `lesson 16 with flair`()
 //        `lesson 17`()
-        `lesson 18`()
+//        `lesson 18`()
+        `lesson 18 stopwatch`()
     } catch (e: Throwable) {
         e.printStackTrace()
     }

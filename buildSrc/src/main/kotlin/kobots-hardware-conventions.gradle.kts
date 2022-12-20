@@ -4,5 +4,5 @@ plugins {
 }
 
 dependencies {
-    implementation("com.diozero:diozero-core:1.3.4")
+    implementation("com.diozero:diozero-core:1.3.5")
 }
