@@ -6,7 +6,7 @@ Experiments in electronics, robotics, and interacting with the "real world" with
 
 This is a _learning_ experience for me, but it **might** produce sometning useful (I'll re-wrtie this README if that actually happens :smiley:).
 
-![Just Build](https://github.com/EAGrahamJr/kobots/actions/workflows/build.yml/badge.svg)
+![Just Build](https://github.com/EAGrahamJr/kobots/actions/workflows/build.yaml/badge.svg)
 
 ## WHY????
 
