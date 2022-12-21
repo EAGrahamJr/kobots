@@ -20,7 +20,7 @@ import com.diozero.api.DebouncedDigitalInputDevice
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.GpioPullUpDown
 import com.diozero.api.PwmOutputDevice
-import com.diozero.devices.OutputShiftRegister
+import com.diozero.devices.GpioExpander
 import com.diozero.devices.motor.TB6612FNGMotor
 import com.diozero.internal.spi.GpioDeviceFactoryInterface
 import crackers.kobots.utilities.nativeDeviceFactory
@@ -87,8 +87,6 @@ fun getTemperature(value: Double, referenceVoltage: Float = 3.3f): Float {
 fun Float.asDegreesF(): Float = (this * 9f / 5f) + 32.0f
 
 /**
- * Convenience function to write a byte to a shift-register.
+ * Convenience function to write a byte to an expander.
  */
-fun OutputShiftRegister.writeByte(value: Int) {
-    setValues(0, value.toByte())
-}
+fun GpioExpander.writeByte(value: Int) = setValues(0, value.toByte())

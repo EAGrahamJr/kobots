@@ -1,7 +1,6 @@
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.devices.OutputShiftRegister
 import crackers.kobots.devices.writeByte
-
 import java.lang.Thread.sleep
 import java.util.concurrent.atomic.AtomicInteger
 
