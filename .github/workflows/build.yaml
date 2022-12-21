@@ -2,8 +2,14 @@ name: Basic Gradle Build
 on:
   push:
     branches: [ main ]
+    paths_ignore:
+      - "*.md"
+      - "docs/**"
   pull_request:
     branches: [ main ]
+    paths_ignore:
+      - "*.md"
+      - "docs/**"
   workflow_dispatch:
 
 jobs:
