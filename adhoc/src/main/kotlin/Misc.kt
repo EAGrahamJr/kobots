@@ -1,5 +1,7 @@
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.GpioPullUpDown
+import com.diozero.api.ServoDevice
+import com.diozero.api.ServoTrim.TOWERPRO_SG90
 import com.diozero.devices.Buzzer
 import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
@@ -112,6 +114,31 @@ fun `lesson 16 with flair`() {
         5 minutes {
             rotate(30)
             rotate(-30)
+        }
+    }
+}
+
+// Live servo test to validate fix in diozero 1.3.4
+fun servoFix() {
+    ServoDevice.Builder(23).setTrim(TOWERPRO_SG90).build().apply {
+        if (!isOn) println("Device not engaged?")
+
+//        for (i in 0..270 step 10) {
+//            println("Angle $i")
+//            angle = i.toFloat()
+//            sleep(1000)
+//        }
+        2 minutes {
+            angle = 0f
+            sleep(1000)
+            angle = 90f
+            sleep(1000)
+            angle = 180f
+            sleep(1000)
+            angle = 45f
+            sleep(1000)
+            angle = 135f
+            sleep(1000)
         }
     }
 }

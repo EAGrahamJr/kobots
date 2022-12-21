@@ -30,7 +30,8 @@ fun main() {
 //        `lesson 16 with flair`()
 //        `lesson 17`()
 //        `lesson 18`()
-        `lesson 18 stopwatch`()
+//        `lesson 18 stopwatch`()
+        servoFix()
     } catch (e: Throwable) {
         e.printStackTrace()
     }
