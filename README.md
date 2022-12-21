@@ -6,6 +6,8 @@ Experiments in electronics, robotics, and interacting with the "real world" with
 
 This is a _learning_ experience for me, but it **might** produce sometning useful (I'll re-wrtie this README if that actually happens :smiley:).
 
+![Just Build](https://github.com/EAGrahamJr/kobots/actions/workflows/build.yml/badge.svg)
+
 ## WHY????
 
 A **long, long** time ago, I attended a [WorldCon](https://en.wikipedia.org/wiki/36th_World_Science_Fiction_Convention) and went to a panel on robotics. I was captivated. However, at the time, I was attending college and it seemed that acid-etching PCBs was probably not going to be a thing.
