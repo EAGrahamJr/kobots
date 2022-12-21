@@ -38,6 +38,6 @@ This project uses [Gradle](https://gradle.org), so the only thing you need is a 
 
 ---
 
-<sup>**1**</sup> All of the tutorials, lessons, kits, and existing libraries are predicated on C (at some level), due to the hardware interaction. I just don't want to go there anymore.
+<sup>**1**</sup> All of the tutorials, lessons, kits, and existing libraries are predicated on C (at some level), due to the hardware interaction. I just don't want to go there anymore.<br/>
 <sup>**2**</sup> [MIT License](https://github.com/mattjlewis/diozero/blob/main/LICENSE.txt)<br/>
 <sup>**3**</sup> Java 17 is currently the only one used
