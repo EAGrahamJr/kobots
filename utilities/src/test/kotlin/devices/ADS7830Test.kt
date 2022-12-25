@@ -17,8 +17,8 @@
 package devices
 
 import crackers.kobots.devices.ADS7830
-import kotlin.test.Test
-import kotlin.test.assertEquals
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 
 internal class ADS7830Test {
     @Test

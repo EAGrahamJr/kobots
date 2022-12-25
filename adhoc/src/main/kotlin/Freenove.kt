@@ -31,7 +31,9 @@ fun main() {
 //        `lesson 17`()
 //        `lesson 18`()
 //        `lesson 18 stopwatch`()
-        servoFix()
+//        servoFix()
+//        `lesson 20`()
+        lcdLimits()
     } catch (e: Throwable) {
         e.printStackTrace()
     }

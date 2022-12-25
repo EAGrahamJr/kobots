@@ -35,3 +35,8 @@ fun <R : Any> ignoreErrors(block: () -> R?): Optional<R> =
  * Elapsed time.
  */
 fun Instant.elapsed() = Duration.between(this, Instant.now())
+
+/**
+ * Short form to get unsigned hex strings
+ */
+fun Int.hex() = Integer.toHexString(this)
