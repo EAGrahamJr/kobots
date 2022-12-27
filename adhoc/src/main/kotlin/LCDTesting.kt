@@ -1,4 +1,4 @@
-import com.diozero.devices.GH1602Lcd
+import com.diozero.devices.FNK0079Lcd
 import com.diozero.devices.LcdConnection
 import com.diozero.devices.LcdInterface.Characters
 import com.pi4j.LcdDisplay
@@ -7,27 +7,11 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalTime
 
-/*
- * Copyright 2022-2022 by E. A. Graham, Jr.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing
- * permissions and limitations under the License.
- */
-
 /**
  * Various dorkings to hack on the LCD 1602 module included in the Freenove kit.
  */
 fun `lesson 20`() {
-    GH1602Lcd(LcdConnection.PCF8574LcdConnection(1)).apply {
+    FNK0079Lcd(LcdConnection.PCF8574LcdConnection(1)).apply {
         displayText("Hello")
         sleep(2000)
         clear()
@@ -50,6 +34,8 @@ val hello = "Hello"
 
 val OFF = false
 val ON = true
+
+// this is the copy from Pi4J that doesn't quite work all the way
 fun lcdLimits() {
     LcdDisplay().apply { // not checked in - modified Pi4J code
         displayText(hello)
@@ -125,7 +111,7 @@ fun lcdLimits() {
 }
 
 fun translated2Diozero() {
-    GH1602Lcd().apply {
+    FNK0079Lcd().apply {
         setText(0, hello)
         sleep(2000)
         clear()
