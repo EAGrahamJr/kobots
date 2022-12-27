@@ -3,14 +3,13 @@ import com.diozero.api.GpioPullUpDown
 import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim.TOWERPRO_SG90
 import com.diozero.devices.Buzzer
-import com.diozero.devices.LcdConnection
-import crackers.kobots.devices.*
+import crackers.kobots.devices.ADS7830
+import crackers.kobots.devices.DebouncedButton
+import crackers.kobots.devices.GenericMotor
+import crackers.kobots.devices.ULN2003Driver
 import java.lang.Math.abs
 import java.lang.Thread.sleep
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.time.Duration
-import java.time.LocalTime
 
 /**
  * Super annoying.
@@ -142,75 +141,4 @@ fun servoFix() {
             sleep(1000)
         }
     }
-}
-
-fun `lesson 20`() {
-    GH1602LCD(LcdConnection.PCF8574LcdConnection(1)).apply {
-        displayText("Hello")
-        sleep(2000)
-        clearDisplay()
-
-        1 minutes {
-            val temp = (Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toFloat() / 1000)
-            val time = LocalTime.now().toString().substringBefore(".")
-
-            val tempString = String.format("CPU: %.2f", temp)
-            displayText(tempString + (if (temp > 48f) "  HOT" else ""), 0)
-            displayText(time, 1, 4)
-            sleep(1000)
-        }
-    }.close()
-}
-
-fun lcdLimits() {
-    GH1602LCD(LcdConnection.PCF8574LcdConnection(1)).apply {
-        displayText("Hello")
-        sleep(2000)
-        clearDisplay()
-
-        val chars: List<Byte> = (0..9).map { ('0' + it).code.toByte() } + ('A'..'F').map { it.code.toByte() }
-        val testString = String(chars.toByteArray())
-        displayText(testString, 0)
-        displayText("Shift right", 1)
-        sleep(1000)
-        moveDisplayRight()
-        sleep(5000)
-        displayText("Shift left", 1)
-        moveDisplayLeft()
-        sleep(5000)
-
-        displayText(testString, 0)
-        displayText("Shift left", 1)
-        sleep(1000)
-        moveDisplayLeft()
-        sleep(5000)
-        displayText("Shift right", 1)
-        moveDisplayRight()
-        sleep(5000)
-
-        displayText(testString, 0)
-//        displayText("Cursor test", 1)
-//        setCursorToPosition(8, 0)
-//        setCursorVisibility(ON)
-//        displayText("Cursor on", 1)
-//        sleep(2000)
-//        setCursorBlinking(ON)
-//        displayText("Cursor blinking", 1)
-//        sleep(2000)
-
-        setCursorToPosition(8, 0)
-        displayText("Write at current", 1)
-        writeCharacter('!')
-        sleep(2000)
-
-        displayText("Move previous", 1)
-        moveCursorLeft()
-        writeCharacter('!')
-        sleep(2000)
-
-        displayText("Move next", 1)
-        moveCursorRight()
-        writeCharacter('+')
-        sleep(2000)
-    }.close()
 }

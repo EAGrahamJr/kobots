@@ -33,7 +33,8 @@ fun main() {
 //        `lesson 18 stopwatch`()
 //        servoFix()
 //        `lesson 20`()
-        lcdLimits()
+//        lcdLimits()
+        translated2Diozero()
     } catch (e: Throwable) {
         e.printStackTrace()
     }
