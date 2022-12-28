@@ -3,6 +3,9 @@ import com.diozero.api.GpioPullUpDown
 import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim.TOWERPRO_SG90
 import com.diozero.devices.Buzzer
+import com.diozero.devices.FNK0079Lcd
+import com.diozero.devices.HCSR04
+import com.diozero.devices.LcdInterface
 import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
@@ -110,4 +113,19 @@ fun servoFix() {
             sleep(1000)
         }
     }
+}
+
+fun `lesson 24`() {
+    val sounder = HCSR04(23, 24)
+    FNK0079Lcd().apply {
+        createChar(0, LcdInterface.Characters.get("frownie"))
+        2 minutes {
+            val distance = sounder.distanceCm
+            val output = String.format("%.2f", distance)
+            setText(0, output)
+            if (distance < 10f) setCharacter(15, 0, 0.toChar())
+            sleep(10)
+        }
+    }.close()
+    sounder.close()
 }

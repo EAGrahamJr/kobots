@@ -34,8 +34,8 @@ fun main() {
 //        servoFix()
 //        `lesson 20`()
 //        lcdLimits()
-        translated2Diozero()
-//        `lesson 21`()
+//        translated2Diozero()
+        `lesson 24`()
     } catch (e: Throwable) {
         e.printStackTrace()
     }
