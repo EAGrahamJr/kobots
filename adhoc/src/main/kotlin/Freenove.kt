@@ -35,6 +35,7 @@ fun main() {
 //        `lesson 20`()
 //        lcdLimits()
         translated2Diozero()
+//        `lesson 21`()
     } catch (e: Throwable) {
         e.printStackTrace()
     }

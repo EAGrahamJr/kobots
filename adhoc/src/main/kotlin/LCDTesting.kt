@@ -111,6 +111,7 @@ fun lcdLimits() {
 }
 
 fun translated2Diozero() {
+//    HD44780Lcd(LcdConnection.PCF8574LcdConnection(1), 16, 2).apply {
     FNK0079Lcd().apply {
         setText(0, hello)
         sleep(2000)

@@ -65,37 +65,6 @@ fun `lesson 14`() {
     }
 }
 
-// fun `lesson 15, which is ignored because PWM sucks`() {
-//    val servo = ServoDevice.Builder(defaultPins.byName("GPIO18")).setTrim(TOWERPRO_SG90).build()
-//    5 minutes {
-//        servo.setValue(-1f)
-//        sleep(1000)
-//        servo.setValue(0f)
-//        sleep(1000)
-//        servo.setValue(1f)
-//        sleep(1000)
-//    }
-//    PwmOutputDevice(18, 25, 0f).apply {
-//        5 minutes {
-//            for (i in 40..100 step 3) {
-//                val v = i.toFloat() / 1000f
-//                println(v)
-//                value = v
-//                sleep(2000)
-//            }
-//        }
-//    }
-//    ServoDevice.Builder(18).setTrim(TOWERPRO_SG90).build().apply {
-//        if (!isOn) println("Device not engaged?")
-//
-//        for (i in 30..150 step 5) {
-//            println("Angle $i")
-//            angle = i.toFloat()
-//            sleep(1000)
-//        }
-//    }
-// }
-
 fun `lesson 16`() {
     ULN2003Driver(arrayOf(18, 23, 24, 25)).apply {
         5 minutes {
@@ -118,16 +87,16 @@ fun `lesson 16 with flair`() {
     }
 }
 
-// Live servo test to validate fix in diozero 1.3.4
+// Live servo test to validate fix in diozero 1.3.5 - validates the servo lesson as well
 fun servoFix() {
     ServoDevice.Builder(23).setTrim(TOWERPRO_SG90).build().apply {
         if (!isOn) println("Device not engaged?")
 
-//        for (i in 0..270 step 10) {
-//            println("Angle $i")
-//            angle = i.toFloat()
-//            sleep(1000)
-//        }
+        for (i in 0..180 step 5) {
+            println("Angle $i")
+            angle = i.toFloat()
+            sleep(1000)
+        }
         2 minutes {
             angle = 0f
             sleep(1000)
