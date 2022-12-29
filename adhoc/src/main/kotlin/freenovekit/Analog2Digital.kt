@@ -1,3 +1,5 @@
+package freenovekit
+
 import com.diozero.api.I2CDevice
 import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.AnodeRgbPwmLed

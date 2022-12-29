@@ -1,3 +1,5 @@
+package freenovekit
+
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.GpioPullUpDown
 import com.diozero.api.ServoDevice

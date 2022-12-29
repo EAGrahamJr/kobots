@@ -1,3 +1,5 @@
+package freenovekit
+
 import com.diozero.devices.FNK0079Lcd
 import com.diozero.devices.LcdConnection
 import com.diozero.devices.LcdInterface.Characters

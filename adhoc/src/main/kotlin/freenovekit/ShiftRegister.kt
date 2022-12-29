@@ -1,3 +1,5 @@
+package freenovekit
+
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.devices.OutputShiftRegister
 import crackers.kobots.devices.writeByte
