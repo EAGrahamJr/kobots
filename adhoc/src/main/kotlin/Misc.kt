@@ -6,6 +6,7 @@ import com.diozero.devices.Buzzer
 import com.diozero.devices.FNK0079Lcd
 import com.diozero.devices.HCSR04
 import com.diozero.devices.LcdInterface
+import com.diozero.devices.imu.invensense.MPU6050
 import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
@@ -128,4 +129,21 @@ fun `lesson 24`() {
         }
     }.close()
     sounder.close()
+}
+
+fun `lesson 25`() {
+    val sensor = MPU6050(1)
+
+    FNK0079Lcd().apply {
+        displayText("Test starting")
+        setText(1, "Calibrating...")
+        val gyroCalibration = sensor.calibrateGyro(50)
+        setText(1, "2 Minutes")
+        2 minutes {
+            println("a/g ${sensor.accelerometerData}\nd/s ${sensor.gyroData.subtract(gyroCalibration)}")
+            setText(0, "Temp ${sensor.temperature}")
+            sleep(1000)
+        }
+    }.close()
+    sensor.close()
 }
