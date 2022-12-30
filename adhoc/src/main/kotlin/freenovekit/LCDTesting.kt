@@ -1,9 +1,9 @@
 package freenovekit
 
-import com.diozero.devices.FNK0079Lcd
 import com.diozero.devices.LcdConnection
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.LcdInterface.Characters
+import com.diozero.devices.TC1604Lcd
 import com.pi4j.LcdDisplay
 import minutes
 import java.lang.Thread.sleep
@@ -15,7 +15,7 @@ import java.time.LocalTime
  * Various dorkings to hack on the LCD 1602 module included in the Freenove kit.
  */
 fun `lesson 20`() {
-    FNK0079Lcd(LcdConnection.PCF8574LcdConnection(1)).apply {
+    TC1604Lcd(LcdConnection.PCF8574LcdConnection(1)).apply {
         displayText("Hello")
         sleep(2000)
         clear()

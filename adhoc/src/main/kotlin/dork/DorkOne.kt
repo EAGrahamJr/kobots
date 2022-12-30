@@ -16,8 +16,8 @@
 
 package dork
 
-import com.diozero.devices.FNK0079Lcd
 import com.diozero.devices.LcdInterface
+import com.diozero.devices.TC1604Lcd
 import com.diozero.devices.imu.invensense.MPU6050
 import minutes
 import java.lang.Thread.sleep
@@ -29,7 +29,7 @@ fun main() {
 
 fun `put me down`() {
     val sensor = MPU6050(1)
-    FNK0079Lcd().apply {
+    TC1604Lcd().apply {
         displayText("Test starting")
 //        setText(1, "Calibrating...")
 //        val gyroCalibration = sensor.calibrateGyro(50)
@@ -48,7 +48,7 @@ fun `put me down`() {
 
 fun shiftSilly() {
     sleep(1000)
-    FNK0079Lcd().apply {
+    TC1604Lcd().apply {
         createChar(0, LcdInterface.Characters.get("smilie"))
         setText(0, "Hi, Roger! " + 0.toChar())
         sleep(2000)

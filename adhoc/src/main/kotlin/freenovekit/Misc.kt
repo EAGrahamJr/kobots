@@ -5,9 +5,9 @@ import com.diozero.api.GpioPullUpDown
 import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim.TOWERPRO_SG90
 import com.diozero.devices.Buzzer
-import com.diozero.devices.FNK0079Lcd
 import com.diozero.devices.HCSR04
 import com.diozero.devices.LcdInterface
+import com.diozero.devices.TC1604Lcd
 import com.diozero.devices.imu.invensense.MPU6050
 import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
@@ -121,7 +121,7 @@ fun servoFix() {
 
 fun `lesson 24`() {
     val sounder = HCSR04(23, 24)
-    FNK0079Lcd().apply {
+    TC1604Lcd().apply {
         createChar(0, LcdInterface.Characters.get("frownie"))
         2 minutes {
             val distance = sounder.distanceCm
@@ -137,7 +137,7 @@ fun `lesson 24`() {
 fun `lesson 25`() {
     val sensor = MPU6050(1)
 
-    FNK0079Lcd().apply {
+    TC1604Lcd().apply {
         displayText("Test starting")
         setText(1, "Calibrating...")
         val gyroCalibration = sensor.calibrateGyro(50)
