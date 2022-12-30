@@ -16,8 +16,6 @@
 
 package freenovekit
 
-import crackers.kobots.utilities.elapsed
-import java.time.Instant
 import kotlin.system.exitProcess
 
 /**
@@ -60,12 +58,4 @@ fun main() {
     }
     println("Ending tutorial code")
     exitProcess(0)
-}
-
-infix fun Int.minutes(block: () -> Unit) {
-    val start = Instant.now()
-    val end = this * 60
-    while (start.elapsed().seconds < end) {
-        block()
-    }
 }

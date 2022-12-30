@@ -24,7 +24,7 @@ tasks {
 }
 
 application {
-    mainClass.set("FreenoveKt")
+    mainClass.set("dork.DorkOneKt")
 }
 
 defaultTasks("clean", "shadowJar", "deployMe")

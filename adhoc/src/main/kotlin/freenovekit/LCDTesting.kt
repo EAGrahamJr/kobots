@@ -2,8 +2,10 @@ package freenovekit
 
 import com.diozero.devices.FNK0079Lcd
 import com.diozero.devices.LcdConnection
+import com.diozero.devices.LcdInterface
 import com.diozero.devices.LcdInterface.Characters
 import com.pi4j.LcdDisplay
+import minutes
 import java.lang.Thread.sleep
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -112,9 +114,8 @@ fun lcdLimits() {
     }.close()
 }
 
-fun translated2Diozero() {
-//    HD44780Lcd(LcdConnection.PCF8574LcdConnection(1), 16, 2).apply {
-    FNK0079Lcd().apply {
+fun lcdFunctionTest(lcd: LcdInterface) {
+    lcd.apply {
         setText(0, hello)
         sleep(2000)
         clear()
@@ -128,14 +129,14 @@ fun translated2Diozero() {
             sleep(5000)
         }
 
-//        doTest("Shift right") {
-//            displayText(testString, 0)
-//            moveDisplayRight()
-//        }
-//        doTest("Shift left") {
-//            displayText(testString, 0)
-//            moveDisplayLeft()
-//        }
+        doTest("Shift right") {
+            setText(0, testString)
+            shiftDisplayRight()
+        }
+        doTest("Shift left") {
+            setText(0, testString)
+            shiftDisplayLeft()
+        }
         doTest("Cursor visible") {
             setCursorPosition(0, 0)
             cursorOff()
