@@ -17,12 +17,6 @@
 from time import sleep
 
 from Adafruit_LCD2004 import Adafruit_CharLCD
-########################################################################
-# Filename    : I2CLCD2004.py
-# Description : Use the LCD display data
-# Author      : freenove
-# modification: 2022/06/28
-########################################################################
 from PCF8574 import PCF8574_GPIO
 
 
