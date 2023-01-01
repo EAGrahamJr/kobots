@@ -6,6 +6,7 @@ import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim.TOWERPRO_SG90
 import com.diozero.devices.Buzzer
 import com.diozero.devices.HCSR04
+import com.diozero.devices.LcdConnection
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
 import crackers.kobots.devices.ADS7830
@@ -16,7 +17,10 @@ import lcd.diozero.TC1604Lcd
 import minutes
 import java.lang.Math.abs
 import java.lang.Thread.sleep
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.time.Duration
+import java.time.LocalTime
 
 /**
  * Super annoying.
@@ -149,4 +153,22 @@ fun `lesson 25`() {
         }
     }.close()
     sensor.close()
+}
+
+fun `lesson 20`() {
+    TC1604Lcd(LcdConnection.PCF8574LcdConnection(1), false).apply {
+        displayText("Hello")
+        sleep(2000)
+        clear()
+
+        1 minutes {
+            val temp = (Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toFloat() / 1000)
+            val time = LocalTime.now().toString().substringBefore(".")
+
+            val tempString = String.format("CPU: %.2f", temp)
+            setText(0, tempString + (if (temp > 48f) "  HOT" else ""))
+            setText(1, time)
+            sleep(1000)
+        }
+    }.close()
 }

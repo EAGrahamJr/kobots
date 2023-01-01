@@ -1,80 +1,60 @@
-/*
- * Copyright 2022-2022 by E. A. Graham, Jr.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
- * or implied. See the License for the specific language governing
- * permissions and limitations under the License.
- */
+package com.pi4j.catalog.components;
 
-package com.pi4j;
-
-import com.diozero.api.DeviceInterface;
-import com.diozero.api.RuntimeIOException;
-import com.diozero.devices.LcdConnection;
-
-import static com.diozero.util.SleepUtil.sleepNanos;
+import com.pi4j.context.Context;
+import com.pi4j.io.i2c.I2C;
+import com.pi4j.io.i2c.I2CConfig;
 
 /**
  * Implementation of a LCDDisplay using GPIO with Pi4J
  * For now, only works with the PCF8574T Backpack
- * <p>
- * This is a copy only for testing/translation and not to be interpreted as useful.
  */
-public class LcdDisplay implements DeviceInterface {
+public class LcdDisplay {
     /**
      * Flags for display commands
      */
-    private static final byte LCD_CLEAR_DISPLAY = (byte) 0x01;
-    private static final byte LCD_RETURN_HOME = (byte) 0x02;
-    private static final byte LCD_ENTRY_MODE_SET = (byte) 0x04;
-    private static final byte LCD_DISPLAY_CONTROL = (byte) 0x08;
-    private static final byte LCD_CURSOR_SHIFT = (byte) 0x10;
-    private static final byte LCD_FUNCTION_SET = (byte) 0x20;
-    private static final byte LCD_SET_CGRAM_ADDR = (byte) 0x40;
-    private static final byte LCD_SET_DDRAM_ADDR = (byte) 0x80;
+    private static final byte LCD_CLEAR_DISPLAY = (byte)0x01;
+    private static final byte LCD_RETURN_HOME = (byte)0x02;
+    private static final byte LCD_ENTRY_MODE_SET = (byte)0x04;
+    private static final byte LCD_DISPLAY_CONTROL = (byte)0x08;
+    private static final byte LCD_CURSOR_SHIFT = (byte)0x10;
+    private static final byte LCD_FUNCTION_SET = (byte)0x20;
+    private static final byte LCD_SET_CGRAM_ADDR = (byte)0x40;
+    private static final byte LCD_SET_DDRAM_ADDR = (byte)0x80;
     // flags for display entry mode
-    private static final byte LCD_ENTRY_RIGHT = (byte) 0x00;
-    private static final byte LCD_ENTRY_LEFT = (byte) 0x02;
-    private static final byte LCD_ENTRY_SHIFT_INCREMENT = (byte) 0x01;
-    private static final byte LCD_ENTRY_SHIFT_DECREMENT = (byte) 0x00;
+    private static final byte LCD_ENTRY_RIGHT = (byte)0x00;
+    private static final byte LCD_ENTRY_LEFT = (byte)0x02;
+    private static final byte LCD_ENTRY_SHIFT_INCREMENT = (byte)0x01;
+    private static final byte LCD_ENTRY_SHIFT_DECREMENT = (byte)0x00;
     // flags for display on/off control
-    private static final byte LCD_DISPLAY_ON = (byte) 0x04;
-    private static final byte LCD_DISPLAY_OFF = (byte) 0x00;
-    private static final byte LCD_CURSOR_ON = (byte) 0x02;
-    private static final byte LCD_CURSOR_OFF = (byte) 0x00;
-    private static final byte LCD_BLINK_ON = (byte) 0x01;
-    private static final byte LCD_BLINK_OFF = (byte) 0x00;
+    private static final byte LCD_DISPLAY_ON = (byte)0x04;
+    private static final byte LCD_DISPLAY_OFF = (byte)0x00;
+    private static final byte LCD_CURSOR_ON = (byte)0x02;
+    private static final byte LCD_CURSOR_OFF = (byte)0x00;
+    private static final byte LCD_BLINK_ON = (byte)0x01;
+    private static final byte LCD_BLINK_OFF = (byte)0x00;
     // flags for display/cursor shift
-    private static final byte LCD_DISPLAY_MOVE = (byte) 0x08;
-    private static final byte LCD_CURSOR_MOVE = (byte) 0x00;
-    private static final byte LCD_MOVE_RIGHT = (byte) 0x04;
-    private static final byte LCD_MOVE_LEFT = (byte) 0x00;
+    private static final byte LCD_DISPLAY_MOVE = (byte)0x08;
+    private static final byte LCD_CURSOR_MOVE = (byte)0x00;
+    private static final byte LCD_MOVE_RIGHT = (byte)0x04;
+    private static final byte LCD_MOVE_LEFT = (byte)0x00;
     // flags for function set
-    private static final byte LCD_8BIT_MODE = (byte) 0x10;
-    private static final byte LCD_4BIT_MODE = (byte) 0x00;
-    private static final byte LCD_2LINE = (byte) 0x08;
-    private static final byte LCD_1LINE = (byte) 0x00;
-    private static final byte LCD_5x10DOTS = (byte) 0x04;
-    private static final byte LCD_5x8DOTS = (byte) 0x00;
+    private static final byte LCD_8BIT_MODE = (byte)0x10;
+    private static final byte LCD_4BIT_MODE = (byte)0x00;
+    private static final byte LCD_2LINE = (byte)0x08;
+    private static final byte LCD_1LINE = (byte)0x00;
+    private static final byte LCD_5x10DOTS = (byte)0x04;
+    private static final byte LCD_5x8DOTS = (byte)0x00;
     // flags for backlight control
-    private static final byte LCD_BACKLIGHT = (byte) 0x08;
-    private static final byte LCD_NO_BACKLIGHT = (byte) 0x00;
-    private static final byte En = (byte) 0b000_00100; // Enable bit
-    private static final byte Rw = (byte) 0b000_00010; // Read/Write bit
-    private static final byte Rs = (byte) 0b000_00001; // Register select bit
+    private static final byte LCD_BACKLIGHT = (byte)0x08;
+    private static final byte LCD_NO_BACKLIGHT = (byte)0x00;
+    private static final byte En = (byte)0b000_00100; // Enable bit
+    private static final byte Rw = (byte)0b000_00010; // Read/Write bit
+    private static final byte Rs = (byte)0b000_00001; // Register select bit
 
     /**
      * Display row offsets. Offset for up to 4 rows.
      */
-    private static final byte[] LCD_ROW_OFFSETS = {0x00, 0x40, 0x14, 0x54};
+    private static final byte[] LCD_ROW_OFFSETS = { 0x00, 0x40, 0x14, 0x54 };
     /**
      * The Default BUS and Device Address.
      * On the PI, you can look it up with the Command 'sudo i2cdetect -y 1'
@@ -85,15 +65,15 @@ public class LcdDisplay implements DeviceInterface {
     /**
      * The PI4J I2C component
      */
-    private final LcdConnection i2c;
+    private final I2C i2c;
     /**
      * The amount of rows on the display
      */
-    private final int rows;
+    public final int rows;
     /**
      * The amount of columns on the display
      */
-    private final int columns;
+    public final int columns;
 
     /**
      * With this Byte cursor visibility is controlled
@@ -102,25 +82,70 @@ public class LcdDisplay implements DeviceInterface {
     /**
      * This boolean checks if the backlight is on or not
      */
-    private boolean backlight;
+    public boolean backlight;
 
     /**
      * Creates a new LCDDisplay component with default values
+     *
+     * @param pi4j Pi4J context
      */
-    public LcdDisplay() {
-        this(2, 16, new LcdConnection.PCF8574LcdConnection(1));
+    public LcdDisplay(Context pi4j) {
+        this(pi4j, 2, 16);
     }
 
-    public LcdDisplay(int rows, int columns, LcdConnection connection) {
+    /**
+     * Creates a new LCDDisplay component with custom rows and columns
+     *
+     * @param pi4j    Pi4J context
+     * @param rows    Custom amount of display lines
+     * @param columns Custom amount of chars on line
+     */
+    public LcdDisplay(Context pi4j, int rows, int columns) {
         this.rows = rows;
         this.columns = columns;
-        i2c = connection;
+        this.i2c = pi4j.create(buildI2CConfig(pi4j, DEFAULT_BUS, DEFAULT_DEVICE));
         init();
     }
 
-    @Override
-    public void close() throws RuntimeIOException {
-        off();
+    /**
+     * Creates a new LCDDisplay component with custom rows and columns
+     *
+     * @param pi4j    Pi4J context
+     * @param rows    Custom amount of display lines
+     * @param columns Custom amount of chars on line
+     * @param bus     Custom I2C bus address
+     * @param device  Custom I2C device Address
+     */
+    public LcdDisplay(Context pi4j, int rows, int columns, int bus, int device) {
+        this.rows = rows;
+        this.columns = columns;
+        this.i2c = pi4j.create(buildI2CConfig(pi4j, bus, device));
+        init();
+    }
+
+    /**
+     * Registers the I2C Component on the PI4J
+     *
+     * @param pi4j   The Context
+     * @param bus    The I2C Bus
+     * @param device The I2C Device
+     * @return A Provider of an I2C Bus
+     */
+    private I2CConfig buildI2CConfig(Context pi4j, int bus, int device) {
+        return I2C.newConfigBuilder(pi4j)
+                .id("I2C-" + device + "@" + bus)
+                .name("PCF8574AT")
+                .bus(bus)
+                .device(device)
+                .build();
+    }
+
+
+    /**
+     * @return The current running Context
+     */
+    public I2C getI2C() {
+        return this.i2c;
     }
 
     /**
@@ -144,7 +169,7 @@ public class LcdDisplay implements DeviceInterface {
      */
     public void moveCursorHome() {
         writeCommand(LCD_RETURN_HOME);
-        sleep(3);
+        sleep(3, 0);
     }
 
     /**
@@ -164,13 +189,13 @@ public class LcdDisplay implements DeviceInterface {
         if (text.length() > columns) {
             throw new IllegalArgumentException("Too long text. Only " + columns + " characters possible");
         }
-        if (line >= rows || line < 0) {
+        if (line > rows || line < 1) {
             throw new IllegalArgumentException("Wrong line id. Only " + rows + " lines possible");
         }
 
         clearLine(line);
         moveCursorHome();
-        displayLine(text, LCD_ROW_OFFSETS[line]);
+        displayLine(text, LCD_ROW_OFFSETS[line - 1]);
     }
 
     /**
@@ -225,7 +250,7 @@ public class LcdDisplay implements DeviceInterface {
             }
 
             // Write character to array
-            lines[currentLine] += (char) text.charAt(i);
+            lines[currentLine] += (char)text.charAt(i);
 
             if (lines[currentLine].length() == columns && currentLine < rows) {
                 currentLine++;
@@ -247,7 +272,7 @@ public class LcdDisplay implements DeviceInterface {
      * @param charvalue of the char that is written
      */
     public void writeCharacter(char charvalue) {
-        writeSplitCommand((byte) charvalue, Rs);
+        writeSplitCommand((byte)charvalue, Rs);
     }
 
     /**
@@ -259,7 +284,7 @@ public class LcdDisplay implements DeviceInterface {
      */
     public void writeCharacter(char charvalue, int column, int line) {
         setCursorToPosition(column, line);
-        writeSplitCommand((byte) charvalue, Rs);
+        writeSplitCommand((byte)charvalue, Rs);
     }
 
     /**
@@ -269,7 +294,7 @@ public class LcdDisplay implements DeviceInterface {
      * @param pos  for the start of the text
      */
     private void displayLine(String text, int pos) {
-        writeCommand((byte) (0x80 + pos));
+        writeCommand((byte)(0x80 + pos));
 
         if (text == null || text.isEmpty()) return;
         for (int i = 0; i < text.length(); i++) {
@@ -283,17 +308,17 @@ public class LcdDisplay implements DeviceInterface {
      * @param line Select line to clear
      */
     public void clearLine(int line) {
-        if (line >= rows || line < 0) {
+        if (line > rows || line < 1) {
             throw new IllegalArgumentException("Wrong line id. Only " + rows + " lines possible");
         }
-        displayLine(" ".repeat(columns), LCD_ROW_OFFSETS[line]);
+        displayLine(" ".repeat(columns), LCD_ROW_OFFSETS[line - 1]);
     }
 
     /**
      * Write a command to the LCD
      */
     private void writeCommand(byte cmd) {
-        writeSplitCommand(cmd, (byte) 0);
+        writeSplitCommand(cmd, (byte)0);
     }
 
     /**
@@ -301,9 +326,9 @@ public class LcdDisplay implements DeviceInterface {
      */
     private void writeSplitCommand(byte cmd, byte mode) {
         //bitwise AND with 11110000 to remove last 4 bits
-        writeFourBits((byte) (mode | (cmd & 0xF0)));
+        writeFourBits((byte)(mode | (cmd & 0xF0)));
         //bitshift and bitwise AND to remove first 4 bits
-        writeFourBits((byte) (mode | ((cmd << 4) & 0xF0)));
+        writeFourBits((byte)(mode | ((cmd << 4) & 0xF0)));
     }
 
     /**
@@ -312,7 +337,7 @@ public class LcdDisplay implements DeviceInterface {
      * @param data the byte that is sent
      */
     private void writeFourBits(byte data) {
-        i2c.write((byte) (data | (backlight ? LCD_BACKLIGHT : LCD_NO_BACKLIGHT)));
+        i2c.write((byte)(data | (backlight ? LCD_BACKLIGHT : LCD_NO_BACKLIGHT)));
         lcd_strobe(data);
     }
 
@@ -320,26 +345,26 @@ public class LcdDisplay implements DeviceInterface {
      * Clocks EN to latch command
      */
     private void lcd_strobe(byte data) {
-        i2c.write((byte) (data | En | (backlight ? LCD_BACKLIGHT : LCD_NO_BACKLIGHT)));
-        sleepNanos(0, 500_000);
-        i2c.write((byte) ((data & ~En) | (backlight ? LCD_BACKLIGHT : LCD_NO_BACKLIGHT)));
-        sleepNanos(0, 100_000);
+        i2c.write((byte)(data | En | (backlight ? LCD_BACKLIGHT : LCD_NO_BACKLIGHT)));
+        sleep(0, 500_000);
+        i2c.write((byte)((data & ~En) | (backlight ? LCD_BACKLIGHT : LCD_NO_BACKLIGHT)));
+        sleep(0, 100_000);
     }
 
     /**
      * Moves the cursor 1 character right
      */
     public void moveCursorRight() {
-        executeCommand(LCD_CURSOR_SHIFT, (byte) (LCD_CURSOR_MOVE | LCD_MOVE_RIGHT));
-        sleep(1);
+        executeCommand(LCD_CURSOR_SHIFT, (byte)(LCD_CURSOR_MOVE | LCD_MOVE_RIGHT));
+        delay(1);
     }
 
     /**
      * Moves the cursor 1 character left
      */
     public void moveCursorLeft() {
-        executeCommand(LCD_CURSOR_SHIFT, (byte) (LCD_CURSOR_MOVE | LCD_MOVE_LEFT));
-        sleep(1);
+        executeCommand(LCD_CURSOR_SHIFT, (byte)(LCD_CURSOR_MOVE | LCD_MOVE_LEFT));
+        delay(1);
     }
 
     /**
@@ -349,14 +374,14 @@ public class LcdDisplay implements DeviceInterface {
      * @param line  Selects the line of the display. Range: 1 - ROWS
      */
     public void setCursorToPosition(int digit, int line) {
-        if (line >= rows || line < 0) {
+        if (line > rows || line < 1) {
             throw new IllegalArgumentException("Line out of range. Display has only " + rows + "x" + columns + " Characters!");
         }
 
         if (digit < 0 || digit > columns) {
             throw new IllegalArgumentException("Line out of range. Display has only " + rows + "x" + columns + " Characters!");
         }
-        writeCommand((byte) (LCD_SET_DDRAM_ADDR | digit + LCD_ROW_OFFSETS[line]));
+        writeCommand((byte)(LCD_SET_DDRAM_ADDR | digit + LCD_ROW_OFFSETS[line - 1]));
     }
 
     /**
@@ -376,7 +401,8 @@ public class LcdDisplay implements DeviceInterface {
     public void setCursorVisibility(boolean show) {
         if (show) {
             this.displayControl |= LCD_CURSOR_ON;
-        } else {
+        }
+        else {
             this.displayControl &= ~LCD_CURSOR_ON;
         }
         executeCommand(LCD_DISPLAY_CONTROL, this.displayControl);
@@ -390,7 +416,8 @@ public class LcdDisplay implements DeviceInterface {
     public void setCursorBlinking(boolean blink) {
         if (blink) {
             this.displayControl |= LCD_BLINK_ON;
-        } else {
+        }
+        else {
             this.displayControl &= ~LCD_BLINK_ON;
         }
 
@@ -401,14 +428,14 @@ public class LcdDisplay implements DeviceInterface {
      * Moves the whole displayed text one character right
      */
     public void moveDisplayRight() {
-        executeCommand(LCD_CURSOR_SHIFT, (byte) (LCD_DISPLAY_MOVE | LCD_MOVE_RIGHT));
+        executeCommand(LCD_CURSOR_SHIFT, (byte)(LCD_DISPLAY_MOVE | LCD_MOVE_RIGHT));
     }
 
     /**
      * Moves the whole displayed text one character right
      */
     public void moveDisplayLeft() {
-        executeCommand(LCD_CURSOR_SHIFT, (byte) (LCD_DISPLAY_MOVE | LCD_MOVE_LEFT));
+        executeCommand(LCD_CURSOR_SHIFT, (byte)(LCD_DISPLAY_MOVE | LCD_MOVE_LEFT));
     }
 
     /**
@@ -421,16 +448,16 @@ public class LcdDisplay implements DeviceInterface {
     public void createCharacter(int location, byte[] character) {
         if (character.length != 8) {
             throw new IllegalArgumentException("Array has invalid length. Character is only 5x8 Digits. Only a array with length" +
-                    " 8 is allowed");
+                                               " 8 is allowed");
         }
 
-        if (location > 7 || location < 0) {
+        if (location > 7 || location < 1) {
             throw new IllegalArgumentException("Invalid memory location. Range 1-7 allowed. Value: " + location);
         }
-        writeCommand((byte) (LCD_SET_CGRAM_ADDR | location << 3));
+        writeCommand((byte)(LCD_SET_CGRAM_ADDR | location << 3));
 
         for (int i = 0; i < 8; i++) {
-            writeSplitCommand(character[i], (byte) 1);
+            writeSplitCommand(character[i], (byte)1);
         }
     }
 
@@ -442,7 +469,7 @@ public class LcdDisplay implements DeviceInterface {
      * @param data    Setup command data
      */
     private void executeCommand(byte command, byte data) {
-        executeCommand((byte) (command | data));
+        executeCommand((byte)(command | data));
     }
 
     /**
@@ -450,29 +477,22 @@ public class LcdDisplay implements DeviceInterface {
      */
     private void executeCommand(byte cmd) {
         i2c.write(cmd);
-        sleepNanos(0, 100_000);
-    }
-
-    private void sleep(int ms) {
-        try {
-            Thread.sleep(ms);
-        } catch (Exception ignored) {
-        }
+        sleep(0, 100_000);
     }
 
     /**
      * Initializes the LCD with the backlight off
      */
     private void init() {
-        writeCommand((byte) 0x03);
-        writeCommand((byte) 0x03);
-        writeCommand((byte) 0x03);
-        writeCommand((byte) 0x02);
+        writeCommand((byte)0x03);
+        writeCommand((byte)0x03);
+        writeCommand((byte)0x03);
+        writeCommand((byte)0x02);
 
         // Initialize display settings
-        writeCommand((byte) (LCD_FUNCTION_SET | LCD_2LINE | LCD_5x8DOTS | LCD_4BIT_MODE));
-        writeCommand((byte) (LCD_DISPLAY_CONTROL | LCD_DISPLAY_ON | LCD_CURSOR_OFF | LCD_BLINK_OFF));
-        writeCommand((byte) (LCD_ENTRY_MODE_SET | LCD_ENTRY_LEFT | LCD_ENTRY_SHIFT_DECREMENT));
+        writeCommand((byte)(LCD_FUNCTION_SET | LCD_2LINE | LCD_5x8DOTS | LCD_4BIT_MODE));
+        writeCommand((byte)(LCD_DISPLAY_CONTROL | LCD_DISPLAY_ON | LCD_CURSOR_OFF | LCD_BLINK_OFF));
+        writeCommand((byte)(LCD_ENTRY_MODE_SET | LCD_ENTRY_LEFT | LCD_ENTRY_SHIFT_DECREMENT));
 
         clearDisplay();
 
@@ -480,5 +500,20 @@ public class LcdDisplay implements DeviceInterface {
         setDisplayBacklight(true);
     }
 
+    /**
+     * Utility function to sleep for the specified amount of milliseconds. An {@link InterruptedException} will be catched and ignored while setting the
+     * interrupt flag again.
+     */
+    protected void sleep(long millis, int nanos) {
+        try {
+            Thread.sleep(millis, nanos);
+        }
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
 
+    protected void delay(long millis) {
+        sleep(millis, 0);
+    }
 }

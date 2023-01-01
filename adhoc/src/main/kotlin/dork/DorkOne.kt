@@ -16,35 +16,13 @@
 
 package dork
 
-import com.diozero.devices.LcdConnection
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
-import com.pi4j.LcdDisplay
 import lcd.diozero.TC1604Lcd
-import lcd.lcdTest
 import minutes
 import java.lang.Thread.sleep
 
 fun main() {
-    val backpack =
-        LcdConnection.PCF8574LcdConnection(1)
-    // backpackOverride()
-
-//    val lcd = TC1604Lcd(backpack, true).apply {
-//        println("My version")
-//    }
-//    val lcd = HD44780Lcd(backpack, 20, 4).apply {
-//        println("Hitachi initialized")
-//    }
-//    lcd.lcdFunctionTest()
-    LcdDisplay(4, 20, backpack).lcdTest()
-}
-
-fun backpackOverride() = object : LcdConnection.PCF8574LcdConnection(1) {
-    override fun write(values: Byte) {
-        super.write(values)
-        System.out.print(String.format("%02x ", (values.toInt() and 0x00ff)))
-    }
 }
 
 fun `put me down`() {

@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation("com.pi4j:pi4j.core:2.2.1")
+    implementation("com.pi4j:pi4j-core:2.2.1")
     implementation("com.pi4j:pi4j-plugin-raspberrypi:2.2.1")
     implementation("com.pi4j:pi4j-plugin-pigpio:2.2.1")
 }
@@ -30,7 +30,8 @@ tasks {
 }
 
 application {
-    mainClass.set("dork.DorkOneKt")
+//    mainClass.set("dork.DorkOneKt")
+    mainClass.set("lcd.LCDTestingKt")
 }
 
 defaultTasks("clean", "shadowJar", "deployMe")

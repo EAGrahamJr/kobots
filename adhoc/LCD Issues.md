@@ -50,23 +50,24 @@ Each test-type is performed after a full hardware power down and start. Multiple
 
 ### 20x4
 
-| Test        | Python               | HD  | Pi4J | LCD Hack | EdG |
-|-------------|----------------------|-----|------|----------|-----|
-| clear       | :+1:                 |     |      |          |     |
-| home        | :+1:                 |     |      |          |     |
-| write       | :+1:                 |     |      |          |     |
-| position    | :+1:                 |     |      |          |     |
-| move        | n/a                  |     |      |          |     | 
-| visible     | :+1:                 |     |      |          |     |
-| blink       | :+1:                 |     |      |          |     |
-| shift left  | :+1:                 |     |      |          |     |
-| shift right | :+1:                 |     |      |          |     |
-| rt-to-lt    | :+1:                 |     |      |          |     |
-| autoscroll  | :+1:                 |     |      |          |     |
-| backlight   | :+1:<sup>**1**</sup> |     |      |          |     |
-| cust. char  | n/a                  |     |      |          |     |
+| Test        | Python               | HD<sup>**2**</sup> | Pi4J | LCD Hack | EdG |
+|-------------|----------------------|--------------------|------|----------|-----|
+| clear       | :+1:                 | :-1:               |      |          |     |
+| home        | :+1:                 | :-1:               |      |          |     |
+| write       | :+1:                 | :-1:               |      |          |     |
+| position    | :+1:                 | :-1:               |      |          |     |
+| move        | n/a                  | :-1:               |      |          |     | 
+| visible     | :+1:                 | :-1:               |      |          |     |
+| blink       | :+1:                 | :-1:               |      |          |     |
+| shift left  | :+1:                 | :-1:               |      |          |     |
+| shift right | :+1:                 | :-1:               |      |          |     |
+| rt-to-lt    | :+1:                 | n/a                |      |          |     |
+| autoscroll  | :+1:                 | :-1:               |      |          |     |
+| backlight   | :+1:<sup>**1**</sup> | :-1:               |      |          |     |
+| cust. char  | n/a                  | :-1:               |      |          |     |
 
-<sup>**1**</sup> enabled/disabled via direct GPIO write, as opposed via the device
+<sup>**1**</sup> enabled/disabled via direct GPIO write, as opposed via the device<br/>
+<sup>**2**</sup> the cursor and display would occasionally turn on and the cursor would be in different locations, but :shrug:
 
 ---
 
