@@ -16,7 +16,7 @@
 
 ## Test Matrix
 
-Each test is performed after a full hardware power down and start.
+Each test-type is performed after a full hardware power down and start. Multiple runs per test-type are executed.
 
 - Python
 - Java (Kotlin)
@@ -43,6 +43,7 @@ Each test is performed after a full hardware power down and start.
 | blink       |        |     |      |          |     |
 | shift left  |        |     |      |          |     |
 | shift right |        |     |      |          |     |
+| rt-to-lt    |        |     |      |          |     |
 | autoscroll  |        |     |      |          |     |
 | backlight   |        |     |      |          |     |
 | cust. char  |        |     |      |          |     |
@@ -60,11 +61,12 @@ Each test is performed after a full hardware power down and start.
 | blink       | :+1:                 |     |      |          |     |
 | shift left  | :+1:                 |     |      |          |     |
 | shift right | :+1:                 |     |      |          |     |
+| rt-to-lt    | :+1:                 |     |      |          |     |
 | autoscroll  | :+1:                 |     |      |          |     |
 | backlight   | :+1:<sup>**1**</sup> |     |      |          |     |
 | cust. char  | n/a                  |     |      |          |     |
 
-<sup>**1**</sup> enabled/disabled via direct GPIO write
+<sup>**1**</sup> enabled/disabled via direct GPIO write, as opposed via the device
 
 ---
 

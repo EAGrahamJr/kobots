@@ -65,6 +65,14 @@ def the_test():
     lcd.noCursor()
     sleep(1)
 
+    start_test("right to left")
+    lcd.rightToLeft()
+    lcd.setCursor(lcd.numcols - 1, 0)
+    for c in chars:
+        lcd.message(c)
+        sleep(.2)
+    lcd.leftToRight()
+
     # TODO cursor movement not in original code
 
     # TODO custom character not in original code

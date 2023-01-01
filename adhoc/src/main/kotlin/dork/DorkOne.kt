@@ -20,8 +20,8 @@ import com.diozero.devices.LcdConnection
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
 import com.pi4j.LcdDisplay
-import diozero.TC1604Lcd
-import freenovekit.lcdTest
+import lcd.diozero.TC1604Lcd
+import lcd.lcdTest
 import minutes
 import java.lang.Thread.sleep
 

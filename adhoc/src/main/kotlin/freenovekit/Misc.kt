@@ -12,7 +12,7 @@ import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
 import crackers.kobots.devices.ULN2003Driver
-import diozero.TC1604Lcd
+import lcd.diozero.TC1604Lcd
 import minutes
 import java.lang.Math.abs
 import java.lang.Thread.sleep

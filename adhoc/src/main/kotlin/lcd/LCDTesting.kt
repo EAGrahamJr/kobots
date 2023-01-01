@@ -1,36 +1,46 @@
-package freenovekit
+/*
+ * Copyright 2022-2023 by E. A. Graham, Jr.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
 
-import com.diozero.devices.LcdConnection
+package lcd
+
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.LcdInterface.Characters
 import com.pi4j.LcdDisplay
-import diozero.TC1604Lcd
-import minutes
 import java.lang.Thread.sleep
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.time.LocalTime
 
 /**
  * Various dorkings to hack on the LCD 1602 module included in the Freenove kit.
  */
-fun `lesson 20`() {
-    TC1604Lcd(LcdConnection.PCF8574LcdConnection(1), false).apply {
-        displayText("Hello")
-        sleep(2000)
-        clear()
-
-        1 minutes {
-            val temp = (Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toFloat() / 1000)
-            val time = LocalTime.now().toString().substringBefore(".")
-
-            val tempString = String.format("CPU: %.2f", temp)
-            setText(0, tempString + (if (temp > 48f) "  HOT" else ""))
-            setText(1, time)
-            sleep(1000)
-        }
-    }.close()
-}
+//fun `lesson 20`() {
+//    TC1604Lcd(LcdConnection.PCF8574LcdConnection(1), false).apply {
+//        displayText("Hello")
+//        sleep(2000)
+//        clear()
+//
+//        1 minutes {
+//            val temp = (Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toFloat() / 1000)
+//            val time = LocalTime.now().toString().substringBefore(".")
+//
+//            val tempString = String.format("CPU: %.2f", temp)
+//            setText(0, tempString + (if (temp > 48f) "  HOT" else ""))
+//            setText(1, time)
+//            sleep(1000)
+//        }
+//    }.close()
+//}
 
 val chars: List<Byte> = (0..9).map { ('0' + it).code.toByte() } + ('A'..'F').map { it.code.toByte() }
 val testString = String(chars.toByteArray())
