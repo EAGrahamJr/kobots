@@ -24,7 +24,7 @@ Each test is performed after a full hardware power down and start.
 ### Devices
 
 - Python - *driver* code from [vendor](https://github.com/Freenove/Freenove_LCD_Module/tree/main/Freenove_LCD_Module_for_Raspberry_Pi/Python/Python_Code)
-  - basically the same as the [OG Adafruit Python]()
+  - basically the same as the [OG Adafruit Python](https://github.com/adafruit/Adafruit_Python_CharLCD)
 - HD - diozero HD44780Lcd
 - Pi4J - from sample components
 - Hack - Pi4J code running on LcdConnection
@@ -38,27 +38,33 @@ Each test is performed after a full hardware power down and start.
 | home        |        |     |      |          |     |
 | write       |        |     |      |          |     |
 | position    |        |     |      |          |     |
+| move        |        |     |      |          |     | 
 | visible     |        |     |      |          |     |
 | blink       |        |     |      |          |     |
 | shift left  |        |     |      |          |     |
 | shift right |        |     |      |          |     |
+| autoscroll  |        |     |      |          |     |
 | backlight   |        |     |      |          |     |
 | cust. char  |        |     |      |          |     |
 
 ### 20x4
 
-| Test        | Python | HD  | Pi4J | LCD Hack | EdG |
-|-------------|--------|-----|------|----------|-----|
-| clear       |        |     |      |          |     |
-| home        |        |     |      |          |     |
-| write       |        |     |      |          |     |
-| position    |        |     |      |          |     |
-| visible     |        |     |      |          |     |
-| blink       |        |     |      |          |     |
-| shift left  |        |     |      |          |     |
-| shift right |        |     |      |          |     |
-| backlight   |        |     |      |          |     |
-| cust. char  |        |     |      |          |     |
+| Test        | Python               | HD  | Pi4J | LCD Hack | EdG |
+|-------------|----------------------|-----|------|----------|-----|
+| clear       | :+1:                 |     |      |          |     |
+| home        | :+1:                 |     |      |          |     |
+| write       | :+1:                 |     |      |          |     |
+| position    | :+1:                 |     |      |          |     |
+| move        | n/a                  |     |      |          |     | 
+| visible     | :+1:                 |     |      |          |     |
+| blink       | :+1:                 |     |      |          |     |
+| shift left  | :+1:                 |     |      |          |     |
+| shift right | :+1:                 |     |      |          |     |
+| autoscroll  | :+1:                 |     |      |          |     |
+| backlight   | :+1:<sup>**1**</sup> |     |      |          |     |
+| cust. char  | n/a                  |     |      |          |     |
+
+<sup>**1**</sup> enabled/disabled via direct GPIO write
 
 ---
 

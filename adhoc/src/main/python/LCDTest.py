@@ -67,13 +67,6 @@ def the_test():
 
     # TODO cursor movement not in original code
 
-    # TODO backlght toggle?
-    start_test('Display toggle')
-    for i in range(1, 4):
-        lcd.noDisplay()
-        sleep(1)
-        lcd.display()
-
     # TODO custom character not in original code
 
     if lcd.numlines > 2:
@@ -85,6 +78,14 @@ def the_test():
         lcd.cursor()
         lcd.blink()
         sleep(2)
+
+    # TODO backlght toggle?
+    start_test('Backlight...')
+    for i in range(1, 4):
+        mcp.output(3, 0)
+        sleep(1)
+        mcp.output(3, 1)
+        sleep(1)
 
     start_test('Completed')
     sleep(5)
