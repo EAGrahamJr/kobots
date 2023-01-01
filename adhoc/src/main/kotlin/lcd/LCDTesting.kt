@@ -16,10 +16,10 @@
 
 package lcd
 
-import com.diozero.devices.HD44780Lcd
 import com.diozero.devices.LcdConnection
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.LcdInterface.Characters
+import com.diozero.devices.SimpleLcd
 import java.lang.Thread.sleep
 
 fun FAIL(text: String) = println("$text not supported by hardware")
@@ -55,23 +55,23 @@ fun LcdInterface.lcdFunctionTest() {
     }
 
     // skip some?
-    doTest("Shift right") {
-        addText(testString)
-        shiftDisplayRight()
-        sleep(2000)
-        setCursorPosition(1, 1)
-        addText("Shift left")
-        shiftDisplayLeft()
-    }
+//    doTest("Shift right") {
+//        addText(testString)
+//        shiftDisplayRight()
+//        sleep(2000)
+//        setCursorPosition(1, 1)
+//        addText("Shift left")
+//        shiftDisplayLeft()
+//    }
 
-    doTest("autoscroll") {
-        autoscrollOn()
-        testString.forEach {
-            addText(it)
-            sleep(200)
-        }
-        autoscrollOff()
-    }
+//    doTest("autoscroll") {
+//        autoscrollOn()
+//        testString.forEach {
+//            addText(it)
+//            sleep(200)
+//        }
+//        autoscrollOff()
+//    }
 
     doTest("Cursor visible") {
         "stuff ".forEach { addText(it) }
@@ -151,5 +151,11 @@ fun backpack(withOutput: Boolean = false): LcdConnection =
 fun main() {
     val backpack = backpack()
     // HD
-    HD44780Lcd(backpack, 20, 4).lcdFunctionTest()
+//    HD44780Lcd(backpack, 20, 4).lcdFunctionTest()
+    // Pi4J example
+//    Pi4J.newAutoContext().also { context ->
+//        pi4JWrapper(LcdDisplay(context, 4, 20)).lcdFunctionTest()
+//    }.shutdown()
+//    hackWrapper(HackLcd(4, 20, backpack)).lcdFunctionTest()
+    SimpleLcd(backpack, true).lcdFunctionTest()
 }

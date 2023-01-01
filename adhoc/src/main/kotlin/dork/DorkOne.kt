@@ -18,7 +18,7 @@ package dork
 
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
-import lcd.diozero.TC1604Lcd
+import diozero.lcd.TC1604Lcd
 import minutes
 import java.lang.Thread.sleep
 

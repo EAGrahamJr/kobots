@@ -52,12 +52,12 @@ fun hackWrapper(delegate: HackLcd): LcdInterface = object : LcdInterface {
     }
 
     override fun addText(char: Char): LcdInterface {
-        addText(char)
+        delegate.writeCharacter(char)
         return this
     }
 
     override fun addText(code: Int): LcdInterface {
-        addText(code)
+        delegate.writeCharacter(code.toChar())
         return this
     }
 
@@ -163,7 +163,7 @@ fun hackWrapper(delegate: HackLcd): LcdInterface = object : LcdInterface {
 }
 
 // hacked up with diozero GPIO class instead of Pi4J context
-fun pk4JWrapper(delegate: LcdDisplay): LcdInterface = object : LcdInterface {
+fun pi4JWrapper(delegate: LcdDisplay): LcdInterface = object : LcdInterface {
     override fun close() {
         // no equivalent
     }
@@ -186,17 +186,17 @@ fun pk4JWrapper(delegate: LcdDisplay): LcdInterface = object : LcdInterface {
     }
 
     override fun setCursorPosition(column: Int, row: Int): LcdInterface {
-        delegate.setCursorToPosition(column, row)
+        delegate.setCursorToPosition(column, row + 1)
         return this
     }
 
     override fun addText(char: Char): LcdInterface {
-        addText(char)
+        delegate.writeCharacter(char)
         return this
     }
 
     override fun addText(code: Int): LcdInterface {
-        addText(code)
+        delegate.writeCharacter(code.toChar())
         return this
     }
 
@@ -296,7 +296,7 @@ fun pk4JWrapper(delegate: LcdDisplay): LcdInterface = object : LcdInterface {
     }
 
     override fun createChar(position: Int, data: ByteArray?): LcdInterface {
-        delegate.createCharacter(position, data)
+        delegate.createCharacter(position + 1, data)
         return this
     }
 }

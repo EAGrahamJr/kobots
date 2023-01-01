@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package lcd.diozero;
+package diozero.lcd;
 
 import com.diozero.api.RuntimeIOException;
 import com.diozero.devices.LcdConnection;
@@ -119,7 +119,7 @@ public class TC1604Lcd implements LcdInterface {
         writeCommand(RETURN_HOME | CLEAR_DISPLAY);
         writeCommand(RETURN_HOME);
 
-        // init the interface (2 lines, 5x8, 4-bit mode
+        // init the interface (2 lines, 5x8, 4-bit mode) - note this is the same for the 4-line as well)
         writeCommand(LCD_FUNCTION_SET | LCD_2LINE | LCD_5x8DOTS | LCD_4BIT_MODE);
 
         // initialize display settings - display on, cursor off, blink off
