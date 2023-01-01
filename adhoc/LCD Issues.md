@@ -67,7 +67,7 @@ Each test-type is performed after a full hardware power down and start. Multiple
 | cust. char  | n/a                  | :-1:               |      |          |     |
 
 <sup>**1**</sup> enabled/disabled via direct GPIO write, as opposed via the device<br/>
-<sup>**2**</sup> the cursor and display would occasionally turn on and the cursor would be in different locations, but :shrug:
+<sup>**2**</sup> the cursor and display would occasionally turn on and the cursor would be in different locations, but no text was displayed :shrug:
 
 ---
 
