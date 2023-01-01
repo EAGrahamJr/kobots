@@ -7,12 +7,12 @@ import com.diozero.api.ServoTrim.TOWERPRO_SG90
 import com.diozero.devices.Buzzer
 import com.diozero.devices.HCSR04
 import com.diozero.devices.LcdInterface
-import com.diozero.devices.TC1604Lcd
 import com.diozero.devices.imu.invensense.MPU6050
 import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
 import crackers.kobots.devices.ULN2003Driver
+import diozero.TC1604Lcd
 import minutes
 import java.lang.Math.abs
 import java.lang.Thread.sleep

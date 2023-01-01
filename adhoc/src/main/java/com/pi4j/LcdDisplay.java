@@ -108,9 +108,13 @@ public class LcdDisplay implements DeviceInterface {
      * Creates a new LCDDisplay component with default values
      */
     public LcdDisplay() {
-        this.rows = 2;
-        this.columns = 16;
-        i2c = new LcdConnection.PCF8574LcdConnection(1);
+        this(2, 16, new LcdConnection.PCF8574LcdConnection(1));
+    }
+
+    public LcdDisplay(int rows, int columns, LcdConnection connection) {
+        this.rows = rows;
+        this.columns = columns;
+        i2c = connection;
         init();
     }
 
