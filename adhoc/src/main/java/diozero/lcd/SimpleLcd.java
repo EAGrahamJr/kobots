@@ -20,6 +20,7 @@ import com.diozero.api.RuntimeIOException;
 import com.diozero.devices.LcdConnection;
 import com.diozero.devices.LcdInterface;
 
+import static com.diozero.util.SleepUtil.sleepMillis;
 import static com.diozero.util.SleepUtil.sleepNanos;
 
 /**
@@ -33,7 +34,7 @@ import static com.diozero.util.SleepUtil.sleepNanos;
  *     <li><a href="https://github.com/Pi4J/pi4j-example-components">Pi4J/pi4j-example-components</a>", Apache v2 License.</li>
  * </ul>
  */
-public class TC1604Lcd implements LcdInterface {
+public class SimpleLcd implements LcdInterface {
     // display commands
     private static final int CLEAR_DISPLAY = 0x01;
     private static final int RETURN_HOME = 0x02;
@@ -86,7 +87,7 @@ public class TC1604Lcd implements LcdInterface {
 
     // the actual interface
     private final LcdConnection lcdConnection;
-    private boolean fourLines;
+    private final boolean fourLines;
 
     private boolean backlight = false;
     private boolean displayOn = true;
@@ -94,22 +95,28 @@ public class TC1604Lcd implements LcdInterface {
     private boolean cursorBlinking = false;
 
     /**
-     * Default constructor for PCF8574-backpack on controller bus 1 (Raspberry Pi).
+     * Default constructor for 2-line display with a PCF8574-backpack on controller bus 1 (Raspberry Pi).
      */
-    public TC1604Lcd() {
+    public SimpleLcd() {
         this(1);
     }
 
     /**
-     * Default constructor for PCF8574-backpack.
+     * Default constructor for 2-line display with a PCF8574-backpack.
      *
      * @param controller the I2C bus controller number
      */
-    public TC1604Lcd(int controller) {
+    public SimpleLcd(int controller) {
         this(new LcdConnection.PCF8574LcdConnection(controller), false);
     }
 
-    public TC1604Lcd(LcdConnection lcdConnection, boolean fourLines) {
+    /**
+     * Constructor.
+     *
+     * @param lcdConnection the connection to use (typically a "backpack" or direct GPIO)
+     * @param fourLines     if {@code true}, the display is treated as 4-lines, 20-character display mode
+     */
+    public SimpleLcd(LcdConnection lcdConnection, boolean fourLines) {
         this.lcdConnection = lcdConnection;
         this.fourLines = fourLines;
 
@@ -177,6 +184,7 @@ public class TC1604Lcd implements LcdInterface {
     @Override
     public LcdInterface clear() {
         writeCommand(CLEAR_DISPLAY);
+        sleepMillis(3);
         return this;
     }
 

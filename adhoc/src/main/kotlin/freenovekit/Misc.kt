@@ -12,7 +12,7 @@ import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
 import crackers.kobots.devices.ULN2003Driver
-import diozero.lcd.TC1604Lcd
+import diozero.lcd.SimpleLcd
 import minutes
 import java.lang.Math.abs
 import java.lang.Thread.sleep
@@ -124,7 +124,7 @@ fun servoFix() {
 
 fun `lesson 24`() {
     val sounder = HCSR04(23, 24)
-    TC1604Lcd().apply {
+    SimpleLcd().apply {
         createChar(0, LcdInterface.Characters.get("frownie"))
         2 minutes {
             val distance = sounder.distanceCm
@@ -155,7 +155,7 @@ fun `lesson 24`() {
 // }
 
 fun `lesson 20`() {
-    TC1604Lcd(LcdConnection.PCF8574LcdConnection(1), false).apply {
+    SimpleLcd(LcdConnection.PCF8574LcdConnection(1), false).apply {
         displayText("Hello")
         sleep(2000)
         clear()

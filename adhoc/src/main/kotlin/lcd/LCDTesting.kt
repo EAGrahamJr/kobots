@@ -19,7 +19,7 @@ package lcd
 import com.diozero.devices.LcdConnection
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.LcdInterface.Characters
-import com.diozero.devices.SimpleLcd
+import diozero.lcd.SimpleLcd
 import java.lang.Thread.sleep
 
 fun FAIL(text: String) = println("$text not supported by hardware")
@@ -151,17 +151,15 @@ fun backpack(withOutput: Boolean = false): LcdConnection =
 fun main() {
     backpack().use { backpack ->
         // HD
-//    HD44780Lcd(backpack, 20, 4).lcdFunctionTest()
+//        HD44780Lcd(backpack, 20, 4).lcdFunctionTest()
 //    hackWrapper(HackLcd(4, 20, backpack)).lcdFunctionTest()
-//    SimpleLcd(backpack, true).lcdFunctionTest()
-//    TC1604Lcd(backpack, true).lcdFunctionTest()
+        SimpleLcd(backpack, true).lcdFunctionTest()
 
         // 20x4
 
         // 16x4
 //        HD44780Lcd(backpack, 16, 2).lcdFunctionTest()
 //        hackWrapper(HackLcd(2, 16, backpack)).lcdFunctionTest()
-        SimpleLcd(backpack, false).lcdFunctionTest()
-//    TC1604Lcd(backpack, false).lcdFunctionTest()
+//        SimpleLcd(backpack, false).lcdFunctionTest()
     }
 }
