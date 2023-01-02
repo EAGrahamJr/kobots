@@ -55,14 +55,16 @@ fun LcdInterface.lcdFunctionTest() {
     }
 
     // skip some?
-//    doTest("Shift right") {
-//        addText(testString)
-//        shiftDisplayRight()
-//        sleep(2000)
-//        setCursorPosition(1, 1)
-//        addText("Shift left")
-//        shiftDisplayLeft()
-//    }
+    doTest("Shifting") {
+        addText(testString)
+        setCursorPosition(10, 1)
+        addText("right")
+        shiftDisplayRight()
+        sleep(2000)
+        setCursorPosition(10, 1)
+        addText("left ")
+        shiftDisplayLeft()
+    }
 
 //    doTest("autoscroll") {
 //        autoscrollOn()
@@ -77,18 +79,16 @@ fun LcdInterface.lcdFunctionTest() {
         "stuff ".forEach { addText(it) }
         sleep(500)
         cursorOn()
-        sleep(500)
         blinkOn()
-        sleep(500)
+        sleep(2000)
         blinkOff()
-        sleep(500)
         cursorOff()
     }
 
     // TODO changing text direction on the fly?
-    doTest("right to left") {
-        FAIL("right-to-left")
-    }
+//    doTest("right to left") {
+//        FAIL("right-to-left")
+//    }
 
     // not in python test
     doTest("Cursor move") {
@@ -149,13 +149,19 @@ fun backpack(withOutput: Boolean = false): LcdConnection =
     }
 
 fun main() {
-    val backpack = backpack()
-    // HD
+    backpack().use { backpack ->
+        // HD
 //    HD44780Lcd(backpack, 20, 4).lcdFunctionTest()
-    // Pi4J example
-//    Pi4J.newAutoContext().also { context ->
-//        pi4JWrapper(LcdDisplay(context, 4, 20)).lcdFunctionTest()
-//    }.shutdown()
 //    hackWrapper(HackLcd(4, 20, backpack)).lcdFunctionTest()
-    SimpleLcd(backpack, true).lcdFunctionTest()
+//    SimpleLcd(backpack, true).lcdFunctionTest()
+//    TC1604Lcd(backpack, true).lcdFunctionTest()
+
+        // 20x4
+
+        // 16x4
+//        HD44780Lcd(backpack, 16, 2).lcdFunctionTest()
+//        hackWrapper(HackLcd(2, 16, backpack)).lcdFunctionTest()
+        SimpleLcd(backpack, false).lcdFunctionTest()
+//    TC1604Lcd(backpack, false).lcdFunctionTest()
+    }
 }

@@ -124,7 +124,7 @@ if __name__ == '__main__':
     print('Program is starting ... ')
 
     mcp.output(3, 1)  # turn on LCD backlight
-    lcd.begin(20, 4)  # set number of LCD lines and columns
+    lcd.begin(16, 2)  # set number of LCD lines and columns
 
     the_test()
 
