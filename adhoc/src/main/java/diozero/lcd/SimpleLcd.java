@@ -93,6 +93,8 @@ public class SimpleLcd implements LcdInterface {
     private boolean displayOn = true;
     private boolean cursorVisible = false;
     private boolean cursorBlinking = false;
+    private boolean autoScroll = false;
+    private boolean leftToRight = true;
 
     /**
      * Default constructor for 2-line display with a PCF8574-backpack on controller bus 1 (Raspberry Pi).
@@ -196,24 +198,39 @@ public class SimpleLcd implements LcdInterface {
 
     @Override
     public LcdInterface autoscrollOn() {
-        // no-op
-        return this;
+        return entryControl(true, this.leftToRight);
     }
 
     @Override
     public LcdInterface autoscrollOff() {
-        // no-op
-        return this;
+        return entryControl(false, this.leftToRight);
+    }
+
+    public LcdInterface rightToLeft() {
+        return entryControl(this.autoScroll, false);
+    }
+
+    public LcdInterface leftToRight() {
+        return entryControl(this.autoScroll, true);
     }
 
     @Override
     public boolean isIncrementOn() {
-        return true;
+        return !autoScroll;
     }
 
     @Override
     public boolean isShiftDisplayOn() {
-        return false;
+        return autoScroll;
+    }
+
+    public LcdInterface entryControl(boolean autoScroll, boolean leftToRight) {
+        this.autoScroll = autoScroll;
+        this.leftToRight = leftToRight;
+        writeCommand(ENTRY_MODE_SET |
+                     (leftToRight ? ENTRY_RIGHT : ENTRY_LEFT) |
+                     (autoScroll ? ENTRY_ENABLE_SHIFT : ENTRY_DISABLE_SHIFT));
+        return this;
     }
 
     @Override

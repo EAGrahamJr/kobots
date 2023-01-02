@@ -33,39 +33,41 @@
 
 ### 20x4
 
-| Test        | Python             | HD         | HackLcd            | SimpleLcd          |
-|-------------|--------------------|------------|--------------------|--------------------|
-| clear       | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| home        | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| write       | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| position    | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| move        | :no_mouth:         | :x:        | :x:                | :heavy_check_mark: | 
-| visible     | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| blink       | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| shift left  | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| shift right | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| rt-to-lt    | :heavy_check_mark: | :no_mouth: | :no_mouth:         | :no_mouth:         |
-| autoscroll  | :heavy_check_mark: | :no_mouth: | :no_mouth:         | :no_mouth:         |
-| backlight   | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark: |
-| cust. char  | :no_mouth:         | :x:        | :x:                | :heavy_check_mark: |
+| Test        | Python             | HD         | HackLcd            | SimpleLcd                          |
+|-------------|--------------------|------------|--------------------|------------------------------------|
+| clear       | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| home        | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| write       | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| position    | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| move        | :no_mouth:         | :x:        | :x:                | :heavy_check_mark:                 | 
+| visible     | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| blink       | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| shift left  | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| shift right | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| rt-to-lt    | :heavy_check_mark: | :no_mouth: | :no_mouth:         | :heavy_check_mark:<sup>**1**</sup> |
+| autoscroll  | :heavy_check_mark: | :no_mouth: | :no_mouth:         | :heavy_check_mark:<sup>**1**</sup> |
+| backlight   | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark:                 |
+| cust. char  | :no_mouth:         | :x:        | :x:                | :heavy_check_mark:                 |
 
 ### 16x2
 
-| Test        | Python             | HD         | HackLcd            | SimpleLcd          |
-|-------------|--------------------|------------|--------------------|--------------------|
-| clear       | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark: |
-| home        | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark: |
-| write       | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark: |
-| position    | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark: |
-| move        | :no_mouth:         | :x:        | :heavy_check_mark: | :heavy_check_mark: | 
-| visible     | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| blink       | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| shift left  | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| shift right | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark: |
-| rt-to-lt    | :heavy_check_mark: | :no_mouth: | :no_mouth:         | :no_mouth:         |
-| autoscroll  | :heavy_check_mark: | :no_mouth: | :no_mouth:         | :no_mouth:         |
-| backlight   | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark: |
-| cust. char  | :no_mouth:         | :x:        | :heavy_check_mark: | :heavy_check_mark: |
+| Test        | Python             | HD         | HackLcd            | SimpleLcd                          |
+|-------------|--------------------|------------|--------------------|------------------------------------|
+| clear       | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark:                 |
+| home        | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark:                 |
+| write       | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark:                 |
+| position    | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark:                 |
+| move        | :no_mouth:         | :x:        | :heavy_check_mark: | :heavy_check_mark:                 | 
+| visible     | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| blink       | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| shift left  | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| shift right | :heavy_check_mark: | :x:        | :x:                | :heavy_check_mark:                 |
+| rt-to-lt    | :heavy_check_mark: | :no_mouth: | :no_mouth:         | :heavy_check_mark:<sup>**1**</sup> |
+| autoscroll  | :heavy_check_mark: | :no_mouth: | :no_mouth:         | :heavy_check_mark:<sup>**1**</sup> |
+| backlight   | :heavy_check_mark: | :x:        | :heavy_check_mark: | :heavy_check_mark:                 |
+| cust. char  | :no_mouth:         | :x:        | :heavy_check_mark: | :heavy_check_mark:                 |
+
+<sup>**1**</sup> - Functionality enabled post-testing.
 
 ## Analysis
 

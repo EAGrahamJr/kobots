@@ -66,14 +66,16 @@ fun LcdInterface.lcdFunctionTest() {
         shiftDisplayLeft()
     }
 
-//    doTest("autoscroll") {
-//        autoscrollOn()
-//        testString.forEach {
-//            addText(it)
-//            sleep(200)
-//        }
-//        autoscrollOff()
-//    }
+    if (this is SimpleLcd) {
+        doTest("autoscroll") {
+            autoscrollOn()
+            testString.forEach {
+                addText(it)
+                sleep(200)
+            }
+            autoscrollOff()
+        }
+    }
 
     doTest("Cursor visible") {
         "stuff ".forEach { addText(it) }
@@ -85,10 +87,17 @@ fun LcdInterface.lcdFunctionTest() {
         cursorOff()
     }
 
-    // TODO changing text direction on the fly?
-//    doTest("right to left") {
-//        FAIL("right-to-left")
-//    }
+    if (this is SimpleLcd) {
+        doTest("right to left") {
+            rightToLeft()
+            setCursorPosition(columnCount - 1, 0)
+            testString.forEach {
+                addText(it)
+                sleep(200)
+            }
+            leftToRight()
+        }
+    }
 
     // not in python test
     doTest("Cursor move") {
@@ -153,7 +162,7 @@ fun main() {
         // HD
 //        HD44780Lcd(backpack, 20, 4).lcdFunctionTest()
 //    hackWrapper(HackLcd(4, 20, backpack)).lcdFunctionTest()
-        SimpleLcd(backpack, true).lcdFunctionTest()
+        SimpleLcd(backpack, false).lcdFunctionTest()
 
         // 20x4
 
