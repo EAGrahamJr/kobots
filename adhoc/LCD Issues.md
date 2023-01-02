@@ -86,5 +86,5 @@
 
 Some seriously updated code from Adafruit:
 
-- [LCD](https://github.com/adafruit/Adafruit_CircuitPython_CharLCD/tree/mai:no_mouth:dafruit_character_lcd)
+- [LCD](https://github.com/adafruit/Adafruit_CircuitPython_CharLCD)
 - 
