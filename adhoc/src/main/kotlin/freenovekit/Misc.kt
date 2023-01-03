@@ -6,13 +6,13 @@ import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim.TOWERPRO_SG90
 import com.diozero.devices.Buzzer
 import com.diozero.devices.HCSR04
-import com.diozero.devices.LcdConnection
 import com.diozero.devices.LcdInterface
+import com.diozero.devices.imu.invensense.MPU6050
 import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
 import crackers.kobots.devices.ULN2003Driver
-import diozero.lcd.SimpleLcd
+import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
 import minutes
 import java.lang.Math.abs
 import java.lang.Thread.sleep
@@ -124,7 +124,7 @@ fun servoFix() {
 
 fun `lesson 24`() {
     val sounder = HCSR04(23, 24)
-    SimpleLcd().apply {
+    Pi2Line.apply {
         createChar(0, LcdInterface.Characters.get("frownie"))
         2 minutes {
             val distance = sounder.distanceCm
@@ -137,25 +137,25 @@ fun `lesson 24`() {
     sounder.close()
 }
 
-// fun `lesson 25`() {
-//    val sensor = MPU6050(1)
-//
-//    TC1604Lcd().apply {
-//        displayText("Test starting")
-//        setText(1, "Calibrating...")
-//        val gyroCalibration = sensor.calibrateGyro(50)
-//        setText(1, "2 Minutes")
-//        2 minutes {
-//            println("a/g ${sensor.accelerometerData}\nd/s ${sensor.gyroData.subtract(gyroCalibration)}")
-//            setText(0, "Temp ${sensor.temperature}")
-//            sleep(1000)
-//        }
-//    }.close()
-//    sensor.close()
-// }
+fun `lesson 25`() {
+    val sensor = MPU6050(1)
+
+    Pi2Line.apply {
+        displayText("Test starting")
+        setText(1, "Calibrating...")
+        val gyroCalibration = sensor.calibrateGyro(50)
+        setText(1, "2 Minutes")
+        2 minutes {
+            println("a/g ${sensor.accelerometerData}\nd/s ${sensor.gyroData.subtract(gyroCalibration)}")
+            setText(0, "Temp ${sensor.temperature}")
+            sleep(1000)
+        }
+    }.close()
+    sensor.close()
+}
 
 fun `lesson 20`() {
-    SimpleLcd(LcdConnection.PCF8574LcdConnection(1), false).apply {
+    Pi2Line.apply {
         displayText("Hello")
         sleep(2000)
         clear()

@@ -26,7 +26,7 @@ import kotlin.math.roundToInt
  * be shown either left-to-right (default) or right-to-left.
  */
 class LcdProgressBar(
-    private val lcd: LcdInterface,
+    private val lcd: LcdInterface<*>,
     private val displayRow: Int = 0,
     private val leftToRight: Boolean = true
 ) {
@@ -51,7 +51,7 @@ class LcdProgressBar(
     var value: Int
         get() = latest
         set(value) {
-            if (value in (0..100)) {
+            if (value in 0..100) {
                 latest = value
                 val columns = value * percentPerColumn
                 val cells = columns.toInt()

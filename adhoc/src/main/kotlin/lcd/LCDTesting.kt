@@ -16,10 +16,9 @@
 
 package lcd
 
-import com.diozero.devices.LcdConnection
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.LcdInterface.Characters
-import diozero.lcd.SimpleLcd
+import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
 import java.lang.Thread.sleep
 
 fun FAIL(text: String) = println("$text not supported by hardware")
@@ -35,7 +34,7 @@ val ON = true
 /**
  * test applied to abstracted interface so everything is the same
  */
-fun LcdInterface.lcdFunctionTest() {
+fun LcdInterface<*>.lcdFunctionTest() {
     setText(0, hello)
     sleep(2000)
     clear()
@@ -66,15 +65,13 @@ fun LcdInterface.lcdFunctionTest() {
         shiftDisplayLeft()
     }
 
-    if (this is SimpleLcd) {
-        doTest("autoscroll") {
-            autoscrollOn()
-            testString.forEach {
-                addText(it)
-                sleep(200)
-            }
-            autoscrollOff()
+    doTest("autoscroll") {
+        autoscrollOn()
+        testString.forEach {
+            addText(it)
+            sleep(200)
         }
+        autoscrollOff()
     }
 
     doTest("Cursor visible") {
@@ -85,18 +82,6 @@ fun LcdInterface.lcdFunctionTest() {
         sleep(2000)
         blinkOff()
         cursorOff()
-    }
-
-    if (this is SimpleLcd) {
-        doTest("right to left") {
-            rightToLeft()
-            setCursorPosition(columnCount - 1, 0)
-            testString.forEach {
-                addText(it)
-                sleep(200)
-            }
-            leftToRight()
-        }
     }
 
     // not in python test
@@ -145,30 +130,6 @@ fun LcdInterface.lcdFunctionTest() {
     close()
 }
 
-fun backpack(withOutput: Boolean = false): LcdConnection =
-    if (withOutput) {
-        object : LcdConnection.PCF8574LcdConnection(1) {
-            override fun write(values: Byte) {
-                super.write(values)
-                print(String.format("%02x ", (values.toInt() and 0x00ff)))
-            }
-        }
-    } else {
-        LcdConnection.PCF8574LcdConnection(1)
-    }
-
 fun main() {
-    backpack().use { backpack ->
-        // HD
-//        HD44780Lcd(backpack, 20, 4).lcdFunctionTest()
-//    hackWrapper(HackLcd(4, 20, backpack)).lcdFunctionTest()
-        SimpleLcd(backpack, false).lcdFunctionTest()
-
-        // 20x4
-
-        // 16x4
-//        HD44780Lcd(backpack, 16, 2).lcdFunctionTest()
-//        hackWrapper(HackLcd(2, 16, backpack)).lcdFunctionTest()
-//        SimpleLcd(backpack, false).lcdFunctionTest()
-    }
+    Pi4Line.lcdFunctionTest()
 }

@@ -1,5 +1,7 @@
 # LCD Testing for diozero
 
+:bangbang: Resolved in `diozero` 1.3.5 - note that some of the mentioned code is now removed from the repo, but can be found in the history.
+
 - Both displays (16x2) and (20x4) are from the same distributor
 - Both are using a PCF8574 backpack
   - 16x4 is "new style" without contrast adjustments and a single IC component

@@ -17,9 +17,9 @@
 package dork
 
 import com.diozero.devices.LcdInterface
-import crackers.kobots.devices.display.HD44780_Lcd
+import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
+import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
 import crackers.kobots.devices.display.LcdProgressBar
-import diozero.lcd.SimpleLcd
 import minutes
 import java.lang.Thread.sleep
 import java.nio.file.Files
@@ -52,7 +52,7 @@ fun main() {
 
 fun shiftSilly() {
     sleep(1000)
-    SimpleLcd().apply {
+    Pi2Line.apply {
         createChar(0, LcdInterface.Characters.get("smilie"))
         setText(0, "Hi, Roger! " + 0.toChar())
         sleep(2000)
@@ -68,17 +68,14 @@ fun shiftSilly() {
 }
 
 fun kobotDisplay() {
-    HD44780_Lcd.Pi4Line.apply {
+    Pi4Line.apply {
+        cursorOff()
+        blinkOff()
         displayText("Lasers charging")
         createChar(0, LcdInterface.Characters.get("frownie"))
         createChar(1, LcdInterface.Characters.get("smilie"))
-        val progress = (0..3).map {
-            val location = it + 2
-            createChar(location, LcdInterface.Characters.get("descprogress${it + 1}"))
-            location
-        }
 
-        LcdProgressBar(this, 1, false).also { pb ->
+        LcdProgressBar(this, 1).also { pb ->
             (0..100).forEach { progress ->
                 pb.value = progress
                 sleep(100)
@@ -90,10 +87,11 @@ fun kobotDisplay() {
             val temp = (Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toFloat() / 1000)
             val time = LocalTime.now().toString().substringBefore(".")
 
-            val tempString = String.format("CPU: %.2f ", temp)
+            val tempString = String.format("Temp: %.2f ", temp)
             setText(0, tempString)
             addText(if (temp > 48f) 0 else 1)
-            setText(1, time)
+            setCursorPosition(5, 1)
+            addText(time)
             sleep(1000)
         }
     }.close()
