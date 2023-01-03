@@ -24,8 +24,8 @@ tasks {
 }
 
 application {
-//    mainClass.set("dork.DorkOneKt")
-    mainClass.set("lcd.LCDTestingKt")
+    mainClass.set("dork.DorkOneKt")
+//    mainClass.set("lcd.LCDTestingKt")
 }
 
 defaultTasks("clean", "shadowJar", "deployMe")

@@ -17,11 +17,18 @@
 package dork
 
 import com.diozero.devices.LcdInterface
+import crackers.kobots.devices.display.HD44780_Lcd
+import crackers.kobots.devices.display.LcdProgressBar
 import diozero.lcd.SimpleLcd
-// import com.diozero.devices.imu.invensense.MPU6050
+import minutes
 import java.lang.Thread.sleep
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.time.LocalTime
 
 fun main() {
+    kobotDisplay()
+//    validChars()
 }
 
 // fun `put me down`() {
@@ -58,4 +65,50 @@ fun shiftSilly() {
         displayText("Wanna do lunch\nnext week?")
         sleep(3000)
     }.close()
+}
+
+fun kobotDisplay() {
+    HD44780_Lcd.Pi4Line.apply {
+        displayText("Lasers charging")
+        createChar(0, LcdInterface.Characters.get("frownie"))
+        createChar(1, LcdInterface.Characters.get("smilie"))
+        val progress = (0..3).map {
+            val location = it + 2
+            createChar(location, LcdInterface.Characters.get("descprogress${it + 1}"))
+            location
+        }
+
+        LcdProgressBar(this, 1, false).also { pb ->
+            (0..100).forEach { progress ->
+                pb.value = progress
+                sleep(100)
+            }
+        }
+        clear()
+
+        1 minutes {
+            val temp = (Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toFloat() / 1000)
+            val time = LocalTime.now().toString().substringBefore(".")
+
+            val tempString = String.format("CPU: %.2f ", temp)
+            setText(0, tempString)
+            addText(if (temp > 48f) 0 else 1)
+            setText(1, time)
+            sleep(1000)
+        }
+    }.close()
+}
+
+fun validChars() {
+    var count = 0
+
+    val names = LcdInterface.Characters.getCharacters()
+    names.forEach { name ->
+        if (LcdInterface.Characters.get(name).size < 8) {
+            count++
+        } else {
+            println("Avail - $name")
+        }
+    }
+    println(" ${names.size} Characters, $count too small")
 }
