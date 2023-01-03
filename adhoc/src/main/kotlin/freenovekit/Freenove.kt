@@ -53,6 +53,7 @@ fun main() {
 //        translated2Diozero()
 //        `lesson 24`()
 //        `lesson 25`()
+        `lesson 23`()
     } catch (e: Throwable) {
         e.printStackTrace()
     }

@@ -27,8 +27,8 @@ import java.nio.file.Paths
 import java.time.LocalTime
 
 fun main() {
-    kobotDisplay()
-//    validChars()
+//    kobotDisplay()
+    validChars()
 }
 
 // fun `put me down`() {

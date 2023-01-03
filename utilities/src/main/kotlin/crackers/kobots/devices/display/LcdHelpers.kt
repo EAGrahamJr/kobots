@@ -19,8 +19,7 @@ import com.diozero.devices.HD44780Lcd
 import com.diozero.devices.LcdConnection
 
 /**
- * Pre-defined LCD objects.
- *
+ * Pre-defined LCD objects. Closes the back-pack when the display is closed.
  */
 object HD44780_Lcd {
     /**
@@ -29,12 +28,26 @@ object HD44780_Lcd {
     val PiBackpack by lazy { LcdConnection.PCF8574LcdConnection(1) }
 
     /**
-     * Default 2-line deisplay
+     * Default 2-line display
      */
-    val Pi2Line by lazy { HD44780Lcd(PiBackpack, 16, 2) }
+    val Pi2Line by lazy {
+        object : HD44780Lcd(PiBackpack, 16, 2) {
+            override fun close() {
+                super.close()
+                PiBackpack.close()
+            }
+        }
+    }
 
     /**
      * Default 4-line display
      */
-    val Pi4Line by lazy { HD44780Lcd(PiBackpack, 20, 4) }
+    val Pi4Line by lazy {
+        object : HD44780Lcd(PiBackpack, 20, 4) {
+            override fun close() {
+                super.close()
+                PiBackpack.close()
+            }
+        }
+    }
 }

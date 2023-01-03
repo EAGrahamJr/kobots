@@ -24,7 +24,8 @@ tasks {
 }
 
 application {
-    mainClass.set("dork.DorkOneKt")
+    mainClass.set("freenovekit.FreenoveKt")
+//    mainClass.set("dork.DorkOneKt")
 //    mainClass.set("lcd.LCDTestingKt")
 }
 
