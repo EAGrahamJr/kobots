@@ -1,5 +1,6 @@
 package freenovekit
 
+import base.minutes
 import com.diozero.api.DigitalInputDevice
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.GpioPullUpDown
@@ -15,7 +16,6 @@ import crackers.kobots.devices.GenericMotor
 import crackers.kobots.devices.ULN2003Driver
 import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
 import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
-import minutes
 import java.lang.Math.abs
 import java.lang.Thread.sleep
 import java.nio.file.Files
@@ -185,7 +185,6 @@ fun `lesson 23`() {
         setText(1, "State: ")
 
         5 minutes {
-            println(if (did.value) "on" else "off")
             setCharacter(7, 1, if (did.value) 0.toChar() else ' ')
         }
     }.close()

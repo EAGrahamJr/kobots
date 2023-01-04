@@ -23,14 +23,18 @@ import java.lang.Thread.sleep
 import java.time.Duration
 
 /**
- * Opinionated stepper-motor driver - derived from the [Freenove](https://freenove.com) kits/lessons for the [diozero](https://github.com/mattjlewis/diozero)
- * library.
+ * Opinionated, simple stepper-motor driver - derived from the [Freenove](https://github.com/Freenove) kits for the
+ * [diozero](https://github.com/mattjlewis/diozero) library.
  *
- * [Data sheet](https://www.ti.com/lit/gpn/uln2003a)
+ * Original code: https://github.com/Freenove/Freenove_Ultimate_Starter_Kit_for_Raspberry_Pi/tree/master/Code/Python_Code/16.1.1_SteppingMotor
  *
- *  Note that each step requires a "wait period" before sending the next pulse, otherwise the speed limit of the motor can be exceeded. Rhe default is 3 ms.
+ * Note that each step requires a "wait period" before sending the next pulse, otherwise the speed limit of the motor can be exceeded. Rhe default is 3 ms.
  *
  * TODO allow for more construction params
+ *
+ * TODO translate the delay into RPM
+ * - for example 512 steps with 3ms pause between is 1 rotation every 1.536 seconds
+ * - roughly 39 RPM
  */
 class ULN2003Driver(pins: Array<Int>) {
     private val counterClockwise = arrayOf(8, 4, 2, 1)
@@ -50,7 +54,7 @@ class ULN2003Driver(pins: Array<Int>) {
     }
 
     /**
-     * Move counter-clockwise one step in this time period. Note that this must then _wait_ for a bit before the next pulse can be sent (default 3 ms).
+     * Move counter-clockwise one step.
      */
     fun stepCounterClockwise(duration: Duration = DEFAULT_PAUSE) {
         for (j in 0..3) {
@@ -77,7 +81,6 @@ class ULN2003Driver(pins: Array<Int>) {
 
     /**
      * Rotate a certain number of degrees: positive is clockwise, negative is counter-clockwise.
-     * Pauses between each "step" for the specified duration (default 3 ms).
      */
     fun rotate(degrees: Int, duration: Duration = DEFAULT_PAUSE) {
         val whichWay = if (degrees < 0) this::stepCounterClockwise else this::stepClockwise

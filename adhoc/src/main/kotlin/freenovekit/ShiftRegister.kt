@@ -1,9 +1,9 @@
 package freenovekit
 
+import base.minutes
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.devices.OutputShiftRegister
 import crackers.kobots.devices.writeByte
-import minutes
 import java.lang.Thread.sleep
 import java.util.concurrent.atomic.AtomicInteger
 

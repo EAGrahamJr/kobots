@@ -2,6 +2,10 @@ plugins {
     id("application-conventions")
 }
 
+dependencies {
+    implementation("com.diozero:diozero-provider-remote:1.3.5")
+}
+
 tasks {
     shadowJar {
         archiveBaseName.set("marvin-pi")
@@ -24,8 +28,8 @@ tasks {
 }
 
 application {
-    mainClass.set("freenovekit.FreenoveKt")
-//    mainClass.set("dork.DorkOneKt")
+//    mainClass.set("freenovekit.FreenoveKt")
+    mainClass.set("dork.DorkOneKt")
 //    mainClass.set("lcd.LCDTestingKt")
 }
 

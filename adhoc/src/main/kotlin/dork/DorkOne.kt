@@ -16,19 +16,23 @@
 
 package dork
 
+import base.REMOTE_PI
+import base.minutes
 import com.diozero.devices.LcdInterface
 import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
 import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
 import crackers.kobots.devices.display.LcdProgressBar
-import minutes
 import java.lang.Thread.sleep
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalTime
 
 fun main() {
-//    kobotDisplay()
-    validChars()
+    System.setProperty(REMOTE_PI, "marvin.local")
+    System.setProperty("tinylog.level", "warning")
+
+    kobotDisplay()
+//    validChars()
 }
 
 // fun `put me down`() {
@@ -78,7 +82,7 @@ fun kobotDisplay() {
         LcdProgressBar(this, 1).also { pb ->
             (0..100).forEach { progress ->
                 pb.value = progress
-                sleep(100)
+                sleep(50)
             }
         }
         clear()

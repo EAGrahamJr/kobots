@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2022 by E. A. Graham, Jr.
+ * Copyright 2022-2023 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
  * or implied. See the License for the specific language governing
  * permissions and limitations under the License.
  */
+package base
 
 import crackers.kobots.utilities.elapsed
 import java.time.Instant
@@ -24,3 +25,8 @@ infix fun Int.minutes(block: () -> Unit) {
         block()
     }
 }
+
+const val REMOTE_PI = "diozero.remote.hostname"
+
+// possibly cheating way of shutting down some logging?
+val ignoreMe = System.setProperty("tinylog.level", "warning")
