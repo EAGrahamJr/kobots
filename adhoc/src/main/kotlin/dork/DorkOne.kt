@@ -28,8 +28,8 @@ import java.nio.file.Paths
 import java.time.LocalTime
 
 fun main() {
+    println("DORK!!!!!")
     System.setProperty(REMOTE_PI, "marvin.local")
-    System.setProperty("tinylog.level", "warning")
 
     kobotDisplay()
 //    validChars()

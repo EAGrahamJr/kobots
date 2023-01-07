@@ -28,5 +28,4 @@ infix fun Int.minutes(block: () -> Unit) {
 
 const val REMOTE_PI = "diozero.remote.hostname"
 
-// possibly cheating way of shutting down some logging?
-val ignoreMe = System.setProperty("tinylog.level", "warning")
+fun Float.stringify(digits: Int = 5) = String.format("%$digits.2f", this)

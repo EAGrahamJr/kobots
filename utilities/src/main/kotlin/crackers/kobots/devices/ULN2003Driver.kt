@@ -17,9 +17,9 @@
 package crackers.kobots.devices
 
 import com.diozero.api.DigitalOutputDevice
+import com.diozero.util.SleepUtil
 import java.lang.Long.max
 import java.lang.Math.abs
-import java.lang.Thread.sleep
 import java.time.Duration
 
 /**
@@ -45,31 +45,23 @@ class ULN2003Driver(pins: Array<Int>) {
      * Move clockwise one step.
      */
     fun stepClockwise(duration: Duration = DEFAULT_PAUSE) {
-        for (j in 0..3) {
-            pinOuts.forEachIndexed { i, it ->
-                if (clockwise[j] == (1 shl i)) it.on() else it.off()
-            }
-            pause(duration)
-        }
+        step(clockwise, duration)
     }
 
     /**
      * Move counter-clockwise one step.
      */
     fun stepCounterClockwise(duration: Duration = DEFAULT_PAUSE) {
-        for (j in 0..3) {
-            pinOuts.forEachIndexed { i, it ->
-                if (counterClockwise[j] == (1 shl i)) it.on() else it.off()
-            }
-            pause(duration)
-        }
+        step(clockwise.reversedArray(), duration)
     }
 
-    /**
-     * Minimum 3ms pause between steps.
-     */
-    private fun pause(duration: Duration) {
-        sleep(max(duration.toMillis(), DEFAULT_PAUSE.toMillis()))
+    private fun step(hilo: Array<Int>, duration: Duration) {
+        for (j in 0..3) {
+            pinOuts.forEachIndexed { i, it ->
+                if (hilo[j] == (1 shl i)) it.on() else it.off()
+            }
+            SleepUtil.sleepMillis(max(duration.toMillis(), DEFAULT_PAUSE.toMillis()))
+        }
     }
 
     /**

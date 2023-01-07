@@ -1,5 +1,8 @@
 Learnin' stuff and experiments not intended to be taken seriously.
 
-# Notes about LCD
-
-Ran into some odd issues trying to get an LCD display to work with orignal `diozero` code, so there's a lot of swirl around that. See [LCD Issues](LCD%20Issues.md).
+- [Cat Bonkder, Mark I](CatBonker-Mark-I.jpg)
+    - 20x4 display
+    - Ultrasonic range-finder
+    - IR sensor
+    - Servo
+    - the remains of a Statue of Liberty LEGO set (hence the green)

@@ -3,7 +3,10 @@ plugins {
 }
 
 dependencies {
-    implementation("com.diozero:diozero-provider-remote:1.3.5")
+    // TODO make this configurable somehow
+//    implementation("com.diozero:diozero-provider-remote:1.3.5")
+    // requires root to run, but makes everything much faster
+    implementation("com.diozero:diozero-provider-pigpio:1.3.5")
 }
 
 tasks {
@@ -29,8 +32,9 @@ tasks {
 
 application {
 //    mainClass.set("freenovekit.FreenoveKt")
-    mainClass.set("dork.DorkOneKt")
+//    mainClass.set("dork.DorkOneKt")
 //    mainClass.set("lcd.LCDTestingKt")
+    mainClass.set("dork.CatBonker1Kt")
 }
 
 defaultTasks("clean", "shadowJar", "deployMe")
