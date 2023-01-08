@@ -2,6 +2,11 @@ Learnin' stuff and experiments not intended to be taken seriously.
 
 ### Cat Bonker, Mark I
 
+- [diozero](https://www.diozero.com/) library
+  - **Note** I am a recent, minor contributor
+- Kotlin 1.8.0
+- Raspberry Pi B+
+
 ![](CatBonker-Mark-I.png)
 
 - uses the remains of a Statue of Liberty LEGO set
