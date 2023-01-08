@@ -1,8 +1,5 @@
-#!/usr/bin/env zsh
-
+#!/usr/bin/env sh
 [ "$1" = "-s" ] && SUSPEND="y" || SUSPEND="n"
+JAVA="/home/crackers/java"
 
-OPTS="-ea -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=*:5005"
-
-# run with sudo for pigpio JNI library
-nohup sudo $(which java) ${OPTS} -jar marvin-pi.jar  &!
+$JAVA -ea -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=*:5005 -jar marvin-pi.jar

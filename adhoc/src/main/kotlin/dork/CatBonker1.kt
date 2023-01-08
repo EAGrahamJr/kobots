@@ -23,6 +23,9 @@ import com.diozero.api.ServoTrim
 import com.diozero.devices.HCSR04
 import com.diozero.devices.HD44780Lcd
 import com.diozero.devices.LcdInterface
+import com.diozero.devices.PwmLed
+import com.diozero.util.SleepUtil.busySleep
+import com.diozero.util.SleepUtil.sleepSeconds
 import crackers.kobots.devices.display.HD44780_Lcd
 import crackers.kobots.devices.display.LcdProgressBar
 import java.lang.Thread.sleep
@@ -37,25 +40,40 @@ import kotlin.concurrent.thread
  *
  * Notes: switched to `pigpio` provider due to jitter on software PWM servo implementation.
  */
-private val KOBOT_NAME = "CatBonker, Mark I"
+private val KOBOT_NAME = "CatBonker, Mk I, v2"
 fun main() {
     val running = AtomicBoolean(true)
 
-    LCD.apply {
+    LCD.use { lcd ->
         Runtime.getRuntime().addShutdownHook(
             thread(start = false) {
                 running.set(false)
             }
         )
         while (running.get()) {
-            timeAndTemp()
-            rangeFinder.distanceCm.run {
-                servo.reactToDistance(this)
-                distance(this)
-            }
+            LocalTime.now().also { time ->
+                if (time.hour >= 23 || time.hour < 8) {
+                    // first thing, turn it off and send the pointer "home"
+                    if (lcd.isBacklightEnabled) {
+                        lcd.isBacklightEnabled = false
+                        servo.value = 0f
+                        led.value = .1f
+                    }
+                    sleepSeconds(300)
+                } else {
+                    // SHOWTIME!
+                    if (!lcd.isBacklightEnabled) lcd.isBacklightEnabled = true
 
-            heat(irSensor)
-            sleep(50)
+                    lcd.timeAndTemp()
+                    rangeFinder.distanceCm.run {
+                        servo.distance(this)
+                        lcd.distance(this)
+                    }
+
+                    led.value = if (irSensor.value) 1f else 0f
+                    busySleep(1_000_000) // 1 ms
+                }
+            }
         }
     }
 }
@@ -76,7 +94,7 @@ val LCD by lazy {
         createChar(1, LcdInterface.Characters.get("smilie"))
         createChar(2, LcdInterface.Characters.get("space_invader"))
         createChar(3, LcdInterface.Characters.get("heart"))
-        clear()
+        displayText(KOBOT_NAME)
     }
 }
 
@@ -91,35 +109,33 @@ fun HD44780Lcd.timeAndTemp() {
     val temp = (Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toFloat() / 1000)
     val time = LocalTime.now().toString().substringBefore(".")
 
-    setCursorPosition(5, 0)
+    setCursorPosition(6, 1)
     addText(time)
 
-    setText(1, "Temp: ${temp.stringify(2)}     ")
+    setText(2, "Temp: ${temp.stringify(2)}     ")
     addText(if (temp > 48f) 0 else 1)
 }
 
 var lastAngle = -1f
 fun HD44780Lcd.distance(dist: Float) {
-    setText(2, "Dist: ${dist.stringify()} cm  ")
+    setText(3, "Dist: ${dist.stringify()} cm  ")
     addText(if (dist < 10) 2.toChar() else ' ')
 }
 
 val rangeFinder by lazy { HCSR04(23, 24) }
 
 val irSensor by lazy { DigitalInputDevice(21) }
-fun HD44780Lcd.heat(pin: DigitalInputDevice) {
-    setText(3, "IR: ")
-    addText(if (pin.value) 3.toChar() else ' ')
-}
 
 val servo: ServoDevice by lazy { ServoDevice.Builder(17).setTrim(ServoTrim.TOWERPRO_SG90).build() }
 
 // basically flips up the arm of the CatBonker if something gets too close
-fun ServoDevice.reactToDistance(dist: Float) {
-    (if (dist < 20f) 90f else if (dist < 40) 45f else if (dist < 70f) 15f else 0f).apply {
+fun ServoDevice.distance(dist: Float) {
+    (if (dist < 20f) 90f else 0f).apply {
         if (this != lastAngle) {
             lastAngle = this
             angle = lastAngle
         }
     }
 }
+
+val led by lazy { PwmLed(27) }
