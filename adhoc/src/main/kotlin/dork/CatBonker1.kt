@@ -16,7 +16,6 @@
 
 package dork
 
-import base.stringify
 import com.diozero.api.DigitalInputDevice
 import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim
@@ -112,19 +111,19 @@ fun HD44780Lcd.timeAndTemp() {
     setCursorPosition(6, 1)
     addText(time)
 
-    setText(2, "Temp: ${temp.stringify(2)}     ")
+    setText(2, "Temp: ${temp.toInt()}      ")
     addText(if (temp > 56f) 0 else 1)
 }
 
 fun HD44780Lcd.distance(dist: Float) {
-    setText(3, "Dist: ${dist.stringify()} cm  ")
+    setText(3, "Dist: ${dist.toInt()} cm    ")
     addText(if (dist < 10) 2.toChar() else ' ')
 }
 
 // basically flips up the arm of the CatBonker if something gets too close
 val servo: ServoDevice by lazy { ServoDevice.Builder(17).setTrim(ServoTrim.TOWERPRO_SG90).build() }
 fun ServoDevice.distance(dist: Float) {
-    angle = (if (dist < 20f) 90f else 0f)
+    angle = if (dist < 20f) 90f else ((LocalTime.now().hour / 24f) * 180f)
 }
 
 // LED on/off based on the IR sensor
