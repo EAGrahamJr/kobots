@@ -20,13 +20,16 @@ import com.diozero.api.DigitalInputDevice
 import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim
 import com.diozero.devices.HCSR04
-import com.diozero.devices.HD44780Lcd
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.PwmLed
 import com.diozero.util.SleepUtil.busySleep
 import com.diozero.util.SleepUtil.sleepSeconds
+import crackers.kobots.devices.at
 import crackers.kobots.devices.display.HD44780_Lcd
 import crackers.kobots.devices.display.LcdProgressBar
+import crackers.kobots.devices.plusAssign
+import crackers.kobots.devices.position
+import crackers.kobots.devices.set
 import java.lang.Thread.sleep
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -37,54 +40,18 @@ import kotlin.concurrent.thread
 /**
  * Basic test of integrating multiple elements, including multiple I2C devices, into a single "entity".
  *
- * Notes: switched to `pigpio` provider due to jitter on software PWM servo implementation.
+ * Notes: switched to `pigpio` provider due to increased CPU temp on software PWM servo implementation.
  */
 private val KOBOT_NAME = "CatBonker, Mk I, v2"
-fun main() {
-    val running = AtomicBoolean(true)
-
-    LCD.use { lcd ->
-        Runtime.getRuntime().addShutdownHook(
-            thread(start = false) {
-                running.set(false)
-            }
-        )
-        while (running.get()) {
-            LocalTime.now().also { time ->
-                if (time.hour >= 23 || time.hour < 8) {
-                    // nighttime: turn it off and send the pointer "home"
-                    if (lcd.isBacklightEnabled) {
-                        lcd.isBacklightEnabled = false
-                        servo.value = 0f
-                        led.value = .1f
-                    }
-                    sleepSeconds(300)
-                } else {
-                    // SHOWTIME!
-                    with(lcd) {
-                        if (!isBacklightEnabled) isBacklightEnabled = true
-                        timeAndTemp()
-                    }
-
-                    rangeFinder.distanceCm.run {
-                        servo.distance(this)
-                        lcd.distance(this)
-                    }
-
-                    led.heat(irSensor.value)
-
-                    busySleep(1_000_000) // 1 ms
-                }
-            }
-        }
-    }
-}
 
 // inputs
 val rangeFinder by lazy { HCSR04(23, 24) }
 val irSensor by lazy { DigitalInputDevice(21) }
 
 // outputs
+val servo: ServoDevice by lazy { ServoDevice.Builder(17).setTrim(ServoTrim.TOWERPRO_SG90).build() }
+val led by lazy { PwmLed(27) }
+
 val LCD by lazy {
     HD44780_Lcd.Pi4Line.apply {
         cursorOff()
@@ -104,30 +71,54 @@ val LCD by lazy {
     }
 }
 
-fun HD44780Lcd.timeAndTemp() {
-    val temp = (Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toFloat() / 1000)
-    val time = LocalTime.now().toString().substringBefore(".")
+// RUN!
+fun main() {
+    val running = AtomicBoolean(true)
 
-    setCursorPosition(6, 1)
-    addText(time)
+    LCD.use { lcd ->
+        Runtime.getRuntime().addShutdownHook(
+            thread(start = false) {
+                running.set(false)
+            }
+        )
+        while (running.get()) {
+            LocalTime.now().also { time ->
+                if (time.hour >= 23 || time.hour < 8) {
+                    // nighttime: turn it off and send the pointer "home"
+                    if (lcd.isBacklightEnabled) {
+                        lcd.isBacklightEnabled = false
+                        servo set 0f
+                        led set .1f
+                    }
+                    sleepSeconds(300)
+                } else {
+                    // SHOWTIME!
+                    with(lcd) {
+                        if (!isBacklightEnabled) isBacklightEnabled = true
+                    }
 
-    setText(2, "Temp: ${temp.toInt()}      ")
-    addText(if (temp > 56f) 0 else 1)
+                    LCD position Pair(1, 6)
+                    LCD += time.toString().substringBefore(".")
+
+                    showTemp()
+
+                    val distanceCm = rangeFinder.distanceCm
+                    LCD[3] = "Dist: ${distanceCm.toInt()} cm    " + if (distanceCm < 10f) 2.toChar() else ' '
+
+                    // reacts if "too close" otherwise, hour of day-ish
+                    servo at (if (distanceCm < 20f) 90f else ((LocalTime.now().hour / 24f) * 180f))
+                    // lights up if triggered
+                    led set irSensor.value
+
+                    busySleep(1_000_000) // 1 ms
+                }
+            }
+        }
+    }
 }
 
-fun HD44780Lcd.distance(dist: Float) {
-    setText(3, "Dist: ${dist.toInt()} cm    ")
-    addText(if (dist < 10) 2.toChar() else ' ')
-}
+fun showTemp() {
+    val temp = (Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toFloat() / 1000).toInt()
 
-// basically flips up the arm of the CatBonker if something gets too close
-val servo: ServoDevice by lazy { ServoDevice.Builder(17).setTrim(ServoTrim.TOWERPRO_SG90).build() }
-fun ServoDevice.distance(dist: Float) {
-    angle = if (dist < 20f) 90f else ((LocalTime.now().hour / 24f) * 180f)
-}
-
-// LED on/off based on the IR sensor
-val led by lazy { PwmLed(27) }
-fun PwmLed.heat(sensorValue: Boolean) {
-    value = if (sensorValue) 1f else 0f
+    LCD[2] = "Temp: $temp      " + (if (temp > 56f) 0 else 1).toChar()
 }

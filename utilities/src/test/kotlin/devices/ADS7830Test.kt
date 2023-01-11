@@ -17,14 +17,15 @@
 package devices
 
 import crackers.kobots.devices.ADS7830
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Test
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
 
-internal class ADS7830Test {
-    @Test
-    fun `basic channel select for read`() {
+internal class ADS7830Test : StringSpec(
+    {
         listOf(0x84, 0xc4, 0x94, 0xd4, 0xa4, 0xe4, 0xb4, 0xf4).forEachIndexed { index, value ->
-            assertEquals(value, ADS7830.channelToRegister(index), "Channel $index did not match")
+            val channel = ADS7830.channelToRegister(index)
+            "basic channel select for $index" {
+                value shouldBe channel
+            }
         }
-    }
-}
+    })
