@@ -83,23 +83,11 @@ fun main() {
         )
         while (running.get()) {
             LocalTime.now().also { time ->
-                if (time.hour >= 23 || time.hour < 8) {
-                    // nighttime: turn it off and send the pointer "home"
-                    if (lcd.isBacklightEnabled) {
-                        lcd.isBacklightEnabled = false
-                        servo set 0f
-                        led set .1f
-                    }
-                    sleepSeconds(300)
-                } else {
+                if (!time.quietTime()) {
                     // SHOWTIME!
-                    with(lcd) {
-                        if (!isBacklightEnabled) isBacklightEnabled = true
-                    }
+                    if (!lcd.isBacklightEnabled) lcd.isBacklightEnabled = true
 
-                    LCD position Pair(1, 6)
-                    LCD += time.toString().substringBefore(".")
-
+                    showTime(time)
                     showTemp()
 
                     val distanceCm = rangeFinder.distanceCm
@@ -117,8 +105,26 @@ fun main() {
     }
 }
 
+fun showTime(time: LocalTime) {
+    LCD position Pair(1, 6)
+    LCD += time.toString().substringBefore(".")
+}
+
 fun showTemp() {
     val temp = (Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toFloat() / 1000).toInt()
 
     LCD[2] = "Temp: $temp      " + (if (temp > 56f) 0 else 1).toChar()
+}
+
+fun LocalTime.quietTime(): Boolean {
+    if (hour >= 23 || hour < 8) {
+        if (LCD.isBacklightEnabled) {
+            LCD.isBacklightEnabled = false
+            servo set 0f
+            led set .1f
+        }
+        sleepSeconds(300)
+        return true
+    }
+    return false
 }
