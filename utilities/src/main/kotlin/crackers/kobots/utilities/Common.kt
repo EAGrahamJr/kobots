@@ -19,6 +19,9 @@ package crackers.kobots.utilities
 import java.time.Duration
 import java.time.Instant
 import java.util.*
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 
 /**
  * Ignore exceptions, for those occasions where you truly don't care.
@@ -40,3 +43,40 @@ fun Instant.elapsed() = Duration.between(this, Instant.now())
  * Short form to get unsigned hex strings
  */
 fun Int.hex() = Integer.toHexString(this)
+
+/**
+ * Run with delay
+ */
+fun ScheduledExecutorService.withDelay(
+    initialDelay: kotlin.time.Duration,
+    delay: kotlin.time.Duration,
+    execute: () -> Unit
+) {
+    scheduleWithFixedDelay(execute, initialDelay.inWholeNanoseconds, delay.inWholeNanoseconds, TimeUnit.NANOSECONDS)
+}
+
+/**
+ * Run rate
+ */
+fun ScheduledExecutorService.withRate(
+    initialDelay: kotlin.time.Duration,
+    delay: kotlin.time.Duration,
+    execute: () -> Unit
+) {
+    scheduleAtFixedRate(execute, initialDelay.inWholeNanoseconds, delay.inWholeNanoseconds, TimeUnit.NANOSECONDS)
+}
+
+/**
+ * Captures data in a simple FIFO buffer for averaging. Probably not suitable for large sizes.
+ */
+class SimpleAverageMeasurement(val bucketSize: Int, val initialValue: Float = Float.MAX_VALUE) {
+    private val dumbBuffer = CopyOnWriteArrayList<Float>()
+
+    val value: Float
+        get() = if (dumbBuffer.isEmpty()) initialValue else dumbBuffer.average().toFloat()
+
+    operator fun plusAssign(v: Float) {
+        dumbBuffer += v
+        while (dumbBuffer.size > bucketSize) dumbBuffer.removeAt(0)
+    }
+}

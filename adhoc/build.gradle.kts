@@ -34,8 +34,9 @@ application {
 //    mainClass.set("freenovekit.FreenoveKt")
 //    mainClass.set("dork.DorkOneKt")
 //    mainClass.set("lcd.LCDTestingKt")
-    mainClass.set("dork.CatBonker1Kt")
+//    mainClass.set("dork.CatBonker1Kt")
 //    mainClass.set("freenovekit.SoftPWMJitterTestKt")
+    mainClass.set("dork.CB1ThreadsKt")
 }
 
 defaultTasks("clean", "shadowJar", "deployMe")

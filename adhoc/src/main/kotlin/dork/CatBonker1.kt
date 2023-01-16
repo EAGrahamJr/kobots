@@ -113,11 +113,11 @@ fun showTime(time: LocalTime) {
 fun showTemp() {
     val temp = (Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toFloat() / 1000).toInt()
 
-    LCD[2] = "Temp: $temp      " + (if (temp > 56f) 0 else 1).toChar()
+    LCD[2] = "Temp: $temp      " + (if (temp > 60f) 0 else 1).toChar()
 }
 
 fun LocalTime.quietTime(): Boolean {
-    if (hour >= 23 || hour < 8) {
+    if (hour >= 23 || hour <= 8) {
         if (LCD.isBacklightEnabled) {
             LCD.isBacklightEnabled = false
             servo set 0f
