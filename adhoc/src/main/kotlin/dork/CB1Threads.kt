@@ -73,7 +73,6 @@ fun servoReact() {
     }
 }
 
-
 val HCSR04.distance by lazy {
     // average over the last 10 ms
     SimpleAverageMeasurement(10).also {
