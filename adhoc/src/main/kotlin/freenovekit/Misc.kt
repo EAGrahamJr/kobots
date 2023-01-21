@@ -10,10 +10,11 @@ import com.diozero.devices.Buzzer
 import com.diozero.devices.HCSR04
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
+import com.diozero.devices.sandpit.motor.BasicStepperController.GpioFiveWireUnipolarController
+import com.diozero.devices.sandpit.motor.Stepper28BYJ48
 import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
-import crackers.kobots.devices.ULN2003Driver
 import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
 import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
 import java.lang.Math.abs
@@ -78,11 +79,11 @@ fun `lesson 14`() {
 }
 
 fun `lesson 16`() {
-    ULN2003Driver(arrayOf(18, 23, 24, 25)).apply {
+    Stepper28BYJ48(GpioFiveWireUnipolarController(intArrayOf(18, 23, 24, 25))).apply {
         5 minutes {
-            rotate(360)
+            rotate(360f)
             sleep(1000)
-            rotate(-360)
+            rotate(-360f)
             sleep(1000)
         }
     }
@@ -90,11 +91,14 @@ fun `lesson 16`() {
 
 // had a lego minifig stuck on the end - it was cute
 fun `lesson 16 with flair`() {
-    ULN2003Driver(arrayOf(18, 23, 24, 25)).apply {
-        rotate(-45)
+    val dos = arrayOf(18, 23, 24, 25).map {
+        DigitalOutputDevice(it)
+    }.toTypedArray()
+    Stepper28BYJ48(GpioFiveWireUnipolarController(intArrayOf(18, 23, 24, 25))).apply {
+        rotate(-45f)
         5 minutes {
-            rotate(30)
-            rotate(-30)
+            rotate(30f)
+            rotate(-30f)
         }
     }
 }
