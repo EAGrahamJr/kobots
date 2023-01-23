@@ -36,7 +36,13 @@ class DebouncedButton @JvmOverloads constructor(
     pud: GpioPullUpDown = GpioPullUpDown.NONE,
     activeHigh: Boolean = pud != GpioPullUpDown.PULL_UP,
     deviceFactory: GpioDeviceFactoryInterface = nativeDeviceFactory
-) : DebouncedDigitalInputDevice(deviceFactory, deviceFactory.getBoardPinInfo().getByGpioNumberOrThrow(gpio), pud, activeHigh, debounceTime.toMillis().toInt()) {
+) : DebouncedDigitalInputDevice(
+    deviceFactory,
+    deviceFactory.getBoardPinInfo().getByGpioNumberOrThrow(gpio),
+    pud,
+    activeHigh,
+    debounceTime.toMillis().toInt()
+) {
 
     /**
      * Action to perform when the button is pressed.
@@ -61,7 +67,10 @@ class DebouncedButton @JvmOverloads constructor(
  * Based on a similar driver: [L293D](https://www.ti.com/lit/gpn/l293d)
  **/
 class GenericMotor(forwardPin: Int, backwardPin: Int, enablePin: Int, frequency: Int = 100) :
-    TB6612FNGMotor(DigitalOutputDevice(forwardPin), DigitalOutputDevice(backwardPin), PwmOutputDevice(enablePin).apply { pwmFrequency = frequency })
+    TB6612FNGMotor(
+        DigitalOutputDevice(forwardPin),
+        DigitalOutputDevice(backwardPin),
+        PwmOutputDevice(enablePin).apply { pwmFrequency = frequency })
 
 const val KELVIN = 273.15f
 

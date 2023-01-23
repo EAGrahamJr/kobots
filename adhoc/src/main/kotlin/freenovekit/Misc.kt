@@ -10,8 +10,8 @@ import com.diozero.devices.Buzzer
 import com.diozero.devices.HCSR04
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
+import com.diozero.devices.sandpit.motor.BYJ48Stepper
 import com.diozero.devices.sandpit.motor.BasicStepperController.GpioFiveWireUnipolarController
-import com.diozero.devices.sandpit.motor.Stepper28BYJ48
 import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
@@ -79,7 +79,7 @@ fun `lesson 14`() {
 }
 
 fun `lesson 16`() {
-    Stepper28BYJ48(GpioFiveWireUnipolarController(intArrayOf(18, 23, 24, 25))).apply {
+    BYJ48Stepper(GpioFiveWireUnipolarController(intArrayOf(18, 23, 24, 25))).apply {
         5 minutes {
             rotate(360f)
             sleep(1000)
@@ -94,7 +94,7 @@ fun `lesson 16 with flair`() {
     val dos = arrayOf(18, 23, 24, 25).map {
         DigitalOutputDevice(it)
     }.toTypedArray()
-    Stepper28BYJ48(GpioFiveWireUnipolarController(intArrayOf(18, 23, 24, 25))).apply {
+    BYJ48Stepper(GpioFiveWireUnipolarController(intArrayOf(18, 23, 24, 25))).apply {
         rotate(-45f)
         5 minutes {
             rotate(30f)

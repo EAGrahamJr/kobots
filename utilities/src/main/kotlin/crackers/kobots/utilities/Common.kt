@@ -16,6 +16,7 @@
 
 package crackers.kobots.utilities
 
+import com.diozero.util.Hex
 import java.time.Duration
 import java.time.Instant
 import java.util.*
@@ -42,7 +43,9 @@ fun Instant.elapsed() = Duration.between(this, Instant.now())
 /**
  * Short form to get unsigned hex strings
  */
-fun Int.hex() = Integer.toHexString(this)
+fun Int.hex() = Hex.encode(this)
+fun Short.hex() = Hex.encode(this)
+fun Byte.hex() = Hex.encode(this)
 
 /**
  * Run with delay
