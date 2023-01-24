@@ -83,3 +83,5 @@ class SimpleAverageMeasurement(val bucketSize: Int, val initialValue: Float = Fl
         while (dumbBuffer.size > bucketSize) dumbBuffer.removeAt(0)
     }
 }
+
+fun microDuration(micros: Long) = Duration.ofNanos(micros * 1000)

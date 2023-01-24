@@ -72,9 +72,6 @@ class VCNL4040 @JvmOverloads constructor(controller: Int, address: Int = ADDRESS
             delegate.close()
             throw NoSuchDeviceException(String.format("Chip ID did not match at this address: %04x", deviceAddress))
         }
-
-        // TODO enable things - currently just print out registers
-
     }
 
     private val ambientIntegrationSubRegister by lazy { delegate.shortSubRegister(ALS_CONFIG, ALS_IT) }
@@ -134,28 +131,13 @@ class VCNL4040 @JvmOverloads constructor(controller: Int, address: Int = ADDRESS
             ambientIntegrationValue.set(newOrdinal)
         }
 
-    private fun writeBit(register: Int, mask: Int, enable: Boolean) {
-        // read the register and flip the indicated bit
-        val output = (if (enable) 0 else 1).toShort()
-        delegate.shortSubRegister(register, mask).write(output)
-    }
-
-
-    /*
-
     val interruptStatus: Byte
         get() {
-            val status = delegate.readWordData(INT_FLAG)
-            printRegister("INT_FLAG", status)
-            val bw = BitWrapper(status, 8, 8)
-            return bw.read().toByte()
+            return delegate.shortSubRegister(INT_FLAG, INT_MASK).read().toByte()
         }
 
     fun enableAmbientLightInterrupts(enable: Boolean) {
-        // read the register and flip the "enable" bit
-        val current = delegate.readWordData(ALS_CONFIG)
-        printRegister("ALS_CONF1G", current)
-        val bw = BitWrapper(current, 1, 1)
+        writeBit(ALS_CONFIG, ALS_INT_EN, enable)
     }
 
     var ambientLightHighThreshold: Short
@@ -169,8 +151,8 @@ class VCNL4040 @JvmOverloads constructor(controller: Int, address: Int = ADDRESS
             delegate.writeWordData(ALS_THDL, lowThreshold)
         }
 
-    fun enableProximityInterrupts(interruptCondition: ProximityType?) {
-        val current = delegate.readWordData(PS_CONF1G)
+    fun enableProximityInterrupts(interruptCondition: ProximityType) {
+        delegate.shortSubRegister(PS_CONFIG12, PS_INT).write(interruptCondition.ordinal.toShort())
     }
 
     var proximityLowThreshold: Short
@@ -183,11 +165,12 @@ class VCNL4040 @JvmOverloads constructor(controller: Int, address: Int = ADDRESS
         set(highThreshold) {
             delegate.writeWordData(PS_THDH, highThreshold)
         }
-    var proximityIntegrationTime: ProximityIntegration?
+
+    /*
+    var proximityIntegrationTime: ProximityIntegration
         get() {
-            val current = delegate.readWordData(PS_CONF1G)
-            printRegister("PS_CONF1G", current)
-            return null
+            val ordinal = delegate.shortSubRegister(PS_CONFIG12, PS_IT).read().toInt()
+            return ProximityIntegration.values()[ordinal]
         }
         set(integrationTime) {
             val current = delegate.readWordData(PS_CONF1G)
@@ -219,6 +202,12 @@ class VCNL4040 @JvmOverloads constructor(controller: Int, address: Int = ADDRESS
         set(highResolution) {
             delegate.shortSubRegister(PS_CONFIG12, PS_HD).write(highResolution.ordinal.toShort())
         }
+
+    private fun writeBit(register: Int, mask: Int, enable: Boolean) {
+        // read the register and flip the indicated bit
+        val output = (if (enable) 0 else 1).toShort()
+        delegate.shortSubRegister(register, mask).write(output)
+    }
 
     companion object {
         const val ADDRESS = 0x60
@@ -278,6 +267,8 @@ class VCNL4040 @JvmOverloads constructor(controller: Int, address: Int = ADDRESS
         // RESERVED 0b00111000
         const val LED_I = 0x0300
 
+        // Interrupt status register - low byte reserved
+        const val INT_MASK = 0xFF00
 
         // Offsets into interrupt status register for different types
         const val ALS_IF_L = 0x0D
