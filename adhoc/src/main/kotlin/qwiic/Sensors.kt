@@ -27,14 +27,17 @@ fun main() {
         println("Holy Abort Button, Batman!")
         exitProcess(2)
     }
-    VCNL4040(1).use {
+    ambientLightAndProximity()
+}
+
+private fun ambientLightAndProximity() {
+    VCNL4040().use {
         it.dumpRegisters()
 
         println("Turn on")
-        it.enableProximity(true)
-        it.enableAmbientLight(true)
-        it.enableWhiteLight(true)
-        it.proximityHighResolution = VCNL4040.ProximityResolution.PS_RES_16
+        it.proximityEnabled = true
+        it.ambientLightEnabled = true
+        it.whiteLightEnabled = true
 
         15 minutes {
             sleep(500)

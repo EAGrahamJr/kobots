@@ -25,19 +25,28 @@ import java.util.concurrent.atomic.AtomicInteger
 /**
  * Proximity and ambient light sensor on I2C bus.
  *
- *
- * Datasheet: https://www.vishay.com/docs/84274/vcnl4040.pdf
- * [Adafruit guide](https://learn.adafruit.com/adafruit-vcnl4040-proximity-sensor?view=all)
+ * * [Datasheet](https://www.vishay.com/docs/84274/vcnl4040.pdf)
+ * * [Adafruit guide](https://learn.adafruit.com/adafruit-vcnl4040-proximity-sensor?view=all)
  */
-class VCNL4040 @JvmOverloads constructor(controller: Int, address: Int = ADDRESS) : LuminositySensorInterface {
+class VCNL4040 @JvmOverloads constructor(controller: Int = 1, address: Int = ADDRESS) : LuminositySensorInterface {
     // Ambient light sensor integration times - ordinal matches data
-    enum class AmbientIntegration {
-        ALS_80MS, ALS_160MS, ALS_320MS, ALS_640MS
+    enum class AmbientLightIntegrationTime(m: Int) {
+        ALS_80MS(80), ALS_160MS(160), ALS_320MS(320), ALS_640MS(640);
+
+        val millis: Int = m
+    }
+
+    enum class AmbientLightPersistence {
+        ONE, TWO, FOUR, EIGHT
     }
 
     // Proximity sensor integration times - ordinal matches data
-    enum class ProximityIntegration {
+    enum class ProximityIntegrationTime {
         PS_1T, PS_1_5T, PS_2T, PS_2_5T, PS_3T, PS_3_5T, PS_4T, PS_8T
+    }
+
+    enum class ProximityMultipulse {
+        ONE, TWO, FOUR, EIGHT
     }
 
     // LED current settings - ordinal matches data
@@ -51,7 +60,7 @@ class VCNL4040 @JvmOverloads constructor(controller: Int, address: Int = ADDRESS
     }
 
     // Proximity sensor interrupt enable/disable options
-    enum class ProximityType {
+    enum class ProximityInterruptType {
         PS_INT_DISABLE, PS_INT_CLOSE, PS_INT_AWAY, PS_INT_CLOSE_AWAY
     }
 
@@ -74,8 +83,6 @@ class VCNL4040 @JvmOverloads constructor(controller: Int, address: Int = ADDRESS
         }
     }
 
-    private val ambientIntegrationSubRegister by lazy { delegate.shortSubRegister(ALS_CONFIG, ALS_IT) }
-
     fun dumpRegisters() {
         (0..0x0c).forEach {
             println("Register ${Hex.encode(it)} - ${Hex.encode(delegate.readWordData(it))}")
@@ -86,10 +93,8 @@ class VCNL4040 @JvmOverloads constructor(controller: Int, address: Int = ADDRESS
         delegate.close()
     }
 
-    override fun getLuminosity(): Float {
-        // scale the lux depending on the value of the integration time
-        return (ambientLight * (0.1 / (1 shl ambientIntegrationTime.ordinal))).toFloat()
-    }
+    // scale the lux depending on the value of the integration time
+    override fun getLuminosity(): Float = (ambientLight * (0.1 / (1 shl ambientLightIntegrationTime.ordinal))).toFloat()
 
     val proximity: Short
         get() = delegate.readWordData(PS_DATA)
@@ -104,176 +109,246 @@ class VCNL4040 @JvmOverloads constructor(controller: Int, address: Int = ADDRESS
             return Math.round(wh * (0.1 / (1 shl ambientIntegrationValue.get()))).toShort()
         }
 
-    fun enableProximity(enable: Boolean) {
-        writeBit(PS_CONFIG12, PS_SD, enable)
-    }
-
-    fun enableAmbientLight(enable: Boolean) {
-        writeBit(ALS_CONFIG, ALS_SD, enable)
-    }
-
-    fun enableWhiteLight(enable: Boolean) {
-        writeBit(PS_MS_H, WHITE_EN, enable)
-    }
-
-    // cache this
-    private val ambientIntegrationValue: AtomicInteger by lazy {
-        AtomicInteger(ambientIntegrationSubRegister.read().toInt())
-    }
-
-    var ambientIntegrationTime: AmbientIntegration
+    // read and clear interrupt ---------------------------------------------------------------------------------------
+    val interruptStatus: Int
         get() {
-            return AmbientIntegration.values()[ambientIntegrationValue.get()]
-        }
-        set(integrationTime) {
-            val newOrdinal = integrationTime.ordinal
-            ambientIntegrationSubRegister.write(newOrdinal.toShort())
-            ambientIntegrationValue.set(newOrdinal)
+            return delegate.shortSubRegister(INT_FLAG, INT_MASK).read().toInt()
         }
 
-    val interruptStatus: Byte
-        get() {
-            return delegate.shortSubRegister(INT_FLAG, INT_MASK).read().toByte()
-        }
+    // bit masks for the interrupt status
+    fun isEnteringProtectionMode(interruptStatus: Int) = interruptStatus and 0x40
+    fun isAmbientLightLow(interruptStatus: Int) = interruptStatus and 0x20
+    fun isAmbientLightHigh(interruptStatus: Int) = interruptStatus and 0x10
+    fun isProximityClose(interruptStatus: Int) = interruptStatus and 0x02
+    fun isProximityFar(interruptStatus: Int) = interruptStatus and 0x01
 
-    fun enableAmbientLightInterrupts(enable: Boolean) {
-        writeBit(ALS_CONFIG, ALS_INT_EN, enable)
-    }
-
+    // Thresholds -----------------------------------------------------------------------------------------------------
     var ambientLightHighThreshold: Short
         get() = delegate.readWordData(ALS_THDH)
         set(highThreshold) {
             delegate.writeWordData(ALS_THDH, highThreshold)
         }
+
     var ambientLightLowThreshold: Short
         get() = delegate.readWordData(ALS_THDL)
         set(lowThreshold) {
             delegate.writeWordData(ALS_THDL, lowThreshold)
         }
 
-    fun enableProximityInterrupts(interruptCondition: ProximityType) {
-        delegate.shortSubRegister(PS_CONFIG12, PS_INT).write(interruptCondition.ordinal.toShort())
-    }
-
     var proximityLowThreshold: Short
         get() = delegate.readWordData(PS_THDL)
         set(lowThreshold) {
             delegate.writeWordData(PS_THDL, lowThreshold)
         }
+
     var proximityHighThreshold: Short
         get() = delegate.readWordData(PS_THDH)
         set(highThreshold) {
             delegate.writeWordData(PS_THDH, highThreshold)
         }
 
-    /*
-    var proximityIntegrationTime: ProximityIntegration
-        get() {
-            val ordinal = delegate.shortSubRegister(PS_CONFIG12, PS_IT).read().toInt()
-            return ProximityIntegration.values()[ordinal]
-        }
-        set(integrationTime) {
-            val current = delegate.readWordData(PS_CONF1G)
-        }
-    var proximityLEDCurrent: LEDCurrent?
-        get() {
-            val current = delegate.readWordData(PS_MS_H)
-            printRegister("PS_MS_H", current)
-            return null
-        }
-        set(ledCurrent) {
-            val current = delegate.readWordData(PS_MS_H)
-        }
-*/
-    var proximityLEDDutyCycle: LEDDutyCycle
-        get() {
-            val current = delegate.shortSubRegister(PS_CONFIG12, PS_DUTY).read().toInt()
-            return LEDDutyCycle.values()[current]
-        }
-        set(dutyCycle) {
-            delegate.shortSubRegister(PS_CONFIG12, PS_DUTY).write(dutyCycle.ordinal.toShort())
-        }
-
-    var proximityHighResolution: ProximityResolution
-        get() {
-            val current = delegate.shortSubRegister(PS_CONFIG12, PS_HD).read().toInt()
-            return ProximityResolution.values()[current]
-        }
-        set(highResolution) {
-            delegate.shortSubRegister(PS_CONFIG12, PS_HD).write(highResolution.ordinal.toShort())
-        }
-
+    //-----------------------------------------------------------------------------------------------------------------
+    // Configuration
     private fun writeBit(register: Int, mask: Int, enable: Boolean) {
         // read the register and flip the indicated bit
-        val output = (if (enable) 0 else 1).toShort()
+        val output = (if (enable) 1 else 0).toShort()
         delegate.shortSubRegister(register, mask).write(output)
     }
+
+    private fun writeValue(e: Enum<*>, register: Int, mask: Int) =
+        delegate.shortSubRegister(register, mask).write(e.ordinal.toShort())
+
+    // ALS Config -----------------------------------------------------------------------------------------------------
+
+    private val ambientLightTimeRegister by lazy { delegate.shortSubRegister(ALS_CONFIG, ALS_IT) }
+
+    // cache this - it's used in calculations above so doesn't need to be fetched every time (prevent 2 reads)
+    private val ambientIntegrationValue: AtomicInteger by lazy {
+        AtomicInteger(ambientLightTimeRegister.read().toInt())
+    }
+
+    var ambientLightIntegrationTime: AmbientLightIntegrationTime
+        get() {
+            return AmbientLightIntegrationTime.values()[ambientIntegrationValue.get()]
+        }
+        set(integrationTime) {
+            val newOrdinal = integrationTime.ordinal
+            ambientLightTimeRegister.write(newOrdinal.toShort())
+            ambientIntegrationValue.set(newOrdinal)
+        }
+
+    var ambientLightInterruptPersistence: AmbientLightPersistence
+        get() {
+            val ordinal = delegate.shortSubRegister(ALS_CONFIG, ALS_PERS).read().toInt()
+            return AmbientLightPersistence.values()[ordinal]
+        }
+        set(ambientLightPersistence) = writeValue(ambientLightPersistence, ALS_CONFIG, ALS_PERS)
+
+    var ambientLightInterruptsEnabled: Boolean
+        get() = delegate.shortSubRegister(ALS_CONFIG, ALS_INT_EN).read() == 0.toShort()
+        set(enable) = writeBit(ALS_CONFIG, ALS_INT_EN, enable)
+
+    /**
+     * The bit for this flag is actually _inverted_ as it's technically an "is shutdown" flag
+     */
+    var ambientLightEnabled: Boolean
+        get() = !(delegate.shortSubRegister(ALS_CONFIG, ALS_SD).read() == 0.toShort())
+        set(enable) = writeBit(ALS_CONFIG, ALS_SD, !enable)
+
+    // PS Config 1 ----------------------------------------------------------------------------------------------------
+    var proximityLEDDutyCycle: LEDDutyCycle
+        get() {
+            val current = delegate.shortSubRegister(PS_CONFIG1, PS_DUTY).read().toInt()
+            return LEDDutyCycle.values()[current]
+        }
+        set(dutyCycle) = writeValue(dutyCycle, PS_CONFIG1, PS_DUTY)
+
+    var proximityInterruptPersistence: Int
+        get() = delegate.shortSubRegister(PS_CONFIG1, PS_PERS).read().toInt() + 1
+        set(proximityInterruptPersistence) =
+            delegate.shortSubRegister(PS_CONFIG1, PS_PERS).write((proximityInterruptPersistence - 1).toShort())
+
+    var proximityIntegrationTime: ProximityIntegrationTime
+        get() {
+            val ordinal = delegate.shortSubRegister(PS_CONFIG1, PS_IT).read().toInt()
+            return ProximityIntegrationTime.values()[ordinal]
+        }
+        set(integrationTime) = writeValue(integrationTime, PS_CONFIG1, PS_IT)
+
+    /**
+     * The bit for this flag is actually _inverted_ as it's technically an "is shutdown" flag
+     */
+    var proximityEnabled: Boolean
+        get() = !(delegate.shortSubRegister(PS_CONFIG1, PS_SD).read() == 0.toShort())
+        set(enable) = writeBit(PS_CONFIG1, PS_SD, !enable)
+
+    // PS Config 2 ----------------------------------------------------------------------------------------------------
+    var proximityHighResolution: ProximityResolution
+        get() {
+            val current = delegate.shortSubRegister(PS_CONFIG2, PS_HD).read().toInt()
+            return ProximityResolution.values()[current]
+        }
+        set(highResolution) = writeValue(highResolution, PS_CONFIG2, PS_HD)
+
+    var proximityInterrupts: ProximityInterruptType
+        get() {
+            val ordinal = delegate.shortSubRegister(PS_CONFIG2, PS_INT).read().toInt()
+            return ProximityInterruptType.values()[ordinal]
+        }
+        set(interruptCondition) = writeValue(interruptCondition, PS_CONFIG2, PS_INT)
+
+
+    // PS Config 3 ----------------------------------------------------------------------------------------------------
+    var proximityMultipulse: ProximityMultipulse
+        get() {
+            val current = delegate.shortSubRegister(PS_CONFIG3, PS_MPS).read().toInt()
+            return ProximityMultipulse.values()[current]
+        }
+        set(highResolution) = writeValue(highResolution, PS_CONFIG3, PS_MPS)
+
+    var proximitySmartPersistenceEnabled: Boolean
+        get() = delegate.shortSubRegister(PS_CONFIG3, PS_SMART_PERS).read() == 0.toShort()
+        set(enable) = writeBit(PS_CONFIG3, PS_SMART_PERS, enable)
+
+    var proximityActiveForceEnabled: Boolean
+        get() = delegate.shortSubRegister(PS_CONFIG3, PS_AF).read() == 0.toShort()
+        set(enable) = writeBit(PS_CONFIG3, PS_AF, enable)
+
+    /**
+     * Outputs one data cycle - see p. 10
+     */
+    fun activeForceModeTrigger() {
+        writeBit(PS_CONFIG3, PS_TRIG, true)
+    }
+
+    var sunlightCancelEnabled: Boolean
+        get() = delegate.shortSubRegister(PS_CONFIG3, PS_SC_EN).read() == 0.toShort()
+        set(enable) = writeBit(PS_CONFIG3, PS_SC_EN, enable)
+
+    // PS MS ----------------------------------------------------------------------------------------------------------
+    /**
+     * The bit for this flag is actually _inverted_
+     */
+    var whiteLightEnabled: Boolean
+        get() = !(delegate.shortSubRegister(PS_MS_H, WHITE_EN).read() == 0.toShort())
+        set(enable) = writeBit(PS_MS_H, WHITE_EN, !enable)
+
+    var proximityOperation: ProximityOperation
+        get() {
+            val ordinal = delegate.shortSubRegister(PS_MS_H, PS_MS).read().toInt()
+            return ProximityOperation.values()[ordinal]
+        }
+        set(proximityOperation) = writeValue(proximityOperation, PS_MS_H, PS_MS)
+
+    var proximityLEDCurrent: LEDCurrent
+        get() {
+            val ordinal = delegate.shortSubRegister(PS_MS_H, LED_I).read().toInt()
+            return LEDCurrent.values()[ordinal]
+        }
+        set(ledCurrent) = writeValue(ledCurrent, PS_MS_H, LED_I)
+
+    // convenience ----------------------------------------------------------------------------------------------------
 
     companion object {
         const val ADDRESS = 0x60
         const val DEVICE_ID = 0x0186
 
         // the device uses 16-bit registers
-        const val ALS_CONFIG = 0x00     // Ambient light sensor configuration register
-        const val ALS_THDH = 0x01       // Ambient light high threshold register
-        const val ALS_THDL = 0x02       // Ambient light low threshold register
-        const val PS_CONFIG12 = 0x03    // Proximity sensor configuration 1/2 register
-        const val PS_CONFIG3 = 0x04     // Proximity sensor configuration 3 register (low byte)
-        const val PS_MS_H = 0x04        // Proximity sensor misc config register (high byte)
-        const val PS_THDL = 0x06        // Proximity sensor low threshold register
-        const val PS_THDH = 0x07        // Proximity sensor high threshold register
-        const val PS_DATA = 0x08        // Proximity sensor data register
-        const val ALS_DATA = 0x09       // Ambient light sensor data register
-        const val WHITE_DATA = 0x0A     // White light sensor data register
-        const val INT_FLAG = 0x0B       // Interrupt status register
-        const val ID_REGISTER = 0x0C    // Device ID
+        private const val ALS_CONFIG = 0x00     // Ambient light sensor configuration register
+        private const val ALS_THDH = 0x01       // Ambient light high threshold register
+        private const val ALS_THDL = 0x02       // Ambient light low threshold register
+        private const val PS_CONFIG1 = 0x03     // Proximity sensor configuration 1 register (low byte)
+        private const val PS_CONFIG2 = 0x03     // Proximity sensor configuration 2 register (high byte)
+        private const val PS_CONFIG3 = 0x04     // Proximity sensor configuration 3 register (low byte)
+        private const val PS_MS_H = 0x04        // Proximity sensor misc config register (high byte)
+        private const val PS_THDL = 0x06        // Proximity sensor low threshold register
+        private const val PS_THDH = 0x07        // Proximity sensor high threshold register
+        private const val PS_DATA = 0x08        // Proximity sensor data register
+        private const val ALS_DATA = 0x09       // Ambient light sensor data register
+        private const val WHITE_DATA = 0x0A     // White light sensor data register
+        private const val INT_FLAG = 0x0B       // Interrupt status register
+        private const val ID_REGISTER = 0x0C    // Device ID
 
         // ALS_CONF bits - this is the lower byte of the word: the high-byte is reserved
-        const val ALS_IT = 0x00C0         // integration time (2-bits - AmbientIntegration)
+        private const val ALS_IT = 0x00C0         // integration time (2-bits - AmbientIntegration)
 
         // RESERVED 0b00110000
-        const val ALS_PERS = 0x000C       // interrupt persistence (2-bits)
-        const val ALS_INT_EN = 0x0002     // interrupt enable/disable (1 == enable)
-        const val ALS_SD = 0x0001         // als power (0 == enable)
+        private const val ALS_PERS = 0x000C       // interrupt persistence (2-bits)
+        private const val ALS_INT_EN = 0x0002     // interrupt enable/disable (1 == enable)
+        private const val ALS_SD = 0x0001         // als power (0 == enable)
 
         // PS_CONF1 bits - this is the lower byte of the PS_CONFIG word
-        const val PS_DUTY = 0x00C0        // duty ration setting (2-bits - LEDDutyCycle)
-        const val PS_PERS = 0x0030        // interrupt persistence (2-bits)
-        const val PS_IT = 0x000E          // integration time (2-bits - ProximityIntegration)
-        const val PS_SD = 0x0001          // ps power (0 == enable)
+        private const val PS_DUTY = 0x00C0        // duty ration setting (2-bits - LEDDutyCycle)
+        private const val PS_PERS = 0x0030        // interrupt persistence (2-bits)
+        private const val PS_IT = 0x000E          // integration time (2-bits - ProximityIntegration)
+        private const val PS_SD = 0x0001          // ps power (0 == enable)
 
         // PS_CONF2 bits - this is the upper byte of the PS_CONFIG word
         // RESERVED 0b11000000
         // RESERVED 0b00110000
-        const val PS_HD = 0x0800          // ps resolution (ProximityResolution)
+        private const val PS_HD = 0x0800          // ps resolution (ProximityResolution)
 
         // RESERVED 0b00000100
-        const val PS_INT = 0x0300         // ps interrupt type (2-bits - ProximityType)
+        private const val PS_INT = 0x0300         // ps interrupt type (2-bits - ProximityType)
 
         // PS_CONF3 bits - this is the lower byte of the PS_CONF3/PS_MS_H register
         // RESERVED 0b1000000
-        const val PS_MPS = 0x0060         // proximity multi-pulse numbers
-        const val PS_SMART_PERS = 0x0010  // smart persistence
-        const val PS_AF = 0x0008          // active force mode (normally 0)
-        const val PS_TRIG = 0x0004        // trigger output cycle
+        private const val PS_MPS = 0x0060         // proximity multi-pulse numbers
+        private const val PS_SMART_PERS = 0x0010  // smart persistence
+        private const val PS_AF = 0x0008          // active force mode (normally 0)
+        private const val PS_TRIG = 0x0004        // trigger output cycle
 
         // RESERVED 0x02
-        const val PS_SC_EN = 0x0001       // sunlight cancellation function
+        private const val PS_SC_EN = 0x0001       // sunlight cancellation function
 
         // PS_MS_H bits - this is the upper byte of the PS_CONF3/PS_MS_H register
-        const val WHITE_EN = 0x8000       // white channel enabled (0 == enabled)
-        const val PS_MS = 0x4000          // proximity function (ProximityOperation)
+        private const val WHITE_EN = 0x8000       // white channel enabled (0 == enabled)
+        private const val PS_MS = 0x4000          // proximity function (ProximityOperation)
 
         // RESERVED 0b00111000
-        const val LED_I = 0x0300
+        private const val LED_I = 0x0300
 
         // Interrupt status register - low byte reserved
-        const val INT_MASK = 0xFF00
-
-        // Offsets into interrupt status register for different types
-        const val ALS_IF_L = 0x0D
-        const val ALS_IF_H = 0x0C
-        const val PS_IF_CLOSE = 0x09
-        const val PS_IF_AWAY = 0x08
+        private const val INT_MASK = 0xFF00
     }
 }
