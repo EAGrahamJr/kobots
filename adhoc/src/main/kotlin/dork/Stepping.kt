@@ -18,14 +18,14 @@ package dork
 
 import base.minutes
 import com.diozero.devices.sandpit.motor.BYJ48Stepper
-import com.diozero.devices.sandpit.motor.BasicStepperController.GpioFiveWireUnipolarController
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
+import com.diozero.devices.sandpit.motor.UnipolarStepperController.GpioFiveWireUnipolarController
 import java.lang.Thread.sleep
 
 fun main() {
     val controller = GpioFiveWireUnipolarController(intArrayOf(18, 23, 24, 25), true)
     BYJ48Stepper(controller).apply {
-        println("RPM = $defaultSpeed, freq = $defaultFrequency")
+        println("RPM = $speed, freq = $defaultFrequency")
         first()
 //        dalek()
         println("Singles")

@@ -11,7 +11,7 @@ import com.diozero.devices.HCSR04
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
 import com.diozero.devices.sandpit.motor.BYJ48Stepper
-import com.diozero.devices.sandpit.motor.BasicStepperController.GpioFiveWireUnipolarController
+import com.diozero.devices.sandpit.motor.UnipolarStepperController.GpioFiveWireUnipolarController
 import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
