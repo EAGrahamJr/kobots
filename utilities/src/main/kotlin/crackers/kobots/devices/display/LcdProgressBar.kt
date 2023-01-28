@@ -43,7 +43,6 @@ class LcdProgressBar(
         }
     }
 
-
     /**
      * Getting/setting for value - percentage 0 to 100
      */

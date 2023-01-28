@@ -70,7 +70,8 @@ class GenericMotor(forwardPin: Int, backwardPin: Int, enablePin: Int, frequency:
     TB6612FNGMotor(
         DigitalOutputDevice(forwardPin),
         DigitalOutputDevice(backwardPin),
-        PwmOutputDevice(enablePin).apply { pwmFrequency = frequency })
+        PwmOutputDevice(enablePin).apply { pwmFrequency = frequency }
+    )
 
 const val KELVIN = 273.15f
 

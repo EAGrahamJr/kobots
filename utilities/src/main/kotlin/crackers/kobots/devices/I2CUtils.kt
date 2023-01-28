@@ -46,8 +46,8 @@ interface I2CSubRegister<N : Number> {
  * done since everything gets turned into an `Int`.
  */
 private abstract class SubRegister<N : Number>(mask: Int) : I2CSubRegister<N> {
-    abstract protected fun readRegister(): N
-    abstract protected fun writeRegister(data: N)
+    protected abstract fun readRegister(): N
+    protected abstract fun writeRegister(data: N)
 
     private val bits: Int
     private val offset: Int

@@ -147,7 +147,7 @@ class VCNL4040 @JvmOverloads constructor(controller: Int = 1, address: Int = ADD
             delegate.writeWordData(PS_THDH, highThreshold)
         }
 
-    //-----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
     // Configuration
     private fun writeBit(register: Int, mask: Int, enable: Boolean) {
         // read the register and flip the indicated bit
@@ -237,7 +237,6 @@ class VCNL4040 @JvmOverloads constructor(controller: Int = 1, address: Int = ADD
         }
         set(interruptCondition) = writeValue(interruptCondition, PS_CONFIG2, PS_INT)
 
-
     // PS Config 3 ----------------------------------------------------------------------------------------------------
     var proximityMultipulse: ProximityMultipulse
         get() {
@@ -294,56 +293,56 @@ class VCNL4040 @JvmOverloads constructor(controller: Int = 1, address: Int = ADD
         const val DEVICE_ID = 0x0186
 
         // the device uses 16-bit registers
-        private const val ALS_CONFIG = 0x00     // Ambient light sensor configuration register
-        private const val ALS_THDH = 0x01       // Ambient light high threshold register
-        private const val ALS_THDL = 0x02       // Ambient light low threshold register
-        private const val PS_CONFIG1 = 0x03     // Proximity sensor configuration 1 register (low byte)
-        private const val PS_CONFIG2 = 0x03     // Proximity sensor configuration 2 register (high byte)
-        private const val PS_CONFIG3 = 0x04     // Proximity sensor configuration 3 register (low byte)
-        private const val PS_MS_H = 0x04        // Proximity sensor misc config register (high byte)
-        private const val PS_THDL = 0x06        // Proximity sensor low threshold register
-        private const val PS_THDH = 0x07        // Proximity sensor high threshold register
-        private const val PS_DATA = 0x08        // Proximity sensor data register
-        private const val ALS_DATA = 0x09       // Ambient light sensor data register
-        private const val WHITE_DATA = 0x0A     // White light sensor data register
-        private const val INT_FLAG = 0x0B       // Interrupt status register
-        private const val ID_REGISTER = 0x0C    // Device ID
+        private const val ALS_CONFIG = 0x00 // Ambient light sensor configuration register
+        private const val ALS_THDH = 0x01 // Ambient light high threshold register
+        private const val ALS_THDL = 0x02 // Ambient light low threshold register
+        private const val PS_CONFIG1 = 0x03 // Proximity sensor configuration 1 register (low byte)
+        private const val PS_CONFIG2 = 0x03 // Proximity sensor configuration 2 register (high byte)
+        private const val PS_CONFIG3 = 0x04 // Proximity sensor configuration 3 register (low byte)
+        private const val PS_MS_H = 0x04 // Proximity sensor misc config register (high byte)
+        private const val PS_THDL = 0x06 // Proximity sensor low threshold register
+        private const val PS_THDH = 0x07 // Proximity sensor high threshold register
+        private const val PS_DATA = 0x08 // Proximity sensor data register
+        private const val ALS_DATA = 0x09 // Ambient light sensor data register
+        private const val WHITE_DATA = 0x0A // White light sensor data register
+        private const val INT_FLAG = 0x0B // Interrupt status register
+        private const val ID_REGISTER = 0x0C // Device ID
 
         // ALS_CONF bits - this is the lower byte of the word: the high-byte is reserved
-        private const val ALS_IT = 0x00C0         // integration time (2-bits - AmbientIntegration)
+        private const val ALS_IT = 0x00C0 // integration time (2-bits - AmbientIntegration)
 
         // RESERVED 0b00110000
-        private const val ALS_PERS = 0x000C       // interrupt persistence (2-bits)
-        private const val ALS_INT_EN = 0x0002     // interrupt enable/disable (1 == enable)
-        private const val ALS_SD = 0x0001         // als power (0 == enable)
+        private const val ALS_PERS = 0x000C // interrupt persistence (2-bits)
+        private const val ALS_INT_EN = 0x0002 // interrupt enable/disable (1 == enable)
+        private const val ALS_SD = 0x0001 // als power (0 == enable)
 
         // PS_CONF1 bits - this is the lower byte of the PS_CONFIG word
-        private const val PS_DUTY = 0x00C0        // duty ration setting (2-bits - LEDDutyCycle)
-        private const val PS_PERS = 0x0030        // interrupt persistence (2-bits)
-        private const val PS_IT = 0x000E          // integration time (2-bits - ProximityIntegration)
-        private const val PS_SD = 0x0001          // ps power (0 == enable)
+        private const val PS_DUTY = 0x00C0 // duty ration setting (2-bits - LEDDutyCycle)
+        private const val PS_PERS = 0x0030 // interrupt persistence (2-bits)
+        private const val PS_IT = 0x000E // integration time (2-bits - ProximityIntegration)
+        private const val PS_SD = 0x0001 // ps power (0 == enable)
 
         // PS_CONF2 bits - this is the upper byte of the PS_CONFIG word
         // RESERVED 0b11000000
         // RESERVED 0b00110000
-        private const val PS_HD = 0x0800          // ps resolution (ProximityResolution)
+        private const val PS_HD = 0x0800 // ps resolution (ProximityResolution)
 
         // RESERVED 0b00000100
-        private const val PS_INT = 0x0300         // ps interrupt type (2-bits - ProximityType)
+        private const val PS_INT = 0x0300 // ps interrupt type (2-bits - ProximityType)
 
         // PS_CONF3 bits - this is the lower byte of the PS_CONF3/PS_MS_H register
         // RESERVED 0b1000000
-        private const val PS_MPS = 0x0060         // proximity multi-pulse numbers
-        private const val PS_SMART_PERS = 0x0010  // smart persistence
-        private const val PS_AF = 0x0008          // active force mode (normally 0)
-        private const val PS_TRIG = 0x0004        // trigger output cycle
+        private const val PS_MPS = 0x0060 // proximity multi-pulse numbers
+        private const val PS_SMART_PERS = 0x0010 // smart persistence
+        private const val PS_AF = 0x0008 // active force mode (normally 0)
+        private const val PS_TRIG = 0x0004 // trigger output cycle
 
         // RESERVED 0x02
-        private const val PS_SC_EN = 0x0001       // sunlight cancellation function
+        private const val PS_SC_EN = 0x0001 // sunlight cancellation function
 
         // PS_MS_H bits - this is the upper byte of the PS_CONF3/PS_MS_H register
-        private const val WHITE_EN = 0x8000       // white channel enabled (0 == enabled)
-        private const val PS_MS = 0x4000          // proximity function (ProximityOperation)
+        private const val WHITE_EN = 0x8000 // white channel enabled (0 == enabled)
+        private const val PS_MS = 0x4000 // proximity function (ProximityOperation)
 
         // RESERVED 0b00111000
         private const val LED_I = 0x0300

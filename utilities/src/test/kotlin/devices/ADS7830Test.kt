@@ -28,4 +28,5 @@ internal class ADS7830Test : StringSpec(
                 value shouldBe channel
             }
         }
-    })
+    }
+)
