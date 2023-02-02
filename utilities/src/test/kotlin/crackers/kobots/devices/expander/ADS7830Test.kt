@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2022 by E. A. Graham, Jr.
+ * Copyright 2022-2023 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,8 @@
  * permissions and limitations under the License.
  */
 
-package devices
+package crackers.kobots.devices.expander
 
-import crackers.kobots.devices.ADS7830
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 
