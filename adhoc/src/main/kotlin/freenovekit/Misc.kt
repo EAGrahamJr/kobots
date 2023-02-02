@@ -12,11 +12,11 @@ import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
 import com.diozero.devices.sandpit.motor.BYJ48Stepper
 import com.diozero.devices.sandpit.motor.UnipolarStepperController.GpioFiveWireUnipolarController
-import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
 import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
 import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
+import crackers.kobots.devices.expander.ADS7830
 import java.lang.Math.abs
 import java.lang.Thread.sleep
 import java.nio.file.Files
@@ -52,9 +52,9 @@ fun `lesson 13`() {
     // exactly same as above
     val motor = GenericMotor(27, 17, 22)
 
-    ADS7830.also { adc ->
+    ADS7830().also { adc ->
         5 minutes {
-            adc.getValueSafely(0).ifPresent {
+            adc.getValue(0).let {
                 val data = 0.5f - it
                 println("Data $data - control ${motor.value}")
                 if (abs(data) > 0.05f) motor.value = data * 2f else motor.stop()
