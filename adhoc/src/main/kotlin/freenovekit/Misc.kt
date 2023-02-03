@@ -4,14 +4,12 @@ import base.minutes
 import com.diozero.api.DigitalInputDevice
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.GpioPullUpDown
-import com.diozero.api.ServoDevice
-import com.diozero.api.ServoTrim.TOWERPRO_SG90
 import com.diozero.devices.Buzzer
 import com.diozero.devices.HCSR04
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
-import com.diozero.devices.sandpit.motor.BYJ48Stepper
-import com.diozero.devices.sandpit.motor.UnipolarStepperController.GpioFiveWireUnipolarController
+// import com.diozero.devices.sandpit.motor.BYJ48Stepper
+// import com.diozero.devices.sandpit.motor.UnipolarStepperController.GpioFiveWireUnipolarController
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.GenericMotor
 import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
@@ -78,6 +76,7 @@ fun `lesson 14`() {
     }
 }
 
+/* my servo changes
 fun `lesson 16`() {
     BYJ48Stepper(GpioFiveWireUnipolarController(intArrayOf(18, 23, 24, 25))).apply {
         5 minutes {
@@ -127,7 +126,7 @@ fun servoFix() {
         }
     }
 }
-
+*/
 fun `lesson 24`() {
     val sounder = HCSR04(23, 24)
     Pi2Line.apply {

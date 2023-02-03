@@ -22,5 +22,4 @@ package crackers.kobots.devices.display
  * Arduino - https://github.com/adafruit/Adafruit_SSD1327
  * Python - https://github.com/adafruit/Adafruit_CircuitPython_SSD1327
  */
-class SSD1327 {
-}
+class SSD1327

@@ -16,6 +16,7 @@
 
 package dork
 
+/** only to be used where my stepper fixes have been added
 import base.minutes
 import com.diozero.devices.sandpit.motor.BYJ48Stepper
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
@@ -23,40 +24,41 @@ import com.diozero.devices.sandpit.motor.UnipolarStepperController.GpioFiveWireU
 import java.lang.Thread.sleep
 
 fun main() {
-    val controller = GpioFiveWireUnipolarController(intArrayOf(18, 23, 24, 25), true)
-    BYJ48Stepper(controller).apply {
-        println("RPM = $speed, freq = $defaultFrequency")
-        first()
+val controller = GpioFiveWireUnipolarController(intArrayOf(18, 23, 24, 25), true)
+BYJ48Stepper(controller).apply {
+println("RPM = $speed, freq = $defaultFrequency")
+first()
 //        dalek()
-        println("Singles")
-        sleep(2000)
-        (1..512).forEach {
-            step(StepperMotorInterface.Direction.CLOCKWISE)
-        }
-    }.close()
+println("Singles")
+sleep(2000)
+(1..512).forEach {
+step(StepperMotorInterface.Direction.CLOCKWISE)
+}
+}.close()
 }
 
 private fun BYJ48Stepper.first() {
-    stop()
-    sleep(2000)
-    1 minutes {
-        rotate(360f)
-        sleep(2000)
-        rotate(-360f)
-        sleep(2000)
-    }
-    onMove { println("moving slowly") }
-    onStop { println("stopped") }
-    start(StepperMotorInterface.Direction.CLOCKWISE, 10f)
-    sleep(15_000)
-    stop()
-    println("done")
+stop()
+sleep(2000)
+1 minutes {
+rotate(360f)
+sleep(2000)
+rotate(-360f)
+sleep(2000)
+}
+onMove { println("moving slowly") }
+onStop { println("stopped") }
+start(StepperMotorInterface.Direction.CLOCKWISE, 10f)
+sleep(15_000)
+stop()
+println("done")
 }
 
 fun BYJ48Stepper.dalek() {
-    stop()
-    1 minutes {
-        rotate(15f)
-        rotate(-15f)
-    }
+stop()
+1 minutes {
+rotate(15f)
+rotate(-15f)
 }
+}
+ */

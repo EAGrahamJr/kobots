@@ -4,9 +4,9 @@ plugins {
 
 dependencies {
     // TODO make this configurable somehow
-    implementation("com.diozero:diozero-provider-remote:1.3.5")
+    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
     // requires root to run, but makes everything much faster
-//    implementation("com.diozero:diozero-provider-pigpio:1.3.5")
+//    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
 }
 
 tasks {

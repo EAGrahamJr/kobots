@@ -33,22 +33,16 @@ class ADS7830(val i2CDevice: I2CDevice = I2CDevice(1, DEFAULT_ADDRESS)) :
 
     override fun getName() = NAME
 
-    private val boardPinInfo: BoardPinInfo by lazy {
-        BoardPinInfo().apply {
-            (0..7).forEach {
-                addAdcPinInfo(
-                    PinInfo("Channel", NAME, it, PinInfo.NOT_DEFINED, "Channel-$it", listOf(DeviceMode.ANALOG_INPUT))
-                )
-            }
+    private val myBoardInfo = BoardPinInfo().apply {
+        (0..7).forEach { channel: Int ->
+            addAdcPinInfo("Channel", channel, "Channel-$channel", PinInfo.NOT_DEFINED, VREF)
         }
     }
 
-    override fun getBoardPinInfo() = boardPinInfo
+    override fun getBoardPinInfo() = myBoardInfo
 
     override fun createAnalogInputDevice(key: String, pinInfo: PinInfo) =
         ChannelDevice(pinInfo.deviceNumber, this, key) as AnalogInputDeviceInterface
-
-    override fun getVRef() = VREF
 
     companion object {
         const val NAME = "ADS7830"
