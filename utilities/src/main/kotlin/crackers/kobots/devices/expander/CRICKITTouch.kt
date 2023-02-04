@@ -29,7 +29,7 @@ import com.diozero.internal.spi.GpioDigitalInputDeviceInterface
  * Because there's always a value present, the initial `read()` function will max the next 5 values and
  * assume any value greater than that (+100) is a "touch" for basic true/false functions.
  */
-class TouchSensor(crickitHat: CrickitHat, padNumber: Int) {
+class CRICKITTouch(crickitHat: CRICKITHat, padNumber: Int) {
     private val seesawPadIndex = padNumber - 1
     private val seeSaw: AdafruitSeeSaw = crickitHat.seeSaw
 
@@ -48,7 +48,7 @@ internal class DigitalTouch(
     key: String,
     factory: DeviceFactoryInterface,
     private val io: Int,
-    private val sensor: TouchSensor
+    private val sensor: CRICKITTouch
 ) :
     AbstractInputDevice<DigitalInputEvent>(key, factory), GpioDigitalInputDeviceInterface {
 
@@ -66,7 +66,7 @@ internal class AnalogTouch(
     key: String,
     factory: DeviceFactoryInterface,
     private val adc: Int,
-    private val sensor: TouchSensor
+    private val sensor: CRICKITTouch
 ) : AbstractInputDevice<AnalogInputEvent>(key, factory), AnalogInputDeviceInterface {
 
     override fun getAdcNumber() = adc

@@ -17,24 +17,25 @@
 package crackers.kobots.devices.expander
 
 import com.diozero.api.*
-import com.diozero.api.function.DeviceEventConsumer
 import com.diozero.internal.spi.*
 import com.diozero.sbc.BoardPinInfo
-import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode
-import crackers.kobots.devices.expander.CrickitTypes.SIGNAL
-import crackers.kobots.devices.expander.CrickitTypes.TOUCH
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * https://learn.adafruit.com/adafruit-crickit-hat-for-raspberry-pi-linux-computers?view=all
  */
 private const val NAME = "CRICKIT"
-private val defaultI2CDevice by lazy { I2CDevice(1, CrickitHat.DEVICE_ADDRESS) }
+private val defaultI2CDevice by lazy { I2CDevice(1, CRICKITHat.DEVICE_ADDRESS) }
 
-class CrickitHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = true) :
+class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = true) :
     AbstractDeviceFactory(NAME),
     GpioDeviceFactoryInterface,
     AnalogInputDeviceFactoryInterface {
+
+    enum class Types(internal val offset: Int) {
+        SIGNAL(0), TOUCH(10), SERVO(20), MOTOR(30), HI_CURRENT(40), NEOPIXEL(50), SPEAKER(60);
+
+        fun deviceNumber(device: Int) = offset + device
+    }
 
     val seeSaw = AdafruitSeeSaw(i2CDevice, initReset = initReset)
 
@@ -59,21 +60,21 @@ class CrickitHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
     private val boardInfo = BoardPinInfo().apply {
         val gpioPinModes = setOf(DeviceMode.DIGITAL_INPUT, DeviceMode.DIGITAL_OUTPUT, DeviceMode.ANALOG_INPUT)
         digitalPins.forEachIndexed { index, pin ->
-            val info = crickitPinInfo(SIGNAL, index + 1, pin, gpioPinModes)
+            val info = crickitPinInfo(Types.SIGNAL, index + 1, pin, gpioPinModes)
             addAdcPinInfo(info)
             addGpioPinInfo(info)
         }
 
         val touchPinModes = setOf(DeviceMode.ANALOG_INPUT, DeviceMode.DIGITAL_INPUT)
         touchpadPins.forEachIndexed { index, pin ->
-            val info = crickitPinInfo(TOUCH, index + 1, pin, touchPinModes, ANALOG_MAX)
+            val info = crickitPinInfo(Types.TOUCH, index + 1, pin, touchPinModes, ANALOG_MAX)
             addAdcPinInfo(info)
             addGpioPinInfo(info)
         }
     }
 
     private fun crickitPinInfo(
-        type: CrickitTypes,
+        type: Types,
         deviceId: Int,
         pin: Int,
         pinModes: Collection<DeviceMode>,
@@ -85,7 +86,7 @@ class CrickitHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
     /**
      * Get a device for the indicated touchpad (1-4)
      */
-    fun touch(index: Int) = TouchSensor(this, index)
+    fun touch(index: Int) = CRICKITTouch(this, index)
 
     fun signalAsDigital(index: Int) = boardPinInfo.getByGpioNumberOrThrow(index).let { info ->
         registerPinDevice(info) { k: String -> SignalDigitalDevice(k, this, info) }
@@ -102,11 +103,11 @@ class CrickitHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
         pud: GpioPullUpDown,
         trigger: GpioEventTrigger
     ): GpioDigitalInputDeviceInterface =
-        if (pinInfo.keyPrefix == SIGNAL.name) SignalDigitalDevice(key, this, pinInfo).apply {
+        if (pinInfo.keyPrefix == Types.SIGNAL.name) SignalDigitalDevice(key, this, pinInfo).apply {
             setInputMode(pud)
         }
         else {
-            val sensor = TouchSensor(this, pinInfo.deviceNumber - TOUCH.offset)
+            val sensor = CRICKITTouch(this, pinInfo.deviceNumber - Types.TOUCH.offset)
             DigitalTouch(key, this, pinInfo.deviceNumber, sensor)
         }
 
@@ -129,10 +130,10 @@ class CrickitHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
 
     override fun createAnalogInputDevice(key: String, pinInfo: PinInfo): AnalogInputDeviceInterface =
         pinInfo.deviceNumber.let { index ->
-            if (pinInfo.keyPrefix == SIGNAL.name) {
+            if (pinInfo.keyPrefix == Types.SIGNAL.name) {
                 SignalAnalogInputDevice(this, pinInfo)
             } else {
-                val sensor = touch(pinInfo.deviceNumber - TOUCH.offset)
+                val sensor = touch(pinInfo.deviceNumber - Types.TOUCH.offset)
                 AnalogTouch(key, this, pinInfo.deviceNumber, sensor)
             }
         }
@@ -183,92 +184,5 @@ class CrickitHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
     }
 }
 
-enum class CrickitTypes(internal val offset: Int) {
-    SIGNAL(0), TOUCH(10), SERVO(20), MOTOR(30), HI_CURRENT(40), NEOPIXEL(50), SPEAKER(60);
-
-    fun deviceNumber(device: Int) = offset + device
-}
 
 const val ANALOG_MAX = 1023f
-
-/**
- * "Internal device" of the Crickit for the signal block. Note that changing modes of the device is allowed (although
- * not necessarily used in practice).
- */
-class SignalDigitalDevice(key: String, crickitHat: CrickitHat, info: PinInfo) :
-    AbstractDevice(key, crickitHat),
-    GpioDigitalOutputDeviceInterface,
-    GpioDigitalInputDeviceInterface {
-
-    private val canWrite = AtomicBoolean(false)
-    private val deviceNumber = info.deviceNumber
-    private val seeSawPin: Int = info.physicalPin
-    private val seeSaw: AdafruitSeeSaw = crickitHat.seeSaw
-
-    // pull up vs pull down - pull-up needs to flip the value around?
-    private val flipValue = AtomicBoolean(false)
-
-    override fun getGpio() = deviceNumber
-    override fun getMode(): DeviceMode = if (canWrite.get()) DeviceMode.DIGITAL_OUTPUT else DeviceMode.DIGITAL_INPUT
-
-    override fun getValue(): Boolean {
-        if (canWrite.get()) throw RuntimeIOException("Input is not allowed on output devices.")
-        return seeSaw.digitalRead(seeSawPin).let { if (flipValue.get()) !it else it }
-    }
-
-    override fun setDebounceTimeMillis(debounceTime: Int) {
-        throw UnsupportedOperationException("Not supported")
-    }
-
-    override fun setValue(value: Boolean) {
-        if (!canWrite.get()) throw RuntimeIOException("Output is not allowed on input devices.")
-        seeSaw.digitalWrite(seeSawPin, value)
-    }
-
-    fun setInputMode(pud: GpioPullUpDown) {
-        flipValue.set(pud != GpioPullUpDown.PULL_DOWN)
-
-        seeSaw.pinMode(
-            seeSawPin,
-            when (pud) {
-                GpioPullUpDown.NONE -> SignalMode.INPUT
-                GpioPullUpDown.PULL_UP -> SignalMode.INPUT_PULLUP
-                GpioPullUpDown.PULL_DOWN -> SignalMode.INPUT_PULLDOWN
-            }
-        )
-        canWrite.set(false)
-    }
-
-    fun setOutputMode() {
-        seeSaw.pinMode(seeSawPin, SignalMode.OUTPUT)
-        canWrite.set(true)
-    }
-
-    override fun setListener(listener: DeviceEventConsumer<DigitalInputEvent>?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun removeListener() {
-        TODO("Not yet implemented")
-    }
-
-    override fun closeDevice() {
-//        removeListener()
-    }
-}
-
-/**
- * "Internal device" of the Crickit for the signal block, analog flavor.
- */
-class SignalAnalogInputDevice(private val crickitHat: CrickitHat, val info: PinInfo) : AnalogInputDeviceInterface,
-    AbstractInputDevice<AnalogInputEvent>(crickitHat.createPinKey(info), crickitHat) {
-    private val seeSawPin: Int = info.physicalPin
-
-    fun raw() = crickitHat.seeSaw.analogRead(seeSawPin.toByte())
-
-    override fun getAdcNumber() = info.deviceNumber
-
-    override fun getValue() = raw() / ANALOG_MAX
-
-    override fun generatesEvents() = false
-}

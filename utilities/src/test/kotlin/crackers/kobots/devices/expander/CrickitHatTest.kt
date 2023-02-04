@@ -40,7 +40,7 @@ class CrickitHatTest : FunSpec(
                 mockResponses.apply(goodInitResponses())
 
                 // initializes
-                CrickitHat(mockDevice)
+                CRICKITHat(mockDevice)
 
                 // contains reset command, get board, get version
                 val expectedCommandBytes = listOf(STATUS_BASE, STATUS_SWRST, 0xff.toByte()) +
@@ -53,7 +53,7 @@ class CrickitHatTest : FunSpec(
             test("Seesaw initialization with bad hardware") {
                 mockResponses.push(byteArrayOf(0xFF.toByte()))
                 assertThrows<RuntimeIOException> {
-                    CrickitHat(mockDevice)
+                    CRICKITHat(mockDevice)
                 }
             }
         }

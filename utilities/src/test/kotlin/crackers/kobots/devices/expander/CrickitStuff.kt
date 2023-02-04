@@ -35,9 +35,9 @@ fun goodInitResponses(): Stack<ByteArray>.() -> Unit = {
     push(byteArrayOf(AdafruitSeeSaw.Companion.DeviceType.SAMD09_HW_ID_CODE.pid.toByte()))
 }
 
-val testHat: CrickitHat by lazy {
+val testHat: CRICKITHat by lazy {
     MockI2CDevice.responses.apply(goodInitResponses())
-    CrickitHat(MockI2CDevice.device).also {
+    CRICKITHat(MockI2CDevice.device).also {
         MockI2CDevice.requests.clear()
     }
 }
