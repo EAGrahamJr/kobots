@@ -23,6 +23,7 @@ import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.STATUS_SWRST
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.STATUS_VERSION
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.assertThrows
 import crackers.kobots.devices.MockI2CDevice.device as mockDevice
 import crackers.kobots.devices.MockI2CDevice.requests as mockRequests
@@ -36,11 +37,11 @@ class CrickitHatTest : FunSpec(
         clearBeforeTest()
 
         context("Seesaw startup:") {
-            test("Seesaw initialization") {
-                mockResponses.apply(goodInitResponses())
+            test("Seesaw initialization - SAM D09 (Raspberry Pi)") {
+                mockResponses.apply(initRaspberryPi())
 
                 // initializes
-                CRICKITHat(mockDevice)
+                val hat = CRICKITHat(mockDevice)
 
                 // contains reset command, get board, get version
                 val expectedCommandBytes = listOf(STATUS_BASE, STATUS_SWRST, 0xff.toByte()) +
@@ -48,6 +49,22 @@ class CrickitHatTest : FunSpec(
                         listOf(STATUS_BASE, STATUS_VERSION)
 
                 mockRequests.shouldContainExactly(expectedCommandBytes)
+                assertEquals(AdafruitSeeSaw.Companion.DeviceType.SAMD09_HW_ID_CODE.pid, hat.seeSaw.chipId)
+            }
+
+            test("Seesaw initialization - ATTINY 8x7") {
+                mockResponses.apply(initOtherBoardType())
+
+                // initializes
+                val hat = CRICKITHat(mockDevice)
+
+                // contains reset command, get board, get version
+                val expectedCommandBytes = listOf(STATUS_BASE, STATUS_SWRST, 0xff.toByte()) +
+                        listOf(STATUS_BASE, STATUS_HW_ID) +
+                        listOf(STATUS_BASE, STATUS_VERSION)
+
+                mockRequests.shouldContainExactly(expectedCommandBytes)
+                assertEquals(AdafruitSeeSaw.Companion.DeviceType.ATTINY8X7_HW_ID_CODE.pid, hat.seeSaw.chipId)
             }
 
             test("Seesaw initialization with bad hardware") {

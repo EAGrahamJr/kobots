@@ -30,13 +30,25 @@ fun initProperties() {
     )
 }
 
-fun goodInitResponses(): Stack<ByteArray>.() -> Unit = {
+fun initRaspberryPi(): Stack<ByteArray>.() -> Unit = {
     push(byteArrayOf(0x0f, 0x75, 0x27, 0x01))
     push(byteArrayOf(AdafruitSeeSaw.Companion.DeviceType.SAMD09_HW_ID_CODE.pid.toByte()))
 }
 
+fun initOtherBoardType(): Stack<ByteArray>.() -> Unit = {
+    push(byteArrayOf(0x0f, 0x75, 0x27, 0x01))
+    push(byteArrayOf(AdafruitSeeSaw.Companion.DeviceType.ATTINY8X7_HW_ID_CODE.pid.toByte()))
+}
+
 val testHat: CRICKITHat by lazy {
-    MockI2CDevice.responses.apply(goodInitResponses())
+    MockI2CDevice.responses.apply(initRaspberryPi())
+    CRICKITHat(MockI2CDevice.device).also {
+        MockI2CDevice.requests.clear()
+    }
+}
+
+val testHatWithOtherBackpack by lazy {
+    MockI2CDevice.responses.apply(initOtherBoardType())
     CRICKITHat(MockI2CDevice.device).also {
         MockI2CDevice.requests.clear()
     }

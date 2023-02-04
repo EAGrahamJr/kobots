@@ -44,6 +44,10 @@ class AdafruitSeeSaw(
     val initReset: Boolean = true
 ) : DeviceInterface {
 
+    /**
+     * Analog pin inputs. This must be set for [analogWrite] to work.
+     */
+    lateinit var analogInputPins: IntArray
     private val logger = LoggerFactory.getLogger("SeeSaw")
     val chipId: Int
 
@@ -51,7 +55,7 @@ class AdafruitSeeSaw(
         // reset
         if (initReset) softwareReset()
 
-        chipId = readByte(STATUS_BASE, STATUS_HW_ID).toInt()
+        chipId = readByte(STATUS_BASE, STATUS_HW_ID).toInt() and 0xFF
         if (chipId != DeviceType.ATTINY8X7_HW_ID_CODE.pid && chipId != DeviceType.SAMD09_HW_ID_CODE.pid) {
             throw RuntimeIOException(String.format("Seesaw Hardware ID ${chipId.hex()} is not correct."))
         }
@@ -136,8 +140,21 @@ class AdafruitSeeSaw(
         TODO("Not yet")
     }
 
-    fun analogRead(pin: Byte): Short {
-        TODO("Not yet")
+    /**
+     * Read value from [pin] as an Int (to avoid any potential negative values).
+     */
+    fun analogRead(pin: Byte): Int {
+        if (!::analogInputPins.isInitialized) throw UnsupportedOperationException("No analog pins defined for device.")
+        val offset = analogInputPins.indexOf(pin.toInt()).let {
+            if (it < 0) throw IllegalArgumentException("Unknown analog pin ${pin.hex()}")
+            // hardware differences (this is interesting)
+            when (chipId) {
+                DeviceType.SAMD09_HW_ID_CODE.pid -> it
+                DeviceType.ATTINY8X7_HW_ID_CODE.pid -> pin
+                else -> throw IllegalStateException("Unknown chip ${chipId.hex()}- this should not happen!")
+            }
+        }.toByte()
+        return read(ADC_BASE, (ADC_CHANNEL_OFFSET + offset).toByte(), 2).toShort()
     }
 
     fun touchRead(pin: Int): Int = readShort(TOUCH_BASE, (TOUCH_CHANNEL_OFFSET + pin).toByte())
@@ -310,7 +327,7 @@ class AdafruitSeeSaw(
         const val SERCOM0_BASE = 0x02
 
         const val TIMER_BASE = 0x08
-        const val ADC_BASE = 0x09
+        const val ADC_BASE = 0x09.toByte()
         const val DAC_BASE = 0x0A
         const val INTERRUPT_BASE = 0x0B
         const val DAP_BASE = 0x0C
@@ -346,7 +363,7 @@ class AdafruitSeeSaw(
         const val ADC_INTENCLR = 0x03
         const val ADC_WINMODE = 0x04
         const val ADC_WINTHRESH = 0x05
-        const val ADC_CHANNEL_OFFSET = 0x07
+        const val ADC_CHANNEL_OFFSET = 0x07.toByte()
 
         const val SERCOM_STATUS = 0x00
         const val SERCOM_INTEN = 0x02

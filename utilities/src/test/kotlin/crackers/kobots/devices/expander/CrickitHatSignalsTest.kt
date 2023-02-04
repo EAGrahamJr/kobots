@@ -17,6 +17,8 @@
 package crackers.kobots.devices.expander
 
 import com.diozero.api.InvalidModeException
+import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.ADC_BASE
+import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.ADC_CHANNEL_OFFSET
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BASE
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BULK
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BULK_CLEAR
@@ -29,6 +31,7 @@ import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import crackers.kobots.devices.MockI2CDevice.requests as mockRequests
 import crackers.kobots.devices.MockI2CDevice.responses as mockResponses
@@ -109,8 +112,8 @@ class CrickitHatSignalsTest : FunSpec(
 
             context("Signal $signal digital input:") {
                 // setup input
-                val input = testHat.signal(signal).also {
-                    it.mode = SignalMode.INPUT_PULLDOWN
+                val input = testHat.signal(signal).apply {
+                    mode = SignalMode.INPUT_PULLDOWN
                     mockRequests.clear()
                 }
                 val blockSize = pinSelectorBytes.size
@@ -133,14 +136,49 @@ class CrickitHatSignalsTest : FunSpec(
             }
 
             context("Signal $signal analog input:") {
-                // setup input
                 // TODO adafruit seems to not require setting a mode to read tha analog
-                val input = testHat.signal(signal).also {
-                    it.mode = SignalMode.INPUT
-                    mockRequests.clear()
-                }
-                test("Read") {
+                test("Read (SAM D09)") {
+                    // setup input - the test hat is already initialized to mimic the Pi
+                    val input = testHat.signal(signal).apply {
+                        mode = SignalMode.INPUT
+                        mockRequests.clear()
+                    }
 
+                    // data read
+                    mockResponses.apply {
+                        push(byteArrayOf(3, 0xFE.toByte()))
+                        push(byteArrayOf(0, 4))
+                    }
+
+                    input.apply {
+                        assertEquals(4, read())
+                        assertEquals(1022, read())
+                    }
+
+                    val command = listOf(ADC_BASE, (ADC_CHANNEL_OFFSET + (signal - 1)).toByte())
+                    mockRequests.shouldContainExactly(command + command)
+                }
+                test("Read (ATTINY 8X7)") {
+                    // setup with the OTHER hardware
+                    val input = testHatWithOtherBackpack.signal(signal).apply {
+                        mode = SignalMode.INPUT
+                        mockRequests.clear()
+                    }
+
+                    // data read
+                    mockResponses.apply {
+//                        clear()
+                        push(byteArrayOf(3, 0xFE.toByte()))
+                        push(byteArrayOf(0, 4))
+                    }
+
+                    input.apply {
+                        assertEquals(4, read())
+                        assertEquals(1022, read())
+                    }
+
+                    val command = listOf(ADC_BASE, (ADC_CHANNEL_OFFSET + CRICKITHat.digitalPins[signal - 1]).toByte())
+                    mockRequests.shouldContainExactly(command + command)
                 }
 
             }
@@ -154,6 +192,12 @@ class CrickitHatSignalsTest : FunSpec(
     init {
         initProperties()
     }
+
+    fun CRICKITSignal.setTestMode(m: SignalMode) {
+        mode = m
+        mockRequests.clear()
+    }
+
 }
 
 val signalPinSelectors = arrayOf<List<Byte>>(

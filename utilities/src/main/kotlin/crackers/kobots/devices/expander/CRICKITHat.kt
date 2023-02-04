@@ -38,7 +38,9 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
         fun deviceNumber(device: Int) = offset + device
     }
 
-    val seeSaw = AdafruitSeeSaw(i2CDevice, initReset = initReset)
+    val seeSaw = AdafruitSeeSaw(i2CDevice, initReset = initReset).apply {
+        analogInputPins = digitalPins
+    }
 
     override fun close() {
         try {
