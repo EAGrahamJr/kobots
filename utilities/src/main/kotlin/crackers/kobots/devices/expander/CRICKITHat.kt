@@ -158,6 +158,8 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
     companion object {
         const val DEVICE_ADDRESS = 0x49
 
+        const val ANALOG_MAX = 1023f
+
         const val CAPTOUCH1 = 4
         const val CAPTOUCH2 = 5
         const val CAPTOUCH3 = 6
@@ -189,6 +191,3 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
         const val DRIVE1 = 13
     }
 }
-
-
-const val ANALOG_MAX = 1023f

@@ -46,8 +46,8 @@ class CrickitHatTouchPadsTest : FunSpec(
         }
 
         (1..4).forEach { touchPad ->
-            context("Touch pad inputs") {
-                test("Pad $touchPad: Read true/false and raw values") {
+            context("TouchPad $touchPad:") {
+                test("Inputs") {
                     // because the first read is for a binary value, capture the 5 calibration reads
                     (1..5).forEach {
                         mockResponses.push(byteArrayOf(0x01, 0x2C))
@@ -69,7 +69,7 @@ class CrickitHatTouchPadsTest : FunSpec(
             }
 
 
-            context("diozero Interop:") {
+            context("TouchPad $touchPad diozero:") {
                 test("Create analog device") {
                     // N.B. this should not trigger the calibration reads
                     AnalogInputDevice(testHat, CRICKITHat.Types.TOUCH.deviceNumber(touchPad)).use { d ->

@@ -22,6 +22,7 @@ import com.diozero.internal.spi.AbstractInputDevice
 import com.diozero.internal.spi.AnalogInputDeviceInterface
 import com.diozero.internal.spi.DeviceFactoryInterface
 import com.diozero.internal.spi.GpioDigitalInputDeviceInterface
+import crackers.kobots.devices.expander.CRICKITHat.Companion.ANALOG_MAX
 
 /**
  * "Internal device" of the Crickit for the capacitive touch sensors.

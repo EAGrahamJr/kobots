@@ -16,7 +16,9 @@
 
 package crackers.kobots.devices.expander
 
+import com.diozero.api.InvalidModeException
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BASE
+import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BULK
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BULK_CLEAR
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BULK_SET
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_DIRECTION_INPUT
@@ -24,9 +26,12 @@ import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_DIRECTION_
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_PULL_DISABLED
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_PULL_ENABLED
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode
+import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
+import org.junit.jupiter.api.Assertions.assertTrue
 import crackers.kobots.devices.MockI2CDevice.requests as mockRequests
+import crackers.kobots.devices.MockI2CDevice.responses as mockResponses
 
 /**
  * Test data values were captured from the Adafruit Circuit Python code directly
@@ -37,7 +42,7 @@ class CrickitHatSignalsTest : FunSpec(
 
         (1..8).forEach { signal ->
             val pinSelectorBytes = signalPinSelectors[signal - 1]
-            context("Digital signal setup [$signal]") {
+            context("Signal $signal setup") {
                 test("Output") {
                     val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_OUTPUT)
                     val setupCommand = directionOutputSetup + pinSelectorBytes
@@ -83,18 +88,65 @@ class CrickitHatSignalsTest : FunSpec(
                 }
             }
 
-            context("Digital output [$signal]") {
-                test("Write to output") {
+            context("Signal $signal digital output:") {
+                // setup output
+                val output = testHat.signal(signal).also {
+                    it.mode = SignalMode.OUTPUT
+                    mockRequests.clear()
                 }
-                test("Write to input (and fail)") {
+
+                test("Write") {
+                    val turnOnCommand = listOf(GPIO_BASE, GPIO_BULK_SET) + pinSelectorBytes
+                    output.value = true
+                    mockRequests.shouldContainExactly(turnOnCommand)
+                }
+                test("Read (and fail)") {
+                    shouldThrowWithMessage<InvalidModeException>("Input is not allowed on output devices.") {
+                        output.value
+                    }
                 }
             }
 
-            context("Digital input [$signal]") {
-                test("Read from input") {
+            context("Signal $signal digital input:") {
+                // setup input
+                val input = testHat.signal(signal).also {
+                    it.mode = SignalMode.INPUT_PULLDOWN
+                    mockRequests.clear()
                 }
-                test("Read from output (and fail)") {
+                val blockSize = pinSelectorBytes.size
+
+                test("Read") {
+                    // set the response to match the mask, ergo "true"
+                    mockResponses.push(ByteArray(blockSize) { index -> pinSelectorBytes[index] })
+
+                    val readCommand = listOf(GPIO_BASE, GPIO_BULK)
+                    assertTrue(input.value)
+                    mockRequests.shouldContainExactly(readCommand)
                 }
+                test("Write (and fail)") {
+                    mockResponses.push(ByteArray(blockSize) { 0.toByte() })
+                    shouldThrowWithMessage<InvalidModeException>("Output is not allowed on input devices.") {
+                        input.value = true
+                        null
+                    }
+                }
+            }
+
+            context("Signal $signal analog input:") {
+                // setup input
+                // TODO adafruit seems to not require setting a mode to read tha analog
+                val input = testHat.signal(signal).also {
+                    it.mode = SignalMode.INPUT
+                    mockRequests.clear()
+                }
+                test("Read") {
+
+                }
+
+            }
+
+            context("Signal $signal diozero:") {
+
             }
         }
     }

@@ -35,7 +35,7 @@ class CrickitHatTest : FunSpec(
     {
         clearBeforeTest()
 
-        context("Seesaw startup") {
+        context("Seesaw startup:") {
             test("Seesaw initialization") {
                 mockResponses.apply(goodInitResponses())
 

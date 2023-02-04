@@ -19,9 +19,10 @@ package crackers.kobots.devices.expander
 import com.diozero.api.AnalogInputEvent
 import com.diozero.api.DeviceMode
 import com.diozero.api.DigitalInputEvent
-import com.diozero.api.RuntimeIOException
+import com.diozero.api.InvalidModeException
 import com.diozero.internal.spi.*
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode
+import crackers.kobots.devices.expander.CRICKITHat.Companion.ANALOG_MAX
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -48,11 +49,11 @@ class CRICKITSignal(crickitHat: CRICKITHat, internal val seeSawPin: Int) {
 
     var value: Boolean
         get() {
-            if (canWrite.get()) throw RuntimeIOException("Input is not allowed on output devices.")
+            if (canWrite.get()) throw InvalidModeException("Input is not allowed on output devices.")
             return seeSaw.digitalRead(seeSawPin).let { if (flipValue.get()) !it else it }
         }
         set(value) {
-            if (!canWrite.get()) throw RuntimeIOException("Output is not allowed on input devices.")
+            if (!canWrite.get()) throw InvalidModeException("Output is not allowed on input devices.")
             seeSaw.digitalWrite(seeSawPin, value)
         }
 
