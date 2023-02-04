@@ -16,89 +16,84 @@
 
 package crackers.kobots.devices.expander
 
-import com.diozero.api.*
-import com.diozero.api.function.DeviceEventConsumer
+import com.diozero.api.AnalogInputEvent
+import com.diozero.api.DeviceMode
+import com.diozero.api.DigitalInputEvent
+import com.diozero.api.RuntimeIOException
 import com.diozero.internal.spi.*
+import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * "Internal device" of the Crickit for the signal block. Note that changing modes of the device is allowed (although
  * not necessarily used in practice).
  */
-class SignalDigitalDevice(key: String, crickitHat: CRICKITHat, info: PinInfo) :
-    AbstractDevice(key, crickitHat),
-    GpioDigitalOutputDeviceInterface,
-    GpioDigitalInputDeviceInterface {
-
-    private val canWrite = AtomicBoolean(false)
-    private val deviceNumber = info.deviceNumber
-    private val seeSawPin: Int = info.physicalPin
+class CRICKITSignal(crickitHat: CRICKITHat, internal val seeSawPin: Int) {
     private val seeSaw: AdafruitSeeSaw = crickitHat.seeSaw
 
-    // pull up vs pull down - pull-up needs to flip the value around?
+    internal val canWrite = AtomicBoolean(false)
+
+    // pull up vs pull down - pull-up needs to flip the value around for it to be consistent
     private val flipValue = AtomicBoolean(false)
 
-    override fun getGpio() = deviceNumber
-    override fun getMode(): DeviceMode = if (canWrite.get()) DeviceMode.DIGITAL_OUTPUT else DeviceMode.DIGITAL_INPUT
+    private lateinit var myMode: SignalMode
+    var mode: SignalMode
+        get() = myMode
+        set(value) {
+            myMode = value
+            flipValue.set(mode != SignalMode.INPUT_PULLDOWN)
+            canWrite.set(mode == SignalMode.OUTPUT)
+            seeSaw.pinMode(seeSawPin, value)
+        }
 
-    override fun getValue(): Boolean {
-        if (canWrite.get()) throw RuntimeIOException("Input is not allowed on output devices.")
-        return seeSaw.digitalRead(seeSawPin).let { if (flipValue.get()) !it else it }
+    var value: Boolean
+        get() {
+            if (canWrite.get()) throw RuntimeIOException("Input is not allowed on output devices.")
+            return seeSaw.digitalRead(seeSawPin).let { if (flipValue.get()) !it else it }
+        }
+        set(value) {
+            if (!canWrite.get()) throw RuntimeIOException("Output is not allowed on input devices.")
+            seeSaw.digitalWrite(seeSawPin, value)
+        }
+
+    fun read(): Int = seeSaw.analogRead(seeSawPin.toByte()).toInt()
+}
+
+/**
+ * "Internal device" of the Crickit for the signal block, digial (input/output) flavor.
+ */
+internal class SignalDigitalDevice(
+    key: String,
+    factory: DeviceFactoryInterface,
+    private val deviceNumber: Int,
+    private val delegate: CRICKITSignal
+) : AbstractInputDevice<DigitalInputEvent>(key, factory),
+    GpioDigitalOutputDeviceInterface, GpioDigitalInputDeviceInterface {
+
+    override fun getGpio() = deviceNumber
+    override fun getMode() = if (delegate.canWrite.get()) DeviceMode.DIGITAL_OUTPUT else DeviceMode.DIGITAL_INPUT
+    override fun getValue() = delegate.value
+    override fun setValue(value: Boolean) {
+        delegate.value = value
     }
 
     override fun setDebounceTimeMillis(debounceTime: Int) {
         throw UnsupportedOperationException("Not supported")
-    }
-
-    override fun setValue(value: Boolean) {
-        if (!canWrite.get()) throw RuntimeIOException("Output is not allowed on input devices.")
-        seeSaw.digitalWrite(seeSawPin, value)
-    }
-
-    fun setInputMode(pud: GpioPullUpDown) {
-        flipValue.set(pud != GpioPullUpDown.PULL_DOWN)
-
-        seeSaw.pinMode(
-            seeSawPin,
-            when (pud) {
-                GpioPullUpDown.NONE -> AdafruitSeeSaw.Companion.SignalMode.INPUT
-                GpioPullUpDown.PULL_UP -> AdafruitSeeSaw.Companion.SignalMode.INPUT_PULLUP
-                GpioPullUpDown.PULL_DOWN -> AdafruitSeeSaw.Companion.SignalMode.INPUT_PULLDOWN
-            }
-        )
-        canWrite.set(false)
-    }
-
-    fun setOutputMode() {
-        seeSaw.pinMode(seeSawPin, AdafruitSeeSaw.Companion.SignalMode.OUTPUT)
-        canWrite.set(true)
-    }
-
-    override fun setListener(listener: DeviceEventConsumer<DigitalInputEvent>?) {
-        TODO("Not yet implemented")
-    }
-
-    override fun removeListener() {
-        TODO("Not yet implemented")
-    }
-
-    override fun closeDevice() {
-//        removeListener()
     }
 }
 
 /**
  * "Internal device" of the Crickit for the signal block, analog flavor.
  */
-class SignalAnalogInputDevice(private val crickitHat: CRICKITHat, val info: PinInfo) : AnalogInputDeviceInterface,
-    AbstractInputDevice<AnalogInputEvent>(crickitHat.createPinKey(info), crickitHat) {
-    private val seeSawPin: Int = info.physicalPin
+internal class SignalAnalogInputDevice(
+    key: String,
+    factory: DeviceFactoryInterface,
+    private val deviceNumber: Int,
+    private val delegate: CRICKITSignal
+) : AbstractInputDevice<AnalogInputEvent>(key, factory),
+    AnalogInputDeviceInterface {
 
-    fun raw() = crickitHat.seeSaw.analogRead(seeSawPin.toByte())
-
-    override fun getAdcNumber() = info.deviceNumber
-
-    override fun getValue() = raw() / ANALOG_MAX
-
+    override fun getAdcNumber() = deviceNumber
+    override fun getValue() = delegate.read() / ANALOG_MAX
     override fun generatesEvents() = false
 }

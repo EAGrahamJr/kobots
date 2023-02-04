@@ -19,6 +19,7 @@ package crackers.kobots.devices.expander
 import com.diozero.api.*
 import com.diozero.internal.spi.*
 import com.diozero.sbc.BoardPinInfo
+import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode
 
 /**
  * https://learn.adafruit.com/adafruit-crickit-hat-for-raspberry-pi-linux-computers?view=all
@@ -88,13 +89,7 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
      */
     fun touch(index: Int) = CRICKITTouch(this, index)
 
-    fun signalAsDigital(index: Int) = boardPinInfo.getByGpioNumberOrThrow(index).let { info ->
-        registerPinDevice(info) { k: String -> SignalDigitalDevice(k, this, info) }
-    }
-
-    fun signalAsAnalog(index: Int) = boardPinInfo.getByGpioNumberOrThrow(index).let { info ->
-        registerPinDevice(info) { k: String -> SignalAnalogInputDevice(this, info) }
-    }
+    fun signal(index: Int) = CRICKITSignal(this, digitalPins[index - 1])
 
     // diozero implementations ----------------------------------------------------------------------------------------
     override fun createDigitalInputDevice(
@@ -103,10 +98,16 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
         pud: GpioPullUpDown,
         trigger: GpioEventTrigger
     ): GpioDigitalInputDeviceInterface =
-        if (pinInfo.keyPrefix == Types.SIGNAL.name) SignalDigitalDevice(key, this, pinInfo).apply {
-            setInputMode(pud)
-        }
-        else {
+        if (pinInfo.keyPrefix == Types.SIGNAL.name) {
+            val signal = CRICKITSignal(this, pinInfo.physicalPin).apply {
+                mode = when (pud) {
+                    GpioPullUpDown.NONE -> SignalMode.INPUT
+                    GpioPullUpDown.PULL_UP -> SignalMode.INPUT_PULLUP
+                    GpioPullUpDown.PULL_DOWN -> SignalMode.INPUT_PULLDOWN
+                }
+            }
+            SignalDigitalDevice(key, this, pinInfo.deviceNumber, signal)
+        } else {
             val sensor = CRICKITTouch(this, pinInfo.deviceNumber - Types.TOUCH.offset)
             DigitalTouch(key, this, pinInfo.deviceNumber, sensor)
         }
@@ -115,10 +116,12 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
         key: String,
         pinInfo: PinInfo,
         initialValue: Boolean
-    ): GpioDigitalOutputDeviceInterface =
-        SignalDigitalDevice(key, this, pinInfo).apply {
-            setOutputMode()
+    ): GpioDigitalOutputDeviceInterface {
+        val signal = CRICKITSignal(this, pinInfo.physicalPin).apply {
+            mode = SignalMode.OUTPUT
         }
+        return SignalDigitalDevice(key, this, pinInfo.deviceNumber, signal)
+    }
 
     override fun createDigitalInputOutputDevice(
         key: String,
@@ -131,7 +134,10 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
     override fun createAnalogInputDevice(key: String, pinInfo: PinInfo): AnalogInputDeviceInterface =
         pinInfo.deviceNumber.let { index ->
             if (pinInfo.keyPrefix == Types.SIGNAL.name) {
-                SignalAnalogInputDevice(this, pinInfo)
+                val signal = CRICKITSignal(this, pinInfo.physicalPin).apply {
+                    mode = SignalMode.INPUT
+                }
+                SignalAnalogInputDevice(key, this, pinInfo.deviceNumber, signal)
             } else {
                 val sensor = touch(pinInfo.deviceNumber - Types.TOUCH.offset)
                 AnalogTouch(key, this, pinInfo.deviceNumber, sensor)

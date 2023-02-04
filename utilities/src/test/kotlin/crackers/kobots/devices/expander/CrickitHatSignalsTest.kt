@@ -16,7 +16,6 @@
 
 package crackers.kobots.devices.expander
 
-import com.diozero.api.GpioPullUpDown
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BASE
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BULK_CLEAR
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BULK_SET
@@ -24,6 +23,7 @@ import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_DIRECTION_
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_DIRECTION_OUTPUT
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_PULL_DISABLED
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_PULL_ENABLED
+import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import crackers.kobots.devices.MockI2CDevice.requests as mockRequests
@@ -35,71 +35,66 @@ class CrickitHatSignalsTest : FunSpec(
     {
         clearBeforeTest()
 
-        context("Digital signal setup:") {
-            (1..8).forEach { signal ->
-                val pinSelectorBytes = signalPinSelectors[signal - 1]
-                test("Device $signal for output") {
+        (1..8).forEach { signal ->
+            val pinSelectorBytes = signalPinSelectors[signal - 1]
+            context("Digital signal setup [$signal]") {
+                test("Output") {
                     val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_OUTPUT)
-                    testHat.signalAsDigital(signal).use { device ->
-                        val setupCommand = directionOutputSetup + pinSelectorBytes
-                        mockRequests.clear()
-                        device.setOutputMode()
-                        mockRequests.shouldContainExactly(setupCommand)
-                    }
+                    val setupCommand = directionOutputSetup + pinSelectorBytes
+
+                    testHat.signal(signal).mode = SignalMode.OUTPUT
+                    mockRequests.shouldContainExactly(setupCommand)
                 }
-                test("Device $signal for input") {
+                test("Input") {
                     val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
                     val disablePullResistor = listOf(GPIO_BASE, GPIO_PULL_DISABLED)
-                    testHat.signalAsDigital(signal).use { device ->
-                        val setupCommand =
-                            directionOutputSetup + pinSelectorBytes + disablePullResistor + pinSelectorBytes
-                        mockRequests.clear()
-                        device.setInputMode(GpioPullUpDown.NONE)
-                        mockRequests.shouldContainExactly(setupCommand)
-                    }
+                    val setupCommand =
+                        directionOutputSetup + pinSelectorBytes +
+                                disablePullResistor + pinSelectorBytes
+
+                    testHat.signal(signal).mode = SignalMode.INPUT
+                    mockRequests.shouldContainExactly(setupCommand)
                 }
-                test("Device $signal for input with pull-up") {
+                test("Input with pull-up") {
                     val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
                     val enablePullResistor = listOf(GPIO_BASE, GPIO_PULL_ENABLED)
                     val bulkSet = listOf(GPIO_BASE, GPIO_BULK_SET)
-                    testHat.signalAsDigital(signal).use { device ->
-                        val setupCommand =
-                            directionOutputSetup + pinSelectorBytes +
-                                    enablePullResistor + pinSelectorBytes +
-                                    bulkSet + pinSelectorBytes
-                        mockRequests.clear()
-                        device.setInputMode(GpioPullUpDown.PULL_UP)
-                        mockRequests.shouldContainExactly(setupCommand)
-                    }
+
+                    val setupCommand =
+                        directionOutputSetup + pinSelectorBytes +
+                                enablePullResistor + pinSelectorBytes +
+                                bulkSet + pinSelectorBytes
+
+                    testHat.signal(signal).mode = SignalMode.INPUT_PULLUP
+                    mockRequests.shouldContainExactly(setupCommand)
                 }
-                test("Device $signal for input with pull-down") {
+                test("Input with pull-down") {
                     val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
                     val enablePullResistor = listOf(GPIO_BASE, GPIO_PULL_ENABLED)
                     val bulkClear = listOf(GPIO_BASE, GPIO_BULK_CLEAR)
-                    testHat.signalAsDigital(signal).use { device ->
-                        val setupCommand =
-                            directionOutputSetup + pinSelectorBytes +
-                                    enablePullResistor + pinSelectorBytes +
-                                    bulkClear + pinSelectorBytes
-                        mockRequests.clear()
-                        device.setInputMode(GpioPullUpDown.PULL_DOWN)
-                        mockRequests.shouldContainExactly(setupCommand)
-                    }
+
+                    val setupCommand =
+                        directionOutputSetup + pinSelectorBytes +
+                                enablePullResistor + pinSelectorBytes +
+                                bulkClear + pinSelectorBytes
+
+                    testHat.signal(signal).mode = SignalMode.INPUT_PULLDOWN
+                    mockRequests.shouldContainExactly(setupCommand)
                 }
             }
-        }
 
-        context("Digital output:") {
-            test("Write to signal output") {
+            context("Digital output [$signal]") {
+                test("Write to output") {
+                }
+                test("Write to input (and fail)") {
+                }
             }
-            test("Write to signal input (and fail)") {
-            }
-        }
 
-        context("Digital input") {
-            test("Read from signal input") {
-            }
-            test("Read from signal output (and fail)") {
+            context("Digital input [$signal]") {
+                test("Read from input") {
+                }
+                test("Read from output (and fail)") {
+                }
             }
         }
     }

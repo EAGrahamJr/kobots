@@ -72,7 +72,7 @@ class CrickitHatTouchPadsTest : FunSpec(
             context("diozero Interop:") {
                 test("Create analog device") {
                     // N.B. this should not trigger the calibration reads
-                    AnalogInputDevice(testHat, CrickitTypes.TOUCH.deviceNumber(touchPad)).use { d ->
+                    AnalogInputDevice(testHat, CRICKITHat.Types.TOUCH.deviceNumber(touchPad)).use { d ->
                         d.unscaledValue shouldBe 0.043010753f
                         d.unscaledValue shouldBe 0.50048876f
                         d.scaledValue shouldBe 1023f
@@ -93,7 +93,7 @@ class CrickitHatTouchPadsTest : FunSpec(
                     }
 
                     DigitalInputDevice(
-                        testHat, CrickitTypes.TOUCH.deviceNumber(touchPad),
+                        testHat, CRICKITHat.Types.TOUCH.deviceNumber(touchPad),
                         GpioPullUpDown.NONE, GpioEventTrigger.NONE
                     ).use { d ->
                         assertFalse(d.value)
