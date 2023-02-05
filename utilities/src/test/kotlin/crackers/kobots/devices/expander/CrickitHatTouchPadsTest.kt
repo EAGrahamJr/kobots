@@ -25,7 +25,6 @@ import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.TOUCH_CHANNEL_O
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Assertions.*
 import crackers.kobots.devices.MockI2CDevice.requests as mockRequests
 import crackers.kobots.devices.MockI2CDevice.responses as mockResponses
 
@@ -54,9 +53,9 @@ class CrickitHatTouchPadsTest : FunSpec(
                     }
                 }
                 (testHat.touch(touchPad)).apply {
-                    assertFalse(isOn)
-                    assertTrue(isOn)
-                    assertEquals(1023, value)
+                    isOn shouldBe false
+                    isOn shouldBe true
+                    value shouldBe 1023
                 }
 
                 // the above should generate 8 requests
@@ -65,7 +64,7 @@ class CrickitHatTouchPadsTest : FunSpec(
                     expectedRegistryCalls += TOUCH_BASE
                     expectedRegistryCalls += (TOUCH_CHANNEL_OFFSET + touchPad - 1).toByte()
                 }
-                mockRequests.shouldContainExactly(expectedRegistryCalls)
+                mockRequests shouldContainExactly expectedRegistryCalls
             }
 
 
@@ -83,7 +82,7 @@ class CrickitHatTouchPadsTest : FunSpec(
                         expectedRegistryCalls += TOUCH_BASE
                         expectedRegistryCalls += (TOUCH_CHANNEL_OFFSET + touchPad - 1).toByte()
                     }
-                    mockRequests.shouldContainExactly(expectedRegistryCalls)
+                    mockRequests shouldContainExactly expectedRegistryCalls
                 }
 
                 test("Create digital device") {
@@ -96,9 +95,9 @@ class CrickitHatTouchPadsTest : FunSpec(
                         testHat, CRICKITHat.Types.TOUCH.deviceNumber(touchPad),
                         GpioPullUpDown.NONE, GpioEventTrigger.NONE
                     ).use { d ->
-                        assertFalse(d.value)
-                        assertTrue(d.value)
-                        assertTrue(d.value)
+                        d.value shouldBe false
+                        d.value shouldBe true
+                        d.value shouldBe true
                     }
 
                     // the above should generate 8 requests
@@ -107,7 +106,7 @@ class CrickitHatTouchPadsTest : FunSpec(
                         expectedRegistryCalls += TOUCH_BASE
                         expectedRegistryCalls += (TOUCH_CHANNEL_OFFSET + touchPad - 1).toByte()
                     }
-                    mockRequests.shouldContainExactly(expectedRegistryCalls)
+                    mockRequests shouldContainExactly expectedRegistryCalls
                 }
             }
         }

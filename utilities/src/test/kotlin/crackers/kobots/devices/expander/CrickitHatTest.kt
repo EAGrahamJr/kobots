@@ -23,7 +23,7 @@ import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.STATUS_SWRST
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.STATUS_VERSION
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
-import org.junit.jupiter.api.Assertions.assertEquals
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.assertThrows
 import crackers.kobots.devices.MockI2CDevice.device as mockDevice
 import crackers.kobots.devices.MockI2CDevice.requests as mockRequests
@@ -48,8 +48,8 @@ class CrickitHatTest : FunSpec(
                         listOf(STATUS_BASE, STATUS_HW_ID) +
                         listOf(STATUS_BASE, STATUS_VERSION)
 
-                mockRequests.shouldContainExactly(expectedCommandBytes)
-                assertEquals(AdafruitSeeSaw.Companion.DeviceType.SAMD09_HW_ID_CODE.pid, hat.seeSaw.chipId)
+                mockRequests shouldContainExactly expectedCommandBytes
+                hat.seeSaw.chipId shouldBe AdafruitSeeSaw.Companion.DeviceType.SAMD09_HW_ID_CODE.pid
             }
 
             test("Seesaw initialization - ATTINY 8x7") {
@@ -63,8 +63,8 @@ class CrickitHatTest : FunSpec(
                         listOf(STATUS_BASE, STATUS_HW_ID) +
                         listOf(STATUS_BASE, STATUS_VERSION)
 
-                mockRequests.shouldContainExactly(expectedCommandBytes)
-                assertEquals(AdafruitSeeSaw.Companion.DeviceType.ATTINY8X7_HW_ID_CODE.pid, hat.seeSaw.chipId)
+                mockRequests shouldContainExactly expectedCommandBytes
+                hat.seeSaw.chipId shouldBe AdafruitSeeSaw.Companion.DeviceType.ATTINY8X7_HW_ID_CODE.pid
             }
 
             test("Seesaw initialization with bad hardware") {

@@ -31,8 +31,7 @@ import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import io.kotest.matchers.shouldBe
 import crackers.kobots.devices.MockI2CDevice.requests as mockRequests
 import crackers.kobots.devices.MockI2CDevice.responses as mockResponses
 
@@ -51,7 +50,7 @@ class CrickitHatSignalsTest : FunSpec(
                     val setupCommand = directionOutputSetup + pinSelectorBytes
 
                     testHat.signal(signal).mode = SignalMode.OUTPUT
-                    mockRequests.shouldContainExactly(setupCommand)
+                    mockRequests shouldContainExactly setupCommand
                 }
                 test("Input") {
                     val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
@@ -61,7 +60,7 @@ class CrickitHatSignalsTest : FunSpec(
                                 disablePullResistor + pinSelectorBytes
 
                     testHat.signal(signal).mode = SignalMode.INPUT
-                    mockRequests.shouldContainExactly(setupCommand)
+                    mockRequests shouldContainExactly setupCommand
                 }
                 test("Input with pull-up") {
                     val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
@@ -74,7 +73,7 @@ class CrickitHatSignalsTest : FunSpec(
                                 bulkSet + pinSelectorBytes
 
                     testHat.signal(signal).mode = SignalMode.INPUT_PULLUP
-                    mockRequests.shouldContainExactly(setupCommand)
+                    mockRequests shouldContainExactly setupCommand
                 }
                 test("Input with pull-down") {
                     val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
@@ -87,7 +86,7 @@ class CrickitHatSignalsTest : FunSpec(
                                 bulkClear + pinSelectorBytes
 
                     testHat.signal(signal).mode = SignalMode.INPUT_PULLDOWN
-                    mockRequests.shouldContainExactly(setupCommand)
+                    mockRequests shouldContainExactly setupCommand
                 }
             }
 
@@ -101,7 +100,7 @@ class CrickitHatSignalsTest : FunSpec(
                 test("Write") {
                     val turnOnCommand = listOf(GPIO_BASE, GPIO_BULK_SET) + pinSelectorBytes
                     output.value = true
-                    mockRequests.shouldContainExactly(turnOnCommand)
+                    mockRequests shouldContainExactly turnOnCommand
                 }
                 test("Read (and fail)") {
                     shouldThrowWithMessage<InvalidModeException>("Input is not allowed on output devices.") {
@@ -123,8 +122,8 @@ class CrickitHatSignalsTest : FunSpec(
                     mockResponses.push(ByteArray(blockSize) { index -> pinSelectorBytes[index] })
 
                     val readCommand = listOf(GPIO_BASE, GPIO_BULK)
-                    assertTrue(input.value)
-                    mockRequests.shouldContainExactly(readCommand)
+                    input.value shouldBe true
+                    mockRequests shouldContainExactly readCommand
                 }
                 test("Write (and fail)") {
                     mockResponses.push(ByteArray(blockSize) { 0.toByte() })
@@ -151,8 +150,8 @@ class CrickitHatSignalsTest : FunSpec(
                     }
 
                     input.apply {
-                        assertEquals(4, read())
-                        assertEquals(1022, read())
+                        read() shouldBe 4
+                        read() shouldBe 1022
                     }
 
                     val command = listOf(ADC_BASE, (ADC_CHANNEL_OFFSET + (signal - 1)).toByte())
@@ -167,18 +166,17 @@ class CrickitHatSignalsTest : FunSpec(
 
                     // data read
                     mockResponses.apply {
-//                        clear()
                         push(byteArrayOf(3, 0xFE.toByte()))
                         push(byteArrayOf(0, 4))
                     }
 
                     input.apply {
-                        assertEquals(4, read())
-                        assertEquals(1022, read())
+                        read() shouldBe 4
+                        read() shouldBe 1022
                     }
 
                     val command = listOf(ADC_BASE, (ADC_CHANNEL_OFFSET + CRICKITHat.digitalPins[signal - 1]).toByte())
-                    mockRequests.shouldContainExactly(command + command)
+                    mockRequests shouldContainExactly command + command
                 }
 
             }

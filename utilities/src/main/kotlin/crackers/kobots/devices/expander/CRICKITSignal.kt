@@ -50,7 +50,7 @@ class CRICKITSignal(crickitHat: CRICKITHat, internal val seeSawPin: Int) {
     var value: Boolean
         get() {
             if (canWrite.get()) throw InvalidModeException("Input is not allowed on output devices.")
-            return seeSaw.digitalRead(seeSawPin).let { if (flipValue.get()) !it else it }
+            return seeSaw.digitalRead(seeSawPin).let { read -> if (flipValue.get()) !read else read }
         }
         set(value) {
             if (!canWrite.get()) throw InvalidModeException("Output is not allowed on input devices.")
