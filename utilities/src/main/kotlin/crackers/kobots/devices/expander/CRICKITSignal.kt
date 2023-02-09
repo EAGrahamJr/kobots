@@ -29,8 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * "Internal device" of the Crickit for the signal block. Note that changing modes of the device is allowed (although
  * not necessarily used in practice).
  */
-class CRICKITSignal(crickitHat: CRICKITHat, internal val seeSawPin: Int) {
-    private val seeSaw: AdafruitSeeSaw = crickitHat.seeSaw
+class CRICKITSignal(private val seeSaw: AdafruitSeeSaw, private val seeSawPin: Int) {
 
     internal val canWrite = AtomicBoolean(false)
 

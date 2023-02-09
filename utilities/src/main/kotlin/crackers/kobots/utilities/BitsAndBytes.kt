@@ -25,3 +25,9 @@ fun ByteArray.toShort(): Int = ((get(0).toInt() and BYTE_MASK) shl 8) + (get(1).
 fun ByteArray.toLong(): Long = mapIndexed { index, byte ->
     ((byte.toInt() and BYTE_MASK) shl (3 - index) * 8).toLong()
 }.sum()
+
+fun Short.toByteArray() = toInt().let {
+    val upper = it and 0xFF00
+    val lower = it and 0x00FF
+    byteArrayOf((upper shr 8).toByte(), lower.toByte())
+}

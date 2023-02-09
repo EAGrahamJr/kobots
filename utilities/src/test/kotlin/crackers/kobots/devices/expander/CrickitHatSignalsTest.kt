@@ -25,9 +25,10 @@ import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BULK_CLEAR
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BULK_SET
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_DIRECTION_INPUT
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_DIRECTION_OUTPUT
-import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_PULL_DISABLED
-import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_PULL_ENABLED
+import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_PULL_RESISTOR_DISABLED
+import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_PULL_RESISTOR_ENABLED
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode
+import crackers.kobots.devices.expander.CRICKITHat.Companion.DIGITAL_PINS
 import io.kotest.assertions.throwables.shouldThrowWithMessage
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
@@ -54,7 +55,7 @@ class CrickitHatSignalsTest : FunSpec(
                 }
                 test("Input") {
                     val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
-                    val disablePullResistor = listOf(GPIO_BASE, GPIO_PULL_DISABLED)
+                    val disablePullResistor = listOf(GPIO_BASE, GPIO_PULL_RESISTOR_DISABLED)
                     val setupCommand =
                         directionOutputSetup + pinSelectorBytes +
                                 disablePullResistor + pinSelectorBytes
@@ -64,7 +65,7 @@ class CrickitHatSignalsTest : FunSpec(
                 }
                 test("Input with pull-up") {
                     val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
-                    val enablePullResistor = listOf(GPIO_BASE, GPIO_PULL_ENABLED)
+                    val enablePullResistor = listOf(GPIO_BASE, GPIO_PULL_RESISTOR_ENABLED)
                     val bulkSet = listOf(GPIO_BASE, GPIO_BULK_SET)
 
                     val setupCommand =
@@ -77,7 +78,7 @@ class CrickitHatSignalsTest : FunSpec(
                 }
                 test("Input with pull-down") {
                     val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
-                    val enablePullResistor = listOf(GPIO_BASE, GPIO_PULL_ENABLED)
+                    val enablePullResistor = listOf(GPIO_BASE, GPIO_PULL_RESISTOR_ENABLED)
                     val bulkClear = listOf(GPIO_BASE, GPIO_BULK_CLEAR)
 
                     val setupCommand =
@@ -175,7 +176,7 @@ class CrickitHatSignalsTest : FunSpec(
                         read() shouldBe 1022
                     }
 
-                    val command = listOf(ADC_BASE, (ADC_CHANNEL_OFFSET + CRICKITHat.digitalPins[signal - 1]).toByte())
+                    val command = listOf(ADC_BASE, (ADC_CHANNEL_OFFSET + DIGITAL_PINS[signal - 1]).toByte())
                     mockRequests shouldContainExactly command + command
                 }
 

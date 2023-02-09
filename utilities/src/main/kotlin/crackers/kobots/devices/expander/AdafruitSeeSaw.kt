@@ -25,6 +25,7 @@ import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode.*
 import crackers.kobots.utilities.*
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import kotlin.experimental.and
 
 /**
  * An I2C to whatever helper chip. Note that this chip does **not** use "normal" I2C registers, but rather selects
@@ -33,7 +34,7 @@ import java.time.Duration
  * Based on the Adafruit [CircuitPython library](https://github.com/adafruit/Adafruit_CircuitPython_seesaw) and the
  * [Arduino library](https://github.com/adafruit/Adafruit_Seesaw)
  *
- * @see https://learn.adafruit.com/adafruit-seesaw-atsamd09-breakout?view=all#using-the-seesaw-platform
+ * See [Using the SeeSaw](https://learn.adafruit.com/adafruit-seesaw-atsamd09-breakout?view=all#using-the-seesaw-platform)
  *
  * The flow-control device is available, but typically not used.
  */
@@ -45,9 +46,15 @@ class AdafruitSeeSaw(
 ) : DeviceInterface {
 
     /**
-     * Analog pin inputs. This must be set for [analogWrite] to work.
+     * Analog pin inputs. This must be set for [analogRead] to work.
      */
     lateinit var analogInputPins: IntArray
+
+    /**
+     * Analog PWM (servo) pin outputs. This must be set for [analogWrite] to work.
+     */
+    lateinit var pwmOutputPins: IntArray
+
     private val logger = LoggerFactory.getLogger("SeeSaw")
     val chipId: Int
 
@@ -84,36 +91,33 @@ class AdafruitSeeSaw(
         SleepUtil.sleepMillis(delay.toMillis())
     }
 
+    // Digital modes --------------------------------------------------------------------------------------------------
     fun pinMode(pin: Int, mode: SignalMode) {
-        val selector = pinSelectorForWrite(pin)
+        val selector = pin.digitalPin()
 
         when (mode) {
             INPUT -> {
                 write(GPIO_BASE, GPIO_DIRECTION_INPUT, selector)
-                write(GPIO_BASE, GPIO_PULL_DISABLED, selector)
+                write(GPIO_BASE, GPIO_PULL_RESISTOR_DISABLED, selector)
             }
 
             OUTPUT -> write(GPIO_BASE, GPIO_DIRECTION_OUTPUT, selector)
             INPUT_PULLUP -> {
                 write(GPIO_BASE, GPIO_DIRECTION_INPUT, selector)
-                write(GPIO_BASE, GPIO_PULL_ENABLED, selector)
+                write(GPIO_BASE, GPIO_PULL_RESISTOR_ENABLED, selector)
                 write(GPIO_BASE, GPIO_BULK_SET, selector)
             }
 
             INPUT_PULLDOWN -> {
                 write(GPIO_BASE, GPIO_DIRECTION_INPUT, selector)
-                write(GPIO_BASE, GPIO_PULL_ENABLED, selector)
+                write(GPIO_BASE, GPIO_PULL_RESISTOR_ENABLED, selector)
                 write(GPIO_BASE, GPIO_BULK_CLEAR, selector)
             }
         }
     }
 
-    fun analogWrite(pin: Byte, value: Short, width: Byte = 8) {
-        TODO("Not yet")
-    }
-
     fun digitalWrite(pin: Int, value: Boolean) {
-        val selector = pinSelectorForWrite(pin)
+        val selector = pin.digitalPin()
         val registerCommand = if (value) GPIO_BULK_SET else GPIO_BULK_CLEAR
         write(GPIO_BASE, registerCommand, selector)
     }
@@ -140,28 +144,69 @@ class AdafruitSeeSaw(
         TODO("Not yet")
     }
 
+    private fun Int.digitalPin(): ByteArray {
+        val bMode = this >= 32
+        val pinValue = 1 shl (if (bMode) this - 32 else this)
+        val cmd = if (bMode) writeToByteArray(pinValue, 8, 4) else writeToByteArray(pinValue, 4, 0)
+        return cmd
+    }
+
     /**
      * Read value from [pin] as an Int (to avoid any potential negative values).
      */
     fun analogRead(pin: Byte): Int {
-        if (!::analogInputPins.isInitialized) throw UnsupportedOperationException("No analog pins defined for device.")
-        val offset = analogInputPins.indexOf(pin.toInt()).let {
-            if (it < 0) throw IllegalArgumentException("Unknown analog pin ${pin.hex()}")
-            // hardware differences (this is interesting)
-            when (chipId) {
-                DeviceType.SAMD09_HW_ID_CODE.pid -> it
-                DeviceType.ATTINY8X7_HW_ID_CODE.pid -> pin
-                else -> throw IllegalStateException("Unknown chip ${chipId.hex()}- this should not happen!")
-            }
-        }.toByte()
+        if (!::analogInputPins.isInitialized)
+            throw UnsupportedOperationException("No analog input pins defined for device.")
+        val offset = analogInputPins.pwmOffsets(pin)
         return read(ADC_BASE, (ADC_CHANNEL_OFFSET + offset).toByte(), 2).toShort()
     }
 
+    // PWM outputs ----------------------------------------------------------------------------------------------------
+    /**
+     * Write value to [pin] as a PWM value
+     */
+    fun analogWrite(pin: Byte, value: Short, twoBytes: Boolean = true) {
+        if (!::pwmOutputPins.isInitialized)
+            throw UnsupportedOperationException("No analog output pins defined for device.")
+        val offset = pwmOutputPins.pwmOffsets(pin)
+
+        val bytes = if (twoBytes) byteArrayOf(offset) + value.toByteArray()
+        else byteArrayOf(offset, (value and 0xFF).toByte())
+
+        write(TIMER_BASE, TIMER_PWM, bytes)
+    }
+
+    /**
+     * Setting the PWM frequency goes hand-in-hand with the [analogWrite] function (same pins). Together, these values
+     * set the basic pulsed output from the PWM pins on the device.
+     */
+    fun setPWMFreq(pin: Byte, freq: Short) {
+        if (!::pwmOutputPins.isInitialized)
+            throw UnsupportedOperationException("No analog output pins defined for device.")
+        val offset = pwmOutputPins.pwmOffsets(pin)
+        val cmd = byteArrayOf(offset) + freq.toByteArray()
+
+        write(TIMER_BASE, TIMER_FREQ, cmd)
+    }
+
+    /**
+     * Hardware chip determines if a straight "offset" is used or a pin-mapping
+     */
+    private fun IntArray.pwmOffsets(pinToFind: Byte): Byte = indexOf(pinToFind.toInt()).let {
+        if (it < 0) throw IllegalArgumentException("Unknown analog pin ${pinToFind.hex()}")
+        // hardware differences (this is interesting)
+        when (chipId) {
+            DeviceType.SAMD09_HW_ID_CODE.pid -> it
+            DeviceType.ATTINY8X7_HW_ID_CODE.pid -> pinToFind
+            else -> throw IllegalStateException("Unknown chip ${chipId.hex()} - this should not happen!")
+        }
+    }.toByte()
+
+
+    // Touchpads ------------------------------------------------------------------------------------------------------
     fun touchRead(pin: Int): Int = readShort(TOUCH_BASE, (TOUCH_CHANNEL_OFFSET + pin).toByte())
 
-    fun setPWMFreq(pin: Byte, freq: Short) {
-        TODO("Not yet")
-    }
+    // Other ----------------------------------------------------------------------------------------------------------
 
     fun enableSercomDataRdyInterrupt(sercom: Byte = 0) {
         TODO("Not yet")
@@ -246,13 +291,6 @@ class AdafruitSeeSaw(
 //    virtual size_t write(:Byte){ TODO("Not yet") }
 //    virtual size_t write(const char *str){ TODO("Not yet") }
 
-    private fun pinSelectorForWrite(pin: Int): ByteArray {
-        val bMode = pin >= 32
-        val pins = 1 shl (if (bMode) pin - 32 else pin)
-        val cmd = if (bMode) writeToByteArray(pins, 8, 4) else writeToByteArray(pins, 4, 0)
-        return cmd
-    }
-
     /**
      * Write a [value] into an allocated array at an [offset].
      */
@@ -272,6 +310,12 @@ class AdafruitSeeSaw(
 
     private fun writeByte(registerBase: Byte, register: Byte, value: Byte): Boolean {
         return write(registerBase, register, byteArrayOf(value))
+    }
+
+    private fun writeShort(registerBase: Byte, register: Byte, value: Short) {
+        val hiByte = value.toUInt() shr 8
+        val loByte = value and 0xFF
+        write(registerBase, register, byteArrayOf(hiByte.toByte(), loByte.toByte()))
     }
 
     /**
@@ -323,11 +367,8 @@ class AdafruitSeeSaw(
     companion object {
         const val STATUS_BASE = 0x00.toByte()
 
-        const val GPIO_BASE = 0x01.toByte()
         const val SERCOM0_BASE = 0x02
 
-        const val TIMER_BASE = 0x08
-        const val ADC_BASE = 0x09.toByte()
         const val DAC_BASE = 0x0A
         const val INTERRUPT_BASE = 0x0B
         const val DAP_BASE = 0x0C
@@ -336,6 +377,7 @@ class AdafruitSeeSaw(
         const val TOUCH_BASE = 0x0F.toByte()
         const val ENCODER_BASE = 0x11
 
+        const val GPIO_BASE = 0x01.toByte()
         const val GPIO_DIRECTION_OUTPUT = 0x02.toByte()
         const val GPIO_DIRECTION_INPUT = 0x03.toByte()
         const val GPIO_BULK = 0x04.toByte()
@@ -345,8 +387,8 @@ class AdafruitSeeSaw(
         const val GPIO_INTENSET = 0x08
         const val GPIO_INTENCLR = 0x09
         const val GPIO_INTFLAG = 0x0A
-        const val GPIO_PULL_ENABLED = 0x0B.toByte()
-        const val GPIO_PULL_DISABLED = 0x0C.toByte()
+        const val GPIO_PULL_RESISTOR_ENABLED = 0x0B.toByte()
+        const val GPIO_PULL_RESISTOR_DISABLED = 0x0C.toByte()
 
         const val STATUS_HW_ID = 0x01.toByte()
         const val STATUS_VERSION = 0x02.toByte()
@@ -354,10 +396,13 @@ class AdafruitSeeSaw(
         const val STATUS_TEMP = 0x04
         const val STATUS_SWRST = 0x7F.toByte()
 
+        // PWM Timers
+        const val TIMER_BASE = 0x08.toByte()
         const val TIMER_STATUS = 0x00
-        const val TIMER_PWM = 0x01
-        const val TIMER_FREQ = 0x02
+        const val TIMER_PWM = 0x01.toByte()
+        const val TIMER_FREQ = 0x02.toByte()
 
+        const val ADC_BASE = 0x09.toByte()
         const val ADC_STATUS = 0x00
         const val ADC_INTEN = 0x02
         const val ADC_INTENCLR = 0x03

@@ -30,9 +30,8 @@ import crackers.kobots.devices.expander.CRICKITHat.Companion.ANALOG_MAX
  * Because there's always a value present, the initial `read()` function will max the next 5 values and
  * assume any value greater than that (+100) is a "touch" for basic true/false functions.
  */
-class CRICKITTouch(crickitHat: CRICKITHat, padNumber: Int) {
+class CRICKITTouch(private val seeSaw: AdafruitSeeSaw, padNumber: Int) {
     private val seesawPadIndex = padNumber - 1
-    private val seeSaw: AdafruitSeeSaw = crickitHat.seeSaw
 
     private val noTouchThreshold: Int by lazy {
         ((1..5).map { value }.max() + 100)
