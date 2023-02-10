@@ -65,7 +65,7 @@ class CrickitHatServoTest : FunSpec(
                 }
             }
             context("diozero for $servoNumber:") {
-                val id = CRICKITHat.Types.SERVO.deviceNumber(servoNumber)
+                val id = CRICKITHatDeviceFactory.Types.SERVO.deviceNumber(servoNumber)
                 val crickitHatDeviceFactory = CRICKITHatDeviceFactory(testHat)
 
                 test("Get and use") {

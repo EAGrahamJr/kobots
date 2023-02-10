@@ -16,7 +16,7 @@
 
 package crackers.kobots.devices.expander
 
-import com.diozero.api.InvalidModeException
+import com.diozero.api.*
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.ADC_BASE
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.ADC_CHANNEL_OFFSET
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BASE
@@ -45,46 +45,27 @@ class CrickitHatSignalsTest : FunSpec(
 
         (1..8).forEach { signal ->
             val pinSelectorBytes = signalPinSelectors[signal - 1]
+            val blockSize = pinSelectorBytes.size
+
             context("Signal $signal setup") {
                 test("Output") {
-                    val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_OUTPUT)
-                    val setupCommand = directionOutputSetup + pinSelectorBytes
+                    val setupCommand = digitalOutputSetupCommands(pinSelectorBytes)
 
                     testHat.signal(signal).mode = SignalMode.OUTPUT
                     mockRequests shouldContainExactly setupCommand
                 }
                 test("Input") {
-                    val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
-                    val disablePullResistor = listOf(GPIO_BASE, GPIO_PULL_RESISTOR_DISABLED)
-                    val setupCommand =
-                        directionOutputSetup + pinSelectorBytes +
-                                disablePullResistor + pinSelectorBytes
+                    val setupCommand = analogInputSetupCommands(pinSelectorBytes)
 
                     testHat.signal(signal).mode = SignalMode.INPUT
                     mockRequests shouldContainExactly setupCommand
                 }
                 test("Input with pull-up") {
-                    val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
-                    val enablePullResistor = listOf(GPIO_BASE, GPIO_PULL_RESISTOR_ENABLED)
-                    val bulkSet = listOf(GPIO_BASE, GPIO_BULK_SET)
-
-                    val setupCommand =
-                        directionOutputSetup + pinSelectorBytes +
-                                enablePullResistor + pinSelectorBytes +
-                                bulkSet + pinSelectorBytes
-
                     testHat.signal(signal).mode = SignalMode.INPUT_PULLUP
-                    mockRequests shouldContainExactly setupCommand
+                    mockRequests shouldContainExactly inputPullUpSetupCommands(pinSelectorBytes)
                 }
                 test("Input with pull-down") {
-                    val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
-                    val enablePullResistor = listOf(GPIO_BASE, GPIO_PULL_RESISTOR_ENABLED)
-                    val bulkClear = listOf(GPIO_BASE, GPIO_BULK_CLEAR)
-
-                    val setupCommand =
-                        directionOutputSetup + pinSelectorBytes +
-                                enablePullResistor + pinSelectorBytes +
-                                bulkClear + pinSelectorBytes
+                    val setupCommand = inputPullDownSetupCommands(pinSelectorBytes)
 
                     testHat.signal(signal).mode = SignalMode.INPUT_PULLDOWN
                     mockRequests shouldContainExactly setupCommand
@@ -116,15 +97,14 @@ class CrickitHatSignalsTest : FunSpec(
                     mode = SignalMode.INPUT_PULLDOWN
                     mockRequests.clear()
                 }
-                val blockSize = pinSelectorBytes.size
 
                 test("Read") {
                     // set the response to match the mask, ergo "true"
                     mockResponses.push(ByteArray(blockSize) { index -> pinSelectorBytes[index] })
 
-                    val readCommand = listOf(GPIO_BASE, GPIO_BULK)
+
                     input.value shouldBe true
-                    mockRequests shouldContainExactly readCommand
+                    mockRequests shouldContainExactly readDigitalInputCommand
                 }
                 test("Write (and fail)") {
                     mockResponses.push(ByteArray(blockSize) { 0.toByte() })
@@ -183,7 +163,56 @@ class CrickitHatSignalsTest : FunSpec(
             }
 
             context("Signal $signal diozero:") {
+                val factory = CRICKITHatDeviceFactory(testHat)
+                test("DigitalInput") {
+                    DigitalInputDevice(
+                        factory, CRICKITHatDeviceFactory.Types.SIGNAL.deviceNumber(signal),
+                        GpioPullUpDown.PULL_DOWN, GpioEventTrigger.NONE
+                    ).use {
+                        mockRequests shouldContainExactly inputPullDownSetupCommands(pinSelectorBytes)
+                        mockRequests.clear()
 
+                        // set the response to match the mask, ergo "true"
+                        mockResponses.push(ByteArray(blockSize) { index -> pinSelectorBytes[index] })
+                        it.value shouldBe true
+                        mockRequests shouldContainExactly readDigitalInputCommand
+                    }
+                }
+                test("DigitalOutput") {
+                    DigitalOutputDevice(
+                        factory,
+                        CRICKITHatDeviceFactory.Types.SIGNAL.deviceNumber(signal),
+                        true,
+                        false
+                    ).use {
+                        mockRequests shouldContainExactly digitalOutputSetupCommands(pinSelectorBytes)
+                        mockRequests.clear()
+
+                        val turnOnCommand = listOf(GPIO_BASE, GPIO_BULK_SET) + pinSelectorBytes
+                        it.on()
+                        mockRequests shouldContainExactly turnOnCommand
+                    }
+                }
+                test("AnalogInput") {
+                    AnalogInputDevice(factory, CRICKITHatDeviceFactory.Types.SIGNAL.deviceNumber(signal)).use {
+                        mockRequests shouldContainExactly analogInputSetupCommands(pinSelectorBytes)
+                        mockRequests.clear()
+
+                        // data read
+                        mockResponses.apply {
+                            push(byteArrayOf(3, 0xFE.toByte()))
+                            push(byteArrayOf(0, 4))
+                        }
+
+                        it.apply {
+                            scaledValue.toInt() shouldBe 4
+                            scaledValue.toInt() shouldBe 1022
+                        }
+
+                        val command = listOf(ADC_BASE, (ADC_CHANNEL_OFFSET + (signal - 1)).toByte())
+                        mockRequests.shouldContainExactly(command + command)
+                    }
+                }
             }
         }
     }
@@ -191,15 +220,50 @@ class CrickitHatSignalsTest : FunSpec(
     init {
         initProperties()
     }
-
-    fun CRICKITSignal.setTestMode(m: SignalMode) {
-        mode = m
-        mockRequests.clear()
-    }
-
 }
 
-val signalPinSelectors = arrayOf<List<Byte>>(
+private fun analogInputSetupCommands(pinSelectorBytes: List<Byte>): List<Byte> {
+    val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
+    val disablePullResistor = listOf(GPIO_BASE, GPIO_PULL_RESISTOR_DISABLED)
+    val setupCommand =
+        directionOutputSetup + pinSelectorBytes +
+                disablePullResistor + pinSelectorBytes
+    return setupCommand
+}
+
+private fun digitalOutputSetupCommands(pinSelectorBytes: List<Byte>): List<Byte> {
+    val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_OUTPUT)
+    val setupCommand = directionOutputSetup + pinSelectorBytes
+    return setupCommand
+}
+
+private fun inputPullDownSetupCommands(pinSelectorBytes: List<Byte>): List<Byte> {
+    val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
+    val enablePullResistor = listOf(GPIO_BASE, GPIO_PULL_RESISTOR_ENABLED)
+    val bulkClear = listOf(GPIO_BASE, GPIO_BULK_CLEAR)
+
+    val setupCommand =
+        directionOutputSetup + pinSelectorBytes +
+                enablePullResistor + pinSelectorBytes +
+                bulkClear + pinSelectorBytes
+    return setupCommand
+}
+
+private fun inputPullUpSetupCommands(pinSelectorBytes: List<Byte>): List<Byte> {
+    val directionOutputSetup = listOf(GPIO_BASE, GPIO_DIRECTION_INPUT)
+    val enablePullResistor = listOf(GPIO_BASE, GPIO_PULL_RESISTOR_ENABLED)
+    val bulkSet = listOf(GPIO_BASE, GPIO_BULK_SET)
+
+    val setupCommand =
+        directionOutputSetup + pinSelectorBytes +
+                enablePullResistor + pinSelectorBytes +
+                bulkSet + pinSelectorBytes
+    return setupCommand
+}
+
+private val readDigitalInputCommand = listOf(GPIO_BASE, GPIO_BULK)
+
+private val signalPinSelectors = arrayOf<List<Byte>>(
     listOf(0x00, 0x00, 0x00, 0x04),
     listOf(0x00, 0x00, 0x00, 0x08),
     listOf(0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00),

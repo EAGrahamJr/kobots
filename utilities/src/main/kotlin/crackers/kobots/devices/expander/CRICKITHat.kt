@@ -31,12 +31,6 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
         pwmOutputPins = PWM_PINS
     }
 
-    enum class Types(internal val offset: Int) {
-        SIGNAL(0), TOUCH(10), SERVO(20), MOTOR(30), HI_CURRENT(40), NEOPIXEL(50), SPEAKER(60);
-
-        fun deviceNumber(device: Int) = offset + device
-    }
-
     override fun close() {
         try {
             seeSaw.close()

@@ -24,7 +24,6 @@ import crackers.kobots.devices.expander.CRICKITHat.Companion.ANALOG_MAX
 import crackers.kobots.devices.expander.CRICKITHat.Companion.DIGITAL_PINS
 import crackers.kobots.devices.expander.CRICKITHat.Companion.SERVOS
 import crackers.kobots.devices.expander.CRICKITHat.Companion.TOUCH_PAD_PINS
-import crackers.kobots.devices.expander.CRICKITHat.Types
 
 /**
  * https://learn.adafruit.com/adafruit-crickit-hat-for-raspberry-pi-linux-computers?view=all
@@ -41,6 +40,13 @@ class CRICKITHatDeviceFactory(private val theHat: CRICKITHat) :
     constructor(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = true) :
             this(CRICKITHat(i2CDevice, initReset))
 
+    enum class Types(internal val offset: Int) {
+        SIGNAL(0), TOUCH(10), SERVO(20), MOTOR(30), HI_CURRENT(40), NEOPIXEL(50), SPEAKER(60);
+
+        fun deviceNumber(device: Int) = offset + device
+        fun indexOf(deviceId: Int) = deviceId - offset
+    }
+
     /**
      * Create the `diozero` "board info" for this expander.
      *
@@ -53,7 +59,7 @@ class CRICKITHatDeviceFactory(private val theHat: CRICKITHat) :
     private val boardInfo: BoardPinInfo = BoardPinInfo().apply {
         val gpioPinModes = setOf(DeviceMode.DIGITAL_INPUT, DeviceMode.DIGITAL_OUTPUT, DeviceMode.ANALOG_INPUT)
         DIGITAL_PINS.forEachIndexed { index, pin ->
-            val info = crickitPinInfo(Types.SIGNAL, index + 1, pin, gpioPinModes)
+            val info = crickitPinInfo(Types.SIGNAL, index + 1, pin, gpioPinModes, ANALOG_MAX)
             addAdcPinInfo(info)
             addGpioPinInfo(info)
         }
@@ -79,7 +85,6 @@ class CRICKITHatDeviceFactory(private val theHat: CRICKITHat) :
 
     override fun getName() = NAME
 
-
     private fun crickitPinInfo(
         type: Types,
         deviceId: Int,
@@ -90,36 +95,36 @@ class CRICKITHatDeviceFactory(private val theHat: CRICKITHat) :
 
     override fun getBoardPinInfo() = boardInfo
 
-    // diozero implementations ----------------------------------------------------------------------------------------
     override fun createDigitalInputDevice(
         key: String,
         pinInfo: PinInfo,
         pud: GpioPullUpDown,
         trigger: GpioEventTrigger
-    ): GpioDigitalInputDeviceInterface =
+    ): GpioDigitalInputDeviceInterface = pinInfo.deviceNumber.let { deviceId ->
         if (pinInfo.keyPrefix == Types.SIGNAL.name) {
-            val signal = CRICKITSignal(theHat.seeSaw, pinInfo.physicalPin).apply {
+            val signal = theHat.signal(Types.SIGNAL.indexOf(deviceId)).apply {
                 mode = when (pud) {
                     GpioPullUpDown.NONE -> SignalMode.INPUT
                     GpioPullUpDown.PULL_UP -> SignalMode.INPUT_PULLUP
                     GpioPullUpDown.PULL_DOWN -> SignalMode.INPUT_PULLDOWN
                 }
             }
-            SignalDigitalDevice(key, this, pinInfo.deviceNumber, signal)
+            SignalDigitalDevice(key, this, deviceId, signal)
         } else {
-            val sensor = CRICKITTouch(theHat.seeSaw, pinInfo.deviceNumber - Types.TOUCH.offset)
-            DigitalTouch(key, this, pinInfo.deviceNumber, sensor)
+            val sensor = theHat.touch(Types.TOUCH.indexOf(deviceId))
+            DigitalTouch(key, this, deviceId, sensor)
         }
+    }
 
     override fun createDigitalOutputDevice(
         key: String,
         pinInfo: PinInfo,
         initialValue: Boolean
-    ): GpioDigitalOutputDeviceInterface {
-        val signal = CRICKITSignal(theHat.seeSaw, pinInfo.physicalPin).apply {
+    ): GpioDigitalOutputDeviceInterface = pinInfo.deviceNumber.let { deviceId ->
+        val signal = theHat.signal(Types.SIGNAL.indexOf(pinInfo.deviceNumber)).apply {
             mode = SignalMode.OUTPUT
         }
-        return SignalDigitalDevice(key, this, pinInfo.deviceNumber, signal)
+        SignalDigitalDevice(key, this, pinInfo.deviceNumber, signal)
     }
 
     override fun createDigitalInputOutputDevice(
@@ -131,15 +136,15 @@ class CRICKITHatDeviceFactory(private val theHat: CRICKITHat) :
     }
 
     override fun createAnalogInputDevice(key: String, pinInfo: PinInfo): AnalogInputDeviceInterface =
-        pinInfo.deviceNumber.let { index ->
+        pinInfo.deviceNumber.let { deviceId ->
             if (pinInfo.keyPrefix == Types.SIGNAL.name) {
-                val signal = CRICKITSignal(theHat.seeSaw, pinInfo.physicalPin).apply {
+                val signal = theHat.signal(Types.SIGNAL.indexOf(deviceId)).apply {
                     mode = SignalMode.INPUT
                 }
-                SignalAnalogInputDevice(key, this, pinInfo.deviceNumber, signal)
+                SignalAnalogInputDevice(key, this, deviceId, signal)
             } else {
-                val sensor = theHat.touch(pinInfo.deviceNumber - Types.TOUCH.offset)
-                AnalogTouch(key, this, pinInfo.deviceNumber, sensor)
+                val sensor = theHat.touch(Types.TOUCH.indexOf(deviceId))
+                AnalogTouch(key, this, deviceId, sensor)
             }
         }
 
@@ -157,8 +162,6 @@ class CRICKITHatDeviceFactory(private val theHat: CRICKITHat) :
         maxPulseWidthUs: Int,
         initialPulseWidthUs: Int
     ): InternalServoDeviceInterface = pinInfo.physicalPin.let { seeSawPin ->
-//        if (pinInfo.keyPrefix != Types.SERVO.name)
-
         InternalServo(
             key,
             pinInfo.deviceNumber,
