@@ -17,6 +17,7 @@
 package crackers.kobots.devices.expander
 
 import com.diozero.api.*
+import com.diozero.internal.PwmServoDevice
 import com.diozero.internal.spi.*
 import com.diozero.sbc.BoardPinInfo
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode
@@ -30,7 +31,7 @@ import crackers.kobots.devices.expander.CRICKITHat.Companion.TOUCH_PAD_PINS
  */
 private const val NAME = "CRICKIT"
 
-class CRICKITHatDeviceFactory(private val theHat: CRICKITHat) :
+class CRICKITHatDeviceFactory(private val theHat: CRICKITHat = CRICKITHat()) :
     AbstractDeviceFactory(NAME),
     GpioDeviceFactoryInterface,
     AnalogInputDeviceFactoryInterface,
@@ -41,7 +42,7 @@ class CRICKITHatDeviceFactory(private val theHat: CRICKITHat) :
             this(CRICKITHat(i2CDevice, initReset))
 
     enum class Types(internal val offset: Int) {
-        SIGNAL(0), TOUCH(10), SERVO(20), MOTOR(30), HI_CURRENT(40), NEOPIXEL(50), SPEAKER(60);
+        SIGNAL(100), TOUCH(110), SERVO(120), MOTOR(30), HI_CURRENT(40), NEOPIXEL(50), SPEAKER(60);
 
         fun deviceNumber(device: Int) = offset + device
         fun indexOf(deviceId: Int) = deviceId - offset
@@ -78,6 +79,37 @@ class CRICKITHatDeviceFactory(private val theHat: CRICKITHat) :
         }
     }
 
+    /**
+     * Convenience function to get a digital input on the Signal block [pin] (1-8), with optional [pullDown]
+     */
+    fun signalDigitalIn(pin: Int, pullDown: Boolean = false) =
+        DigitalInputDevice(
+            this,
+            Types.SIGNAL.deviceNumber(pin),
+            if (pullDown) GpioPullUpDown.PULL_DOWN else GpioPullUpDown.PULL_UP, GpioEventTrigger.NONE
+        )
+
+    /**
+     * Convenience function to get a digital output on the Signal block [pin] (1-8)
+     */
+    fun signalDigitalOut(pin: Int) = DigitalOutputDevice(this, Types.SIGNAL.deviceNumber(pin), true, false)
+
+    /**
+     * Convenience function to get an analog input on the  Signal block [pin] (1-8)
+     */
+    fun signalAnalogIn(pin: Int) = AnalogInputDevice(this, Types.SIGNAL.deviceNumber(pin))
+
+    /**
+     * Convenience function to get a servo device on the Servo block [pins] (1-4)
+     */
+    fun servo(pin: Int, servoTrim: ServoTrim = ServoTrim.DEFAULT) =
+        ServoDevice.Builder.builder(Types.SERVO.deviceNumber(pin))
+            .setDeviceFactory(this)
+            .setTrim(servoTrim)
+            .build()
+
+    //-----------------------------------------------------------------------------------------------------------------
+    // diozero device and factory stuff
 
     override fun close() {
         theHat.close()
@@ -162,16 +194,14 @@ class CRICKITHatDeviceFactory(private val theHat: CRICKITHat) :
         maxPulseWidthUs: Int,
         initialPulseWidthUs: Int
     ): InternalServoDeviceInterface = pinInfo.physicalPin.let { seeSawPin ->
-        InternalServo(
+        val pwm = CRICKITnternalPwm(
             key,
             pinInfo.deviceNumber,
             theHat.seeSaw,
             seeSawPin,
-            frequencyHz,
-            minPulseWidthUs,
-            maxPulseWidthUs,
-            initialPulseWidthUs
+            frequencyHz
         )
+        PwmServoDevice(key, this, pwm, minPulseWidthUs, maxPulseWidthUs, initialPulseWidthUs)
     }
 
     override fun createAnalogOutputDevice(

@@ -16,7 +16,7 @@
 
 package crackers.kobots.devices.expander
 
-import com.diozero.api.*
+import com.diozero.api.InvalidModeException
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.ADC_BASE
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.ADC_CHANNEL_OFFSET
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.GPIO_BASE
@@ -165,10 +165,7 @@ class CrickitHatSignalsTest : FunSpec(
             context("Signal $signal diozero:") {
                 val factory = CRICKITHatDeviceFactory(testHat)
                 test("DigitalInput") {
-                    DigitalInputDevice(
-                        factory, CRICKITHatDeviceFactory.Types.SIGNAL.deviceNumber(signal),
-                        GpioPullUpDown.PULL_DOWN, GpioEventTrigger.NONE
-                    ).use {
+                    factory.signalDigitalIn(signal, true).use {
                         mockRequests shouldContainExactly inputPullDownSetupCommands(pinSelectorBytes)
                         mockRequests.clear()
 
@@ -179,12 +176,7 @@ class CrickitHatSignalsTest : FunSpec(
                     }
                 }
                 test("DigitalOutput") {
-                    DigitalOutputDevice(
-                        factory,
-                        CRICKITHatDeviceFactory.Types.SIGNAL.deviceNumber(signal),
-                        true,
-                        false
-                    ).use {
+                    factory.signalDigitalOut(signal).use {
                         mockRequests shouldContainExactly digitalOutputSetupCommands(pinSelectorBytes)
                         mockRequests.clear()
 
@@ -194,7 +186,7 @@ class CrickitHatSignalsTest : FunSpec(
                     }
                 }
                 test("AnalogInput") {
-                    AnalogInputDevice(factory, CRICKITHatDeviceFactory.Types.SIGNAL.deviceNumber(signal)).use {
+                    factory.signalAnalogIn(signal).use {
                         mockRequests shouldContainExactly analogInputSetupCommands(pinSelectorBytes)
                         mockRequests.clear()
 

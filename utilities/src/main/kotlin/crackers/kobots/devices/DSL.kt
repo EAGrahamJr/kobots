@@ -45,11 +45,11 @@ infix fun ServoDevice.set(input: Float) {
 }
 
 /**
- * Sets the _angle_ for the servo. Note that this **must** be in the
+ * Sets the [angle] for the servo. Note that this **must** be in the
  * range the servo supports.
  */
-infix fun ServoDevice.at(input: Float) {
-    angle = input
+infix fun ServoDevice.at(angle: Float) {
+    this.angle = angle
 }
 
 /**

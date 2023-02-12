@@ -17,7 +17,6 @@
 package crackers.kobots.devices.expander
 
 import com.diozero.api.I2CDevice
-import com.diozero.api.ServoTrim
 import crackers.kobots.devices.expander.CRICKITHat.Companion.DEVICE_ADDRESS
 
 /**
@@ -41,36 +40,12 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
     /**
      * Get a device for the indicated touchpad (1-4)
      */
-    fun touch(index: Int) = CRICKITTouch(seeSaw, index)
+    internal fun touch(index: Int) = CRICKITTouch(seeSaw, index)
 
     /**
      * Get a device for the indicated signal (1-8)
      */
-    fun signal(index: Int) = CRICKITSignal(seeSaw, DIGITAL_PINS[index - 1])
-
-    /**
-     * Attach a servo to a PWM pin. Defaults to 50Hz with min/max pulse of 600-2400 microseconds.
-     */
-    fun servo(
-        index: Int,
-        frequencyInHz: Int = 50,
-        minimumPulseMicroSeconds: Int = 600,
-        maximumPulseMicroSeconds: Int = 2400
-    ) =
-        CRICKITServo(
-            index,
-            seeSaw,
-            SERVOS[index - 1],
-            frequencyInHz,
-            minimumPulseMicroSeconds,
-            maximumPulseMicroSeconds
-        )
-
-    /**
-     * Attach a servo to a PWM pin. Defaults to 50Hz with min/max pulse of 600-2400 microseconds.
-     */
-    fun servo(index: Int, frequencyInHz: Int = 50, trim: ServoTrim = ServoTrim.DEFAULT) =
-        servo(index, frequencyInHz, trim.minPulseWidthUs, trim.maxPulseWidthUs)
+    internal fun signal(index: Int) = DIGITAL_PINS[index - 1].let { pin -> CRICKITSignal(seeSaw, pin) }
 
     companion object {
         const val DEVICE_ADDRESS = 0x49

@@ -16,8 +16,8 @@
 
 package crackers.kobots.devices.expander
 
-import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim
+import crackers.kobots.devices.at
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.TIMER_BASE
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.TIMER_FREQ
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.TIMER_PWM
@@ -38,46 +38,22 @@ class CrickitHatServoTest : FunSpec(
             testHat.seeSaw.pwmOutputPins = PWM_PINS
         }
         (1..4).forEach { servoNumber ->
-            val servoPin = SERVOS[servoNumber - 1]
-            val servoIndex = PWM_PINS.indexOf(servoPin).toByte()    // because default Pi for testing
-
             context("Servo $servoNumber:") {
-                test("Set frequency") {
-                    // default frequency is set on the constructor above
-                    testHat.servo(servoNumber)
-                    mockRequests shouldStartWith listOf(TIMER_BASE, TIMER_FREQ, servoIndex, 0x00, 0x32)
-                }
-            }
-            context("CRICKIT servo $servoNumber:") {
-                val device = testHat.servo(servoNumber, trim = ServoTrim.TOWERPRO_SG90)
+                val servoPin = SERVOS[servoNumber - 1]
+                val servoIndex = PWM_PINS.indexOf(servoPin).toByte()    // because default Pi for testing
+                val factory = CRICKITHatDeviceFactory(testHat)
 
-                test("3 angles") {
-                    device.run {
-                        angle = 90
-                        angle = 180
-                        angle = 0
+                test("Via builder") {
+                    factory.servo(servoNumber, ServoTrim.TOWERPRO_SG90).apply {
+                        // test setup of default frequency of 50Hz
+                        mockRequests shouldStartWith listOf(TIMER_BASE, TIMER_FREQ, servoIndex, 0x00, 0x32)
+
+                        // clear the request buffer and move it
+                        mockRequests.clear()
+                        angle = 90f
+                        angle = 180f
+                        this at 0f      // dsl
                     }
-                    // N.B. make sure it's byte to byte, otherwise it tries to compare ints (and one is negative)
-                    mockRequests shouldContainExactly
-                            listOf(TIMER_BASE, TIMER_PWM, servoIndex, 0x12, 0x8F.toByte()) +
-                            listOf(TIMER_BASE, TIMER_PWM, servoIndex, 0x1E, 0xB8.toByte()) +
-                            listOf(TIMER_BASE, TIMER_PWM, servoIndex, 0x06, 0x66)
-                }
-            }
-            context("diozero for $servoNumber:") {
-                val id = CRICKITHatDeviceFactory.Types.SERVO.deviceNumber(servoNumber)
-                val crickitHatDeviceFactory = CRICKITHatDeviceFactory(testHat)
-
-                test("Get and use") {
-                    ServoDevice.Builder.builder(id)
-                        .setDeviceFactory(crickitHatDeviceFactory)
-                        .setTrim(ServoTrim.TOWERPRO_SG90)
-                        .build().apply {
-                            mockRequests.clear()
-                            angle = 90f
-                            angle = 180f
-                            angle = 0f
-                        }
                     // N.B. make sure it's byte to byte, otherwise it tries to compare ints (and one is negative)
                     mockRequests shouldContainExactly
                             listOf(TIMER_BASE, TIMER_PWM, servoIndex, 0x12, 0x8F.toByte()) +
