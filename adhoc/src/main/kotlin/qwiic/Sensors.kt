@@ -23,6 +23,8 @@ import java.lang.Thread.sleep
 import kotlin.system.exitProcess
 
 fun main() {
+    System.setProperty("diozero.remote.hostname", "useless.local")
+
     qwiicKill.whenPressed {
         println("Holy Abort Button, Batman!")
         exitProcess(2)

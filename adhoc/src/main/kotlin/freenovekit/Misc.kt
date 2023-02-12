@@ -4,14 +4,15 @@ import base.minutes
 import com.diozero.api.DigitalInputDevice
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.GpioPullUpDown
+import com.diozero.api.PwmOutputDevice
 import com.diozero.devices.Buzzer
 import com.diozero.devices.HCSR04
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
+import com.diozero.devices.motor.TB6612FNGMotor
 // import com.diozero.devices.sandpit.motor.BYJ48Stepper
 // import com.diozero.devices.sandpit.motor.UnipolarStepperController.GpioFiveWireUnipolarController
 import crackers.kobots.devices.DebouncedButton
-import crackers.kobots.devices.GenericMotor
 import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
 import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
 import crackers.kobots.devices.expander.ADS7830
@@ -30,6 +31,18 @@ fun `lesson 6`() {
         beep(.1f, .2f, 5, false)
     }
 }
+
+/**
+ * Opinionated wrapper around TB6612FNGMotor (sets freq. to 100)
+ *
+ * Based on a similar driver: [L293D](https://www.ti.com/lit/gpn/l293d)
+ **/
+class GenericMotor(forwardPin: Int, backwardPin: Int, enablePin: Int, frequency: Int = 100) :
+    TB6612FNGMotor(
+        DigitalOutputDevice(forwardPin),
+        DigitalOutputDevice(backwardPin),
+        PwmOutputDevice(enablePin).apply { pwmFrequency = frequency }
+    )
 
 /**
  * Motor rotor
