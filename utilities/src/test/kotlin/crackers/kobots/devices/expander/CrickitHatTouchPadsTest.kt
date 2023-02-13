@@ -34,6 +34,7 @@ import crackers.kobots.devices.MockI2CDevice.responses as mockResponses
 class CrickitHatTouchPadsTest : FunSpec(
     {
         clearBeforeTest()
+        val factory = CRICKITHatDeviceFactory(testHat)
 
         // present the same data for each test
         beforeTest {
@@ -52,7 +53,7 @@ class CrickitHatTouchPadsTest : FunSpec(
                         mockResponses.push(byteArrayOf(0x01, 0x2C))
                     }
                 }
-                (testHat.touch(touchPad)).apply {
+                (factory.touch(touchPad)).apply {
                     isOn shouldBe false
                     isOn shouldBe true
                     value shouldBe 1023

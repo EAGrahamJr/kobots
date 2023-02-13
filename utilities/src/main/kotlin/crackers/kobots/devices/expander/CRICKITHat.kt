@@ -20,7 +20,7 @@ import com.diozero.api.I2CDevice
 import crackers.kobots.devices.expander.CRICKITHat.Companion.DEVICE_ADDRESS
 
 /**
- * A CRICKIT Hat.
+ * A CRICKIT Hat pin definitions. Includes the default setup for the SeeSaw controller.
  */
 internal val defaultI2CDevice by lazy { I2CDevice(1, DEVICE_ADDRESS) }
 
@@ -37,15 +37,6 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
         }
     }
 
-    /**
-     * Get a device for the indicated touchpad (1-4)
-     */
-    internal fun touch(index: Int) = CRICKITTouch(seeSaw, index)
-
-    /**
-     * Get a device for the indicated signal (1-8)
-     */
-    internal fun signal(index: Int) = DIGITAL_PINS[index - 1].let { pin -> CRICKITSignal(seeSaw, pin) }
 
     companion object {
         const val DEVICE_ADDRESS = 0x49
@@ -94,7 +85,7 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
         /**
          * Logical order - **NOT** pin order (see [PWM_PINS]
          */
-        val MOTORS = arrayOf(MOTOR1A to MOTOR1B, MOTOR2A to MOTOR2B)
+        val MOTORS = intArrayOf(MOTOR1A, MOTOR1B, MOTOR2A, MOTOR2B)
 
         const val DRIVE4 = 42
         const val DRIVE3 = 43

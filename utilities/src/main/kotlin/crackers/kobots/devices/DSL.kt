@@ -20,6 +20,7 @@ import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.PwmOutputDevice
 import com.diozero.api.ServoDevice
 import com.diozero.devices.LcdInterface
+import com.diozero.devices.motor.MotorInterface
 
 /**
  * Adds DSL-like capabilities to `diozero`
@@ -91,4 +92,12 @@ operator fun LcdInterface<*>.plusAssign(char: Char) {
  */
 operator fun LcdInterface<*>.plusAssign(special: Int) {
     addText(special)
+}
+
+/**
+ * Run a motor at this relative speed (-1 to 1).
+ */
+infix fun MotorInterface.at(speed: Float) {
+    if (speed < 0) backward(Math.abs(speed))
+    else forward(speed)
 }

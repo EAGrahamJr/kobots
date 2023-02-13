@@ -22,6 +22,7 @@ import com.diozero.api.DigitalInputEvent
 import com.diozero.api.InvalidModeException
 import com.diozero.internal.spi.*
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.truncate
 
 
 /**
@@ -191,7 +192,7 @@ internal class CRICKITnternalPwm(
 
     override fun setValue(fraction: Float) {
         val dutyCycle = fraction * 0xFFFF
-        seeSaw.analogWrite(seeSawPin.toByte(), Math.round(dutyCycle).toShort(), true)
+        seeSaw.analogWrite(seeSawPin.toByte(), truncate(dutyCycle).toInt().toShort(), true)
     }
 
     override fun getValue() = currentValue

@@ -42,6 +42,7 @@ import crackers.kobots.devices.MockI2CDevice.responses as mockResponses
 class CrickitHatSignalsTest : FunSpec(
     {
         clearBeforeTest()
+        val factory = CRICKITHatDeviceFactory(testHat)
 
         (1..8).forEach { signal ->
             val pinSelectorBytes = signalPinSelectors[signal - 1]
@@ -51,30 +52,30 @@ class CrickitHatSignalsTest : FunSpec(
                 test("Output") {
                     val setupCommand = digitalOutputSetupCommands(pinSelectorBytes)
 
-                    testHat.signal(signal).mode = SignalMode.OUTPUT
+                    factory.signal(signal).mode = SignalMode.OUTPUT
                     mockRequests shouldContainExactly setupCommand
                 }
                 test("Input") {
                     val setupCommand = analogInputSetupCommands(pinSelectorBytes)
 
-                    testHat.signal(signal).mode = SignalMode.INPUT
+                    factory.signal(signal).mode = SignalMode.INPUT
                     mockRequests shouldContainExactly setupCommand
                 }
                 test("Input with pull-up") {
-                    testHat.signal(signal).mode = SignalMode.INPUT_PULLUP
+                    factory.signal(signal).mode = SignalMode.INPUT_PULLUP
                     mockRequests shouldContainExactly inputPullUpSetupCommands(pinSelectorBytes)
                 }
                 test("Input with pull-down") {
                     val setupCommand = inputPullDownSetupCommands(pinSelectorBytes)
 
-                    testHat.signal(signal).mode = SignalMode.INPUT_PULLDOWN
+                    factory.signal(signal).mode = SignalMode.INPUT_PULLDOWN
                     mockRequests shouldContainExactly setupCommand
                 }
             }
 
             context("Signal $signal digital output:") {
                 // setup output
-                val output = testHat.signal(signal).also {
+                val output = factory.signal(signal).also {
                     it.mode = SignalMode.OUTPUT
                     mockRequests.clear()
                 }
@@ -93,7 +94,7 @@ class CrickitHatSignalsTest : FunSpec(
 
             context("Signal $signal digital input:") {
                 // setup input
-                val input = testHat.signal(signal).apply {
+                val input = factory.signal(signal).apply {
                     mode = SignalMode.INPUT_PULLDOWN
                     mockRequests.clear()
                 }
@@ -119,7 +120,7 @@ class CrickitHatSignalsTest : FunSpec(
                 // TODO adafruit seems to not require setting a mode to read tha analog
                 test("Read (SAM D09)") {
                     // setup input - the test hat is already initialized to mimic the Pi
-                    val input = testHat.signal(signal).apply {
+                    val input = factory.signal(signal).apply {
                         mode = SignalMode.INPUT
                         mockRequests.clear()
                     }
@@ -140,7 +141,7 @@ class CrickitHatSignalsTest : FunSpec(
                 }
                 test("Read (ATTINY 8X7)") {
                     // setup with the OTHER hardware
-                    val input = testHatWithOtherBackpack.signal(signal).apply {
+                    val input = CRICKITHatDeviceFactory(testHatWithOtherBackpack).signal(signal).apply {
                         mode = SignalMode.INPUT
                         mockRequests.clear()
                     }
