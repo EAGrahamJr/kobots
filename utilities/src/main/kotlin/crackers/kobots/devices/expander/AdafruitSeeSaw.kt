@@ -321,6 +321,7 @@ class AdafruitSeeSaw(
     /**
      * Read an arbitrary I2C register range from the device
      */
+    @Synchronized
     private fun read(
         registerBase: Byte,
         register: Byte,
@@ -341,6 +342,7 @@ class AdafruitSeeSaw(
     /**
      * Write an arbitrary I2C register data to the device
      */
+    @Synchronized
     private fun write(registerBase: Byte, register: Byte, buffer: ByteArray = ByteArray(0)): Boolean {
         val output = ByteArray(2 + buffer.size)
 

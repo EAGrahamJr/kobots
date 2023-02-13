@@ -32,7 +32,7 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * CB1 configuration with multiple threads reading the sensors
  */
-val running = AtomicBoolean(true)
+private val running = AtomicBoolean(true)
 val threadPool = Executors.newScheduledThreadPool(5)
 
 fun main() {

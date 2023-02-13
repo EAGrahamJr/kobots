@@ -23,9 +23,9 @@ import java.lang.Thread.sleep
 
 fun FAIL(text: String) = println("$text not supported by hardware")
 
-val chars: List<Byte> = (0..9).map { ('0' + it).code.toByte() } +
-        ('A'..'F').map { it.code.toByte() } +
-        (1..4).map { ('0' + it).code.toByte() }
+val a2f = ('A'..'F').map { it.code.toByte() }
+val otherDigits = (1..4).map { ('0' + it).code.toByte() }
+val chars: List<Byte> = (0..9).map { ('0' + it).code.toByte() } + a2f + otherDigits
 val hello = "Hello"
 
 val OFF = false
