@@ -17,11 +17,8 @@
 package crackers.kobots.devices
 
 import com.diozero.api.DebouncedDigitalInputDevice
-import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.GpioPullUpDown
-import com.diozero.api.PwmOutputDevice
 import com.diozero.devices.GpioExpander
-import com.diozero.devices.motor.TB6612FNGMotor
 import com.diozero.internal.spi.GpioDeviceFactoryInterface
 import crackers.kobots.utilities.nativeDeviceFactory
 import java.time.Duration
@@ -61,17 +58,6 @@ class DebouncedButton @JvmOverloads constructor(
     }
 }
 
-/**
- * Opinionated wrapper around TB6612FNGMotor (sets freq. to 100)
- *
- * Based on a similar driver: [L293D](https://www.ti.com/lit/gpn/l293d)
- **/
-class GenericMotor(forwardPin: Int, backwardPin: Int, enablePin: Int, frequency: Int = 100) :
-    TB6612FNGMotor(
-        DigitalOutputDevice(forwardPin),
-        DigitalOutputDevice(backwardPin),
-        PwmOutputDevice(enablePin).apply { pwmFrequency = frequency }
-    )
 
 const val KELVIN = 273.15f
 

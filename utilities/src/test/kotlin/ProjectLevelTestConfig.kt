@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2022 by E. A. Graham, Jr.
+ * Copyright 2022-2023 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,15 @@
  * permissions and limitations under the License.
  */
 
-package devices
+import com.diozero.sbc.DeviceFactoryHelper.DEVICE_FACTORY_PROP
+import io.kotest.core.config.AbstractProjectConfig
 
-import crackers.kobots.devices.ADS7830
-import io.kotest.core.spec.style.StringSpec
-import io.kotest.matchers.shouldBe
-
-internal class ADS7830Test : StringSpec(
-    {
-        listOf(0x84, 0xc4, 0x94, 0xd4, 0xa4, 0xe4, 0xb4, 0xf4).forEachIndexed { index, value ->
-            val channel = ADS7830.channelToRegister(index)
-            "basic channel select for $index" {
-                value shouldBe channel
-            }
-        }
+/**
+ * All tests will use this
+ */
+class ProjectLevelTestConfig : AbstractProjectConfig() {
+    init {
+        displayFullTestPath = true
+        System.setProperty(DEVICE_FACTORY_PROP, "com.diozero.internal.provider.mock.MockDeviceFactory")
     }
-)
+}

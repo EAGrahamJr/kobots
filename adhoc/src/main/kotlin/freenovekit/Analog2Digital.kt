@@ -1,15 +1,16 @@
 package freenovekit
 
 import com.diozero.api.I2CDevice
-import crackers.kobots.devices.ADS7830
 import crackers.kobots.devices.AnodeRgbPwmLed
 import crackers.kobots.devices.asDegreesF
+import crackers.kobots.devices.expander.ADS7830
+import crackers.kobots.devices.getTemperature
 import crackers.kobots.utilities.elapsed
 import java.lang.Thread.sleep
 import java.time.Instant
 
 fun `lesson 7`() {
-    ADS7830.apply {
+    ADS7830().apply {
         val start = Instant.now()
         while (start.elapsed().seconds < 300) {
             val data = getValue(0)
@@ -21,7 +22,7 @@ fun `lesson 7`() {
 
 fun `lesson 9 but using my stuff`() {
     val rgb = AnodeRgbPwmLed(17, 27, 22)
-    ADS7830.apply {
+    ADS7830().apply {
         val start = Instant.now()
         while (start.elapsed().seconds < 300) {
             val red = getValue(0)
@@ -35,17 +36,17 @@ fun `lesson 9 but using my stuff`() {
 }
 
 fun `lesson 11`() {
-    ADS7830.apply {
+    ADS7830().apply {
         val start = Instant.now()
         while (start.elapsed().seconds < 300) {
-            println(getTemperature(0).asDegreesF())
+            println(getTemperature(getValue(0).toDouble()).asDegreesF())
         }
     }
 }
 
 fun `probe i2c`() {
-    ADS7830.defaultDevice.apply {
-        println("is it there? ${probe()}")
+    ADS7830().apply {
+        println("is it there? ${i2CDevice.probe()}")
     }
     println("Other one there? ${I2CDevice(1, 0x48).probe()}")
     sleep(100)

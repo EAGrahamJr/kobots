@@ -3,5 +3,5 @@ plugins {
 }
 
 dependencies {
-    testImplementation("com.diozero:diozero-provider-remote:1.3.5")
+    testImplementation("com.diozero:diozero-provider-mock:$DIOZERO_VER")
 }

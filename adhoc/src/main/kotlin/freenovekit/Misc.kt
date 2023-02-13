@@ -4,19 +4,18 @@ import base.minutes
 import com.diozero.api.DigitalInputDevice
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.GpioPullUpDown
-import com.diozero.api.ServoDevice
-import com.diozero.api.ServoTrim.TOWERPRO_SG90
+import com.diozero.api.PwmOutputDevice
 import com.diozero.devices.Buzzer
 import com.diozero.devices.HCSR04
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
-import com.diozero.devices.sandpit.motor.BYJ48Stepper
-import com.diozero.devices.sandpit.motor.UnipolarStepperController.GpioFiveWireUnipolarController
-import crackers.kobots.devices.ADS7830
+import com.diozero.devices.motor.TB6612FNGMotor
+// import com.diozero.devices.sandpit.motor.BYJ48Stepper
+// import com.diozero.devices.sandpit.motor.UnipolarStepperController.GpioFiveWireUnipolarController
 import crackers.kobots.devices.DebouncedButton
-import crackers.kobots.devices.GenericMotor
 import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
 import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
+import crackers.kobots.devices.expander.ADS7830
 import java.lang.Math.abs
 import java.lang.Thread.sleep
 import java.nio.file.Files
@@ -32,6 +31,18 @@ fun `lesson 6`() {
         beep(.1f, .2f, 5, false)
     }
 }
+
+/**
+ * Opinionated wrapper around TB6612FNGMotor (sets freq. to 100)
+ *
+ * Based on a similar driver: [L293D](https://www.ti.com/lit/gpn/l293d)
+ **/
+class GenericMotor(forwardPin: Int, backwardPin: Int, enablePin: Int, frequency: Int = 100) :
+    TB6612FNGMotor(
+        DigitalOutputDevice(forwardPin),
+        DigitalOutputDevice(backwardPin),
+        PwmOutputDevice(enablePin).apply { pwmFrequency = frequency }
+    )
 
 /**
  * Motor rotor
@@ -52,9 +63,9 @@ fun `lesson 13`() {
     // exactly same as above
     val motor = GenericMotor(27, 17, 22)
 
-    ADS7830.also { adc ->
+    ADS7830().also { adc ->
         5 minutes {
-            adc.getValueSafely(0).ifPresent {
+            adc.getValue(0).let {
                 val data = 0.5f - it
                 println("Data $data - control ${motor.value}")
                 if (abs(data) > 0.05f) motor.value = data * 2f else motor.stop()
@@ -78,6 +89,7 @@ fun `lesson 14`() {
     }
 }
 
+/* my servo changes
 fun `lesson 16`() {
     BYJ48Stepper(GpioFiveWireUnipolarController(intArrayOf(18, 23, 24, 25))).apply {
         5 minutes {
@@ -127,7 +139,7 @@ fun servoFix() {
         }
     }
 }
-
+*/
 fun `lesson 24`() {
     val sounder = HCSR04(23, 24)
     Pi2Line.apply {

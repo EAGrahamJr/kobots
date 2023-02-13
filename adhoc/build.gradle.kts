@@ -4,9 +4,10 @@ plugins {
 
 dependencies {
     // TODO make this configurable somehow
-    implementation("com.diozero:diozero-provider-remote:1.3.5")
+//    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
     // requires root to run, but makes everything much faster
-//    implementation("com.diozero:diozero-provider-pigpio:1.3.5")
+    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4-native-mt")
 }
 
 tasks {
@@ -37,5 +38,6 @@ application {
 //    mainClass.set("dork.CatBonker1Kt")
 //    mainClass.set("freenovekit.SoftPWMJitterTestKt")
 //    mainClass.set("dork.CB1ThreadsKt")
-    mainClass.set("dork.SteppingKt")
+//    mainClass.set("dork.SteppingKt")
+    mainClass.set("kobots.ops.SchwingKt")
 }
