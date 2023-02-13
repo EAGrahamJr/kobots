@@ -47,8 +47,7 @@ class CRICKITMotorDeviceTest : FunSpec(
                 .5f to negPin + fullOff + posPin + halfOn,
                 0f to negPin + fullOff + posPin + fullOff,
                 -.5f to posPin + fullOff + negPin + halfOn,
-                -1f to posPin + fullOff + negPin + fullOn,
-                0f to negPin + fullOff + posPin + fullOff
+                -1f to posPin + fullOff + negPin + fullOn
             )
                 .forEach { p ->
                     test("Run motor $motorId to ${p.first}") {
@@ -59,4 +58,9 @@ class CRICKITMotorDeviceTest : FunSpec(
         }
 
 
-    })
+    }) {
+
+    init {
+        initProperties()
+    }
+}

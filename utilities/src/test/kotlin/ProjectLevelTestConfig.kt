@@ -14,6 +14,7 @@
  * permissions and limitations under the License.
  */
 
+import com.diozero.sbc.DeviceFactoryHelper.DEVICE_FACTORY_PROP
 import io.kotest.core.config.AbstractProjectConfig
 
 /**
@@ -22,5 +23,6 @@ import io.kotest.core.config.AbstractProjectConfig
 class ProjectLevelTestConfig : AbstractProjectConfig() {
     init {
         displayFullTestPath = true
+        System.setProperty(DEVICE_FACTORY_PROP, "com.diozero.internal.provider.mock.MockDeviceFactory")
     }
 }
