@@ -18,6 +18,7 @@ package crackers.kobots.devices.display
 
 import com.diozero.api.DeviceInterface
 import com.diozero.devices.oled.SsdOledCommunicationChannel
+import java.awt.Image
 import java.awt.color.ColorSpace
 import java.awt.image.BufferedImage
 import java.awt.image.ColorConvertOp
@@ -26,28 +27,28 @@ import java.awt.image.DataBufferByte
 /**
  * Abstract B/W display.
  *
- * TODO Both C++ and Python use an in-memory buffer and only write to the display when explicitly told to do so.
+ * TODO Both C++ and Python use an in-memory buffer and only write to the display when that "region" is dirty
  * TODO Because Java has a separate image construct, is this necessary?
  */
 abstract class GrayOled(
-    val delegate: SsdOledCommunicationChannel,
+    private val delegate: SsdOledCommunicationChannel,
     val width: Int,
     val height: Int,
     val displayType: DisplayType,
-    val initializationSequence: IntArray = IntArray(0),
+    initializationSequence: IntArray = IntArray(0),
     reset: Boolean = true
 ) : DeviceInterface {
 
-    enum class DisplayType(val bitsPerPixel: Int) {
-        WHITE(1), BLACK(1), INVERSE(1), FOUR_BITS(4)
+    enum class DisplayType(val pixelsPerByte: Int) {
+        WHITE(1), BLACK(1), INVERSE(1), FOUR_BITS(2)
     }
 
-    private val i2c_dev = delegate is I2cCommunicationChannel
-
-    protected abstract fun dataCommand(): Int
+    protected abstract val dataCommand: Int
+    protected abstract val setRowCommand: Int
+    protected abstract val setColumnCommand: Int
 
     init {
-        if (reset && initializationSequence.isNotEmpty()) oledSendCommandList(initializationSequence)
+        if (reset && initializationSequence.isNotEmpty()) command(initializationSequence)
     }
 
     override fun close() {
@@ -61,57 +62,45 @@ abstract class GrayOled(
     /**
      * Display an image. This is the preferred method?
      */
-    fun display(image: BufferedImage) {
+    fun display(image: BufferedImage): BufferedImage {
+        val imageHt = image.height
+        val imageWd = image.width
+
+        // scale to fit
         val scaledImage =
-            if (image.width == width && image.height == height) image
+            if (imageWd == width && imageHt == height) image
             else {
-                // scale to fit
-                // TODO figure out a "scaling factor"?
-                BufferedImage(width, height, image.type).apply {
+                val scale = Math.min(width.toFloat() / imageWd, height.toFloat() / imageHt)
+                val w = Math.round(scale * imageWd)
+                val h = Math.round(scale * imageHt)
+
+                val scaled = image.getScaledInstance(w, h, Image.SCALE_DEFAULT)
+                val type = if (image.type != 0) image.type else BufferedImage.TYPE_USHORT_GRAY
+                BufferedImage(width, height, type).apply {
                     createGraphics().apply {
-                        drawImage(image, 0, 0, width, height, null)
+                        drawImage(scaled, 0, 0, w, h, null)
                         dispose()
                     }
                 }
             }
 
-        displayImage(
-            // if it already matches, just use it, otherwise convert to the default color space
-            if (image.type.equals(getNativeImageType())) scaledImage
-            else ColorConvertOp(image.colorModel.colorSpace, COLOR_SPACE, null).filter(scaledImage, null)
-        )
+        // if the type already matches, just use it, otherwise convert to the default color space
+        val convertedImage = if (image.type == getNativeImageType()) scaledImage
+        else ColorConvertOp(COLOR_SPACE, null).filter(scaledImage, null)
+
+        // put it in the buffer
+        return convertedImage.also {
+            displayImage(it)
+        }
     }
 
     /**
      * The main methodology for pushing the image to the on-board display memory
      */
+    protected val sendBuffer = mutableListOf<Int>()
     open protected fun displayImage(image: BufferedImage) {
-        // TODO this is supposed to represent the "dirty buffer", initialized here to the display
-        val window_x1 = 0
-        val window_x2 = width - 1
-        val window_y1 = 0
-        val window_y2 = height - 1
-
-        // ushort count = WIDTH * ((HEIGHT + 7) / 8);
-        val rows = height
-        val bytesPerRow = displayType.bitsPerPixel // because uses 4 bits, so two pixels per byte
-
-        val row_start = Math.min(bytesPerRow - 1, (window_x1 / 2))
-        val row_end = Math.max(0, (window_x2 / 2))
-        val first_row = Math.min((rows - 1), window_y1)
-        val last_row = Math.max(0, window_y2)
-
-        // this defines the memory "window" that corresponds to the "dirty buffer" and resets the data RAM to where
-        // we want to start writing
-        val cmd = intArrayOf(
-            SSD1327.SETROW,
-            first_row,
-            last_row,
-            SSD1327.SETCOLUMN,
-            row_start,
-            row_end
-        )
-        oledSendCommandList(cmd)
+        // set RAM for writing
+        home()
 
         // start grabbing pixels
         val rasterized = (image.raster.dataBuffer as DataBufferByte).data
@@ -119,11 +108,11 @@ abstract class GrayOled(
         // TODO the non-gray images will need to force the values to 0 or 1
         when (displayType) {
             DisplayType.WHITE -> {
-                for (offset in 0 until rasterized.size) sendDataBuffer(rasterized[offset].toInt())
+                for (offset in 0 until rasterized.size) sendBuffer += (rasterized[offset].toInt())
             }
 
             DisplayType.BLACK -> {
-                for (offset in 0 until rasterized.size) sendDataBuffer((rasterized[offset].toInt()).inv() and 0x00FF)
+                for (offset in 0 until rasterized.size) sendBuffer += ((rasterized[offset].toInt()).inv() and 0x00FF)
             }
 
             DisplayType.INVERSE -> {
@@ -132,60 +121,69 @@ abstract class GrayOled(
 
             DisplayType.FOUR_BITS -> {
                 for (offset in 0 until rasterized.size step 2) {
-                    val hiPixel = ((rasterized[offset] / 4) shl 4) and 0xF0
-                    val loPixel = (rasterized[offset + 1] / 4) and 0x0F
-                    sendDataBuffer(hiPixel or loPixel)
+                    val hiPixel = rasterized[offset].convert4Bits()
+                    val loPixel = rasterized[offset + 1].convert4Bits()
+
+                    sendBuffer += ((hiPixel shl 4) and 0xF0) or (loPixel and 0x0F)
                 }
             }
         }
-
-
-//        if (i2c_dev) { // I2C
-//            // Set low speed clk
-//            i2c_dev->setSpeed(i2c_postclk);
-//        }
-
-        // reset dirty window
-//        window_x1 = 1024;
-//        window_y1 = 1024;
-//        window_x2 = -1;
-//        window_y2 = -1;
     }
 
-    protected var sendBuffer = mutableListOf<Int>()
-    protected fun sendDataBuffer(value: Int?) {
-        if (value == null) {
-            if (sendBuffer.isNotEmpty()) oledSendData(SSD1327.DATA_MODE, sendBuffer.toIntArray())
-        } else {
-            sendBuffer += value
-            if (sendBuffer.size == 1024) {
-                oledSendData(SSD1327.DATA_MODE, sendBuffer.toIntArray())
-                sendBuffer.clear()
-            }
+    protected fun home() {
+        command(
+            intArrayOf(
+                setRowCommand, 0, height - 1,
+                setColumnCommand, 0, (width / displayType.pixelsPerByte) - 1
+            )
+        )
+    }
+
+    private fun Byte.convert4Bits(): Int = this.toInt().let {
+        if (it == 0 || it == 255) it
+        else Math.round(((it and 0xFF) * 4f) / 255)
+    }
+
+    fun appendBuffer(bytes: List<Int>) {
+        sendBuffer.addAll(bytes)
+    }
+
+    fun show() {
+        sendBuffer.chunked(4096) { it.toIntArray() }.forEach {
+            data(it)
         }
+        sendBuffer.clear()
     }
+
 
     /**
      * Issue single command byte to OLED
      * @param c The single byte command
      */
-    protected fun oledSendCommand(c: Int) = oledSendCommandList(intArrayOf(c))
+    protected fun command(c: Int) = command(intArrayOf(c))
 
     /**
-     * Issue multiple bytes of commands OLED, using I2C or hard/soft SPI as
-     * needed.
+     * Issue multiple bytes of commands, using I2C or hard/soft SPI as needed.
      *  @param values the commands to write
      */
-    protected fun oledSendCommandList(values: IntArray) =
-        if (i2c_dev) writeToI2C(CMD_MODE, values) else TODO("Add SPI support")
+    protected fun command(values: IntArray) = writeBuffer(CMD_MODE, values)
 
-    protected fun oledSendData(dataCommand: Int, dataBuffer: IntArray) =
-        if (i2c_dev) writeToI2C(dataCommand, dataBuffer) else TODO("Add SPI support")
+    /**
+     * Issue multiple bytes of data, using I2C or hard/soft SPI as needed.
+     *  @param values the commands to write
+     */
+    protected fun data(dataBuffer: IntArray) = writeBuffer(dataCommand, dataBuffer)
 
-    private fun writeToI2C(prefix: Int, buffer: IntArray) {
-        val remapped: List<Byte> = mutableListOf(prefix.toByte())
-        buffer.forEach { remapped + it.toByte() }
-        delegate.write(*remapped.toByteArray())
+    /**
+     * I
+     */
+    private fun writeBuffer(prefix: Int, buffer: IntArray) {
+        val size = buffer.size + 1
+        val remapped = ByteArray(size).apply {
+            set(0, prefix.toByte())
+            buffer.forEachIndexed { index, b -> set(index + 1, b.toByte()) }
+        }
+        delegate.write(remapped, 0, size)
     }
 
     companion object {

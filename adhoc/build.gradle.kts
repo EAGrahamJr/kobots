@@ -4,11 +4,14 @@ plugins {
 
 dependencies {
     // TODO make this configurable somehow
-//    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
+    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
     // requires root to run, but makes everything much faster
-    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
+//    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4-native-mt")
 }
+
+//val sshTarget = "marvin.local"
+val sshTarget = "useless.local"
 
 tasks {
     shadowJar {
@@ -22,8 +25,8 @@ tasks {
             exec {
                 commandLine(
                     "sh", "-c", """
-                    scp build/libs/marvin-pi.jar marvin.local:/home/crackers
-                    scp *.sh marvin.local:/home/crackers
+                    scp build/libs/marvin-pi.jar $sshTarget:/home/crackers
+                    scp *.sh $sshTarget:/home/crackers
                     """.trimIndent()
                 )
             }
@@ -39,5 +42,6 @@ application {
 //    mainClass.set("freenovekit.SoftPWMJitterTestKt")
 //    mainClass.set("dork.CB1ThreadsKt")
 //    mainClass.set("dork.SteppingKt")
-    mainClass.set("kobots.ops.SchwingKt")
+//    mainClass.set("kobots.ops.SchwingKt")
+    mainClass.set("qwiic.oled.WithSensorKt")
 }
