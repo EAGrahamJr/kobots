@@ -2,10 +2,15 @@ package freenovekit
 
 import base.minutes
 import com.diozero.api.DigitalOutputDevice
+import com.diozero.devices.GpioExpander
 import com.diozero.devices.OutputShiftRegister
-import crackers.kobots.devices.writeByte
 import java.lang.Thread.sleep
 import java.util.concurrent.atomic.AtomicInteger
+
+/**
+ * Convenience function to write a byte to an expander.
+ */
+fun GpioExpander.writeByte(value: Int) = setValues(0, value.toByte())
 
 /*
  * Lessons for 74HC595

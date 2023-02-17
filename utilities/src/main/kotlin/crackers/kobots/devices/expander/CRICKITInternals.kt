@@ -24,7 +24,6 @@ import com.diozero.internal.spi.*
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.truncate
 
-
 /**
  * "Internal device" of the Crickit for the capacitive touch sensors.
  *
@@ -118,7 +117,8 @@ internal class SignalDigitalDevice(
     private val deviceNumber: Int,
     private val delegate: CRICKITSignal
 ) : AbstractInputDevice<DigitalInputEvent>(key, factory),
-    GpioDigitalOutputDeviceInterface, GpioDigitalInputDeviceInterface {
+    GpioDigitalOutputDeviceInterface,
+    GpioDigitalInputDeviceInterface {
 
     override fun getGpio() = deviceNumber
     override fun getMode() = if (delegate.canWrite.get()) DeviceMode.DIGITAL_OUTPUT else DeviceMode.DIGITAL_INPUT
@@ -156,7 +156,7 @@ internal class CRICKITnternalPwm(
     private val pwmNumber: Int,
     private val seeSaw: AdafruitSeeSaw,
     private val seeSawPin: Int,
-    frequency: Int,
+    frequency: Int
 ) : InternalPwmOutputDeviceInterface {
 
     private var frequencyHz: Int = 50

@@ -50,6 +50,15 @@ object MockI2CDevice {
             )
         } returns Unit
 
+        every {
+            d.writeByteData(any(), any())
+        } answers {
+            it.invocation.args.apply {
+                requests += (get(0).toString().toInt() and 0xFF).toByte()
+                requests += (get(1).toString().toInt() and 0xFF).toByte()
+            }
+        }
+
         // read bytes: this will pop a response from the expected response stack
         val toRead = slot<Int>()
         every {

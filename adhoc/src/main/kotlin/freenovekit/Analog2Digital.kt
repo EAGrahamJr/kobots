@@ -4,7 +4,6 @@ import com.diozero.api.I2CDevice
 import crackers.kobots.devices.AnodeRgbPwmLed
 import crackers.kobots.devices.asDegreesF
 import crackers.kobots.devices.expander.ADS7830
-import crackers.kobots.devices.getTemperature
 import crackers.kobots.utilities.elapsed
 import java.lang.Thread.sleep
 import java.time.Instant
@@ -50,4 +49,22 @@ fun `probe i2c`() {
     }
     println("Other one there? ${I2CDevice(1, 0x48).probe()}")
     sleep(100)
+}
+
+const val KELVIN = 273.15f
+
+/**
+ * A function that converts a percentage reading into Celsius temperature for a "generic" thermistor.
+ *
+ * The formula given is `T2 = 1/(1/T1 + ln(Rt/R1)/B)`
+ */
+fun getTemperature(value: Double, referenceVoltage: Float = 3.3f): Float {
+    val voltage = referenceVoltage * value
+    // NOTE: this would normally be multiplied by the reference resistence (R1) to get the current, but that is divided back out in the formula
+    val voltageRatio = voltage / (referenceVoltage - voltage)
+    // 25 is the "reference" temperature
+    // 3950 is the "thermal index"
+    val k = 1 / (1 / (KELVIN + 25) + Math.log(voltageRatio) / 3950.0)
+    println("V $voltage R $voltageRatio K $k")
+    return (k - KELVIN).toFloat()
 }

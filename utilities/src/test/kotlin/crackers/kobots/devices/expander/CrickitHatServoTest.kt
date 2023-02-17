@@ -40,7 +40,7 @@ class CrickitHatServoTest : FunSpec(
         (1..4).forEach { servoNumber ->
             context("Servo $servoNumber:") {
                 val servoPin = SERVOS[servoNumber - 1]
-                val servoIndex = PWM_PINS.indexOf(servoPin).toByte()    // because default Pi for testing
+                val servoIndex = PWM_PINS.indexOf(servoPin).toByte() // because default Pi for testing
                 val factory = CRICKITHatDeviceFactory(testHat)
 
                 test("Via builder") {
@@ -52,7 +52,7 @@ class CrickitHatServoTest : FunSpec(
                         mockRequests.clear()
                         angle = 90f
                         angle = 180f
-                        this at 0f      // dsl
+                        this at 0f // dsl
                     }
                     // N.B. make sure it's byte to byte, otherwise it tries to compare ints (and one is negative)
                     mockRequests shouldContainExactly
@@ -62,7 +62,8 @@ class CrickitHatServoTest : FunSpec(
                 }
             }
         }
-    }) {
+    }
+) {
     init {
         initProperties()
     }

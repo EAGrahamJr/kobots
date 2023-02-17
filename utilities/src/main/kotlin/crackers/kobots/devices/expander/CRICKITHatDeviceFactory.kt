@@ -52,7 +52,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
     PwmOutputDeviceFactoryInterface {
 
     constructor(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = true) :
-            this(CRICKITHat(i2CDevice, initReset))
+        this(CRICKITHat(i2CDevice, initReset))
 
     private val seeSaw: AdafruitSeeSaw
 
@@ -74,7 +74,8 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
         DigitalInputDevice(
             this,
             SIGNAL.deviceNumber(pin),
-            if (pullDown) GpioPullUpDown.PULL_DOWN else GpioPullUpDown.PULL_UP, GpioEventTrigger.NONE
+            if (pullDown) GpioPullUpDown.PULL_DOWN else GpioPullUpDown.PULL_UP,
+            GpioEventTrigger.NONE
         )
 
     /**
@@ -105,7 +106,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
         return PwmMotor(this, pins.first, pins.second)
     }
 
-    //-----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
     // internal quick-access functionality
     /**
      * Get a device for the indicated touchpad (1-4)
@@ -117,7 +118,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
      */
     internal fun signal(index: Int) = DIGITAL_PINS[index - 1].let { pin -> CRICKITSignal(seeSaw, pin) }
 
-    //-----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
     // diozero device and factory stuff
 
     override fun close() {

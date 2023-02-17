@@ -98,6 +98,9 @@ operator fun LcdInterface<*>.plusAssign(special: Int) {
  * Run a motor at this relative speed (-1 to 1).
  */
 infix fun MotorInterface.at(speed: Float) {
-    if (speed < 0) backward(Math.abs(speed))
-    else forward(speed)
+    if (speed < 0) {
+        backward(Math.abs(speed))
+    } else {
+        forward(speed)
+    }
 }

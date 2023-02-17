@@ -56,9 +56,8 @@ class CRICKITMotorDeviceTest : FunSpec(
                     }
                 }
         }
-
-
-    }) {
+    }
+) {
 
     init {
         initProperties()

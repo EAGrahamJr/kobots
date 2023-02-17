@@ -39,9 +39,9 @@ class CrickitHatTouchPadsTest : FunSpec(
         // present the same data for each test
         beforeTest {
             mockResponses.apply {
-                push(byteArrayOf(0x3, 0xFF.toByte()))   // full value
-                push(byteArrayOf(0x02, 0x00))           // "on" value
-                push(byteArrayOf(0x00, 0x2C))           // "off" value
+                push(byteArrayOf(0x3, 0xFF.toByte())) // full value
+                push(byteArrayOf(0x02, 0x00)) // "on" value
+                push(byteArrayOf(0x00, 0x2C)) // "off" value
             }
         }
 
@@ -68,7 +68,6 @@ class CrickitHatTouchPadsTest : FunSpec(
                 mockRequests shouldContainExactly expectedRegistryCalls
             }
 
-
             context("TouchPad $touchPad diozero:") {
                 val factory = CRICKITHatDeviceFactory(testHat)
                 test("Create analog device") {
@@ -94,8 +93,10 @@ class CrickitHatTouchPadsTest : FunSpec(
                     }
 
                     DigitalInputDevice(
-                        factory, CRICKITHatDeviceFactory.Types.TOUCH.deviceNumber(touchPad),
-                        GpioPullUpDown.NONE, GpioEventTrigger.NONE
+                        factory,
+                        CRICKITHatDeviceFactory.Types.TOUCH.deviceNumber(touchPad),
+                        GpioPullUpDown.NONE,
+                        GpioEventTrigger.NONE
                     ).use { d ->
                         d.value shouldBe false
                         d.value shouldBe true

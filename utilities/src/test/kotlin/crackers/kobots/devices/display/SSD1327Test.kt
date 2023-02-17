@@ -20,7 +20,6 @@ import crackers.kobots.devices.display.SSD1327.Companion.ADAFRUIT_STEMMA
 import java.lang.Thread.sleep
 import javax.imageio.ImageIO
 
-
 fun main() {
     val inputStream = object {}.javaClass.getResourceAsStream("/test-image-grayscale.gif")
     val image = ImageIO.read(inputStream)

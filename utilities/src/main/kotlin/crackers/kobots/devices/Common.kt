@@ -18,7 +18,6 @@ package crackers.kobots.devices
 
 import com.diozero.api.DebouncedDigitalInputDevice
 import com.diozero.api.GpioPullUpDown
-import com.diozero.devices.GpioExpander
 import com.diozero.internal.spi.GpioDeviceFactoryInterface
 import crackers.kobots.utilities.nativeDeviceFactory
 import java.time.Duration
@@ -58,31 +57,18 @@ class DebouncedButton @JvmOverloads constructor(
     }
 }
 
-
-const val KELVIN = 273.15f
-
-/**
- * A function that converts a percentage reading into Celsius temperature for a "generic" thermistor.
- *
- * The formula given is `T2 = 1/(1/T1 + ln(Rt/R1)/B)`
- */
-fun getTemperature(value: Double, referenceVoltage: Float = 3.3f): Float {
-    val voltage = referenceVoltage * value
-    // NOTE: this would normally be multiplied by the reference resistence (R1) to get the current, but that is divided back out in the formula
-    val voltageRatio = voltage / (referenceVoltage - voltage)
-    // 25 is the "reference" temperature
-    // 3950 is the "thermal index"
-    val k = 1 / (1 / (KELVIN + 25) + Math.log(voltageRatio) / 3950.0)
-    println("V $voltage R $voltageRatio K $k")
-    return (k - KELVIN).toFloat()
-}
-
 /**
  * Convert a float representing degrees C to F.
  */
 fun Float.asDegreesF(): Float = (this * 9f / 5f) + 32.0f
 
 /**
- * Convenience function to write a byte to an expander.
+ * Checks to see if an Int is in the specified range
  */
-fun GpioExpander.writeByte(value: Int) = setValues(0, value.toByte())
+fun Int.inRange(name: String, range: IntRange) =
+    if (this !in range) throw IllegalArgumentException("'$name' is out of bounds") else this
+
+/**
+ * Convert a boolean to integer "equivalent"
+ */
+fun Boolean.toInt() = if (this) 1 else 0

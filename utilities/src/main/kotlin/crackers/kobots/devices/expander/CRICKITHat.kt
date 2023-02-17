@@ -37,7 +37,6 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
         }
     }
 
-
     companion object {
         const val DEVICE_ADDRESS = 0x49
 

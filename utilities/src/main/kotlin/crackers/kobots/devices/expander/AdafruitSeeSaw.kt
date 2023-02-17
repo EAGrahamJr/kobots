@@ -155,8 +155,9 @@ class AdafruitSeeSaw(
      * Read value from [pin] as an Int (to avoid any potential negative values).
      */
     fun analogRead(pin: Byte): Int {
-        if (!::analogInputPins.isInitialized)
+        if (!::analogInputPins.isInitialized) {
             throw UnsupportedOperationException("No analog input pins defined for device.")
+        }
         val offset = analogInputPins.pwmOffsets(pin)
         return read(ADC_BASE, (ADC_CHANNEL_OFFSET + offset).toByte(), 2).toShort()
     }
@@ -166,12 +167,16 @@ class AdafruitSeeSaw(
      * Write value to [pin] as a PWM value
      */
     fun analogWrite(pin: Byte, value: Short, twoBytes: Boolean = true) {
-        if (!::pwmOutputPins.isInitialized)
+        if (!::pwmOutputPins.isInitialized) {
             throw UnsupportedOperationException("No analog output pins defined for device.")
+        }
         val offset = pwmOutputPins.pwmOffsets(pin)
 
-        val bytes = if (twoBytes) byteArrayOf(offset) + value.toByteArray()
-        else byteArrayOf(offset, (value and 0xFF).toByte())
+        val bytes = if (twoBytes) {
+            byteArrayOf(offset) + value.toByteArray()
+        } else {
+            byteArrayOf(offset, (value and 0xFF).toByte())
+        }
 
         write(TIMER_BASE, TIMER_PWM, bytes)
     }
@@ -181,8 +186,9 @@ class AdafruitSeeSaw(
      * set the basic pulsed output from the PWM pins on the device.
      */
     fun setPWMFreq(pin: Byte, freq: Short) {
-        if (!::pwmOutputPins.isInitialized)
+        if (!::pwmOutputPins.isInitialized) {
             throw UnsupportedOperationException("No analog output pins defined for device.")
+        }
         val offset = pwmOutputPins.pwmOffsets(pin)
         val cmd = byteArrayOf(offset) + freq.toByteArray()
 
@@ -201,7 +207,6 @@ class AdafruitSeeSaw(
             else -> throw IllegalStateException("Unknown chip ${chipId.hex()} - this should not happen!")
         }
     }.toByte()
-
 
     // Touchpads ------------------------------------------------------------------------------------------------------
     fun touchRead(pin: Int): Int = readShort(TOUCH_BASE, (TOUCH_CHANNEL_OFFSET + pin).toByte())

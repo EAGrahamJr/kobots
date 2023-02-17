@@ -40,8 +40,11 @@ class SSD1327(delegate: SsdOledCommunicationChannel) :
     override fun setDisplayOn(on: Boolean) {
         // enable/disable the VDD regulator, too
         command(
-            if (on) intArrayOf(SET_FN_SELECT_A, 0x01, SET_DISP or 0x01)
-            else intArrayOf(SET_FN_SELECT_A, 0x00, SET_DISP)
+            if (on) {
+                intArrayOf(SET_FN_SELECT_A, 0x01, SET_DISP or 0x01)
+            } else {
+                intArrayOf(SET_FN_SELECT_A, 0x00, SET_DISP)
+            }
         )
     }
 
@@ -76,7 +79,7 @@ class SSD1327(delegate: SsdOledCommunicationChannel) :
 //        const val DISPLAYALLOFF = 0xA6
         const val SET_MUX_RATIO = 0xA8
         const val SET_FN_SELECT_A = 0xAB
-        const val SET_DISP = 0xAE     // private in SsdOled
+        const val SET_DISP = 0xAE // private in SsdOled
 
         //        const val DISPLAYON = 0xAF      // private in SsdOled
         const val SET_PHASE_LEN = 0xB1

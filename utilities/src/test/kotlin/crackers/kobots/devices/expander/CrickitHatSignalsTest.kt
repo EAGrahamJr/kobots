@@ -103,7 +103,6 @@ class CrickitHatSignalsTest : FunSpec(
                     // set the response to match the mask, ergo "true"
                     mockResponses.push(ByteArray(blockSize) { index -> pinSelectorBytes[index] })
 
-
                     input.value shouldBe true
                     mockRequests shouldContainExactly readDigitalInputCommand
                 }
@@ -160,7 +159,6 @@ class CrickitHatSignalsTest : FunSpec(
                     val command = listOf(ADC_BASE, (ADC_CHANNEL_OFFSET + DIGITAL_PINS[signal - 1]).toByte())
                     mockRequests shouldContainExactly command + command
                 }
-
             }
 
             context("Signal $signal diozero:") {

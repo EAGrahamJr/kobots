@@ -68,8 +68,9 @@ abstract class GrayOled(
 
         // scale to fit
         val scaledImage =
-            if (imageWd == width && imageHt == height) image
-            else {
+            if (imageWd == width && imageHt == height) {
+                image
+            } else {
                 val scale = Math.min(width.toFloat() / imageWd, height.toFloat() / imageHt)
                 val w = Math.round(scale * imageWd)
                 val h = Math.round(scale * imageHt)
@@ -85,8 +86,11 @@ abstract class GrayOled(
             }
 
         // if the type already matches, just use it, otherwise convert to the default color space
-        val convertedImage = if (image.type == getNativeImageType()) scaledImage
-        else ColorConvertOp(COLOR_SPACE, null).filter(scaledImage, null)
+        val convertedImage = if (image.type == getNativeImageType()) {
+            scaledImage
+        } else {
+            ColorConvertOp(COLOR_SPACE, null).filter(scaledImage, null)
+        }
 
         // put it in the buffer
         return convertedImage.also {
@@ -98,7 +102,7 @@ abstract class GrayOled(
      * The main methodology for pushing the image to the on-board display memory
      */
     protected val sendBuffer = mutableListOf<Int>()
-    open protected fun displayImage(image: BufferedImage) {
+    protected open fun displayImage(image: BufferedImage) {
         // set RAM for writing
         home()
 
@@ -133,15 +137,22 @@ abstract class GrayOled(
     protected fun home() {
         command(
             intArrayOf(
-                setRowCommand, 0, height - 1,
-                setColumnCommand, 0, (width / displayType.pixelsPerByte) - 1
+                setRowCommand,
+                0,
+                height - 1,
+                setColumnCommand,
+                0,
+                (width / displayType.pixelsPerByte) - 1
             )
         )
     }
 
     private fun Byte.convert4Bits(): Int = this.toInt().let {
-        if (it == 0 || it == 255) it
-        else Math.round(((it and 0xFF) * 4f) / 255)
+        if (it == 0 || it == 255) {
+            it
+        } else {
+            Math.round(((it and 0xFF) * 4f) / 255)
+        }
     }
 
     fun appendBuffer(bytes: List<Int>) {
@@ -154,7 +165,6 @@ abstract class GrayOled(
         }
         sendBuffer.clear()
     }
-
 
     /**
      * Issue single command byte to OLED
