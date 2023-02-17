@@ -56,9 +56,9 @@ class CrickitHatServoTest : FunSpec(
                     }
                     // N.B. make sure it's byte to byte, otherwise it tries to compare ints (and one is negative)
                     mockRequests shouldContainExactly
-                            listOf(TIMER_BASE, TIMER_PWM, servoIndex, 0x12, 0x8F.toByte()) +
-                            listOf(TIMER_BASE, TIMER_PWM, servoIndex, 0x1E, 0xB8.toByte()) +
-                            listOf(TIMER_BASE, TIMER_PWM, servoIndex, 0x06, 0x66)
+                        listOf(TIMER_BASE, TIMER_PWM, servoIndex, 0x12, 0x8F.toByte()) +
+                        listOf(TIMER_BASE, TIMER_PWM, servoIndex, 0x1E, 0xB8.toByte()) +
+                        listOf(TIMER_BASE, TIMER_PWM, servoIndex, 0x06, 0x66)
                 }
             }
         }

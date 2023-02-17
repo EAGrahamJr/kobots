@@ -45,8 +45,8 @@ class CrickitHatTest : FunSpec(
 
                 // contains reset command, get board, get version
                 val expectedCommandBytes = listOf(STATUS_BASE, STATUS_SWRST, 0xff.toByte()) +
-                        listOf(STATUS_BASE, STATUS_HW_ID) +
-                        listOf(STATUS_BASE, STATUS_VERSION)
+                    listOf(STATUS_BASE, STATUS_HW_ID) +
+                    listOf(STATUS_BASE, STATUS_VERSION)
 
                 mockRequests shouldContainExactly expectedCommandBytes
                 hat.seeSaw.chipId shouldBe AdafruitSeeSaw.Companion.DeviceType.SAMD09_HW_ID_CODE.pid
@@ -60,8 +60,8 @@ class CrickitHatTest : FunSpec(
 
                 // contains reset command, get board, get version
                 val expectedCommandBytes = listOf(STATUS_BASE, STATUS_SWRST, 0xff.toByte()) +
-                        listOf(STATUS_BASE, STATUS_HW_ID) +
-                        listOf(STATUS_BASE, STATUS_VERSION)
+                    listOf(STATUS_BASE, STATUS_HW_ID) +
+                    listOf(STATUS_BASE, STATUS_VERSION)
 
                 mockRequests shouldContainExactly expectedCommandBytes
                 hat.seeSaw.chipId shouldBe AdafruitSeeSaw.Companion.DeviceType.ATTINY8X7_HW_ID_CODE.pid

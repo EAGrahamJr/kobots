@@ -218,7 +218,7 @@ private fun analogInputSetupCommands(pinSelectorBytes: List<Byte>): List<Byte> {
     val disablePullResistor = listOf(GPIO_BASE, GPIO_PULL_RESISTOR_DISABLED)
     val setupCommand =
         directionOutputSetup + pinSelectorBytes +
-                disablePullResistor + pinSelectorBytes
+            disablePullResistor + pinSelectorBytes
     return setupCommand
 }
 
@@ -235,8 +235,8 @@ private fun inputPullDownSetupCommands(pinSelectorBytes: List<Byte>): List<Byte>
 
     val setupCommand =
         directionOutputSetup + pinSelectorBytes +
-                enablePullResistor + pinSelectorBytes +
-                bulkClear + pinSelectorBytes
+            enablePullResistor + pinSelectorBytes +
+            bulkClear + pinSelectorBytes
     return setupCommand
 }
 
@@ -247,8 +247,8 @@ private fun inputPullUpSetupCommands(pinSelectorBytes: List<Byte>): List<Byte> {
 
     val setupCommand =
         directionOutputSetup + pinSelectorBytes +
-                enablePullResistor + pinSelectorBytes +
-                bulkSet + pinSelectorBytes
+            enablePullResistor + pinSelectorBytes +
+            bulkSet + pinSelectorBytes
     return setupCommand
 }
 

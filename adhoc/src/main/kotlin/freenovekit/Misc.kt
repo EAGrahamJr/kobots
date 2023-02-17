@@ -10,8 +10,6 @@ import com.diozero.devices.HCSR04
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
 import com.diozero.devices.motor.TB6612FNGMotor
-// import com.diozero.devices.sandpit.motor.BYJ48Stepper
-// import com.diozero.devices.sandpit.motor.UnipolarStepperController.GpioFiveWireUnipolarController
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
 import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
