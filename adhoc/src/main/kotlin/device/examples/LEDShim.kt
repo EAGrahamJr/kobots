@@ -19,11 +19,10 @@ package device.examples
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import crackers.kobots.devices.lighting.PimoroniLEDShim
-import device.examples.LEDShimExamples.blinkTest
+import device.examples.LEDShimExamples.framesTest
 import java.awt.Color
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
-
 
 object LEDShimExamples {
     val running = AtomicBoolean(true)
@@ -35,7 +34,6 @@ object LEDShimExamples {
     val zButton by lazy {
         crickit.signalDigitalIn(8)
     }.apply {
-
     }
 
     private fun running(): Boolean {
@@ -55,7 +53,7 @@ object LEDShimExamples {
                 val rgb = Color.getHSBColor(h, 1f, 1f)
                 pixelColor(x, rgb)
             }
-            SleepUtil.sleepMillis(1)
+            SleepUtil.busySleep(100_000)
         }
     }
 
@@ -67,6 +65,37 @@ object LEDShimExamples {
         }
         setBlink(0)
     }
+
+    fun PimoroniLEDShim.fillTest() {
+        for (i in 1..10) {
+            fill(i * 10)
+            SleepUtil.sleepSeconds(.5)
+        }
+        while (running()) {
+            SleepUtil.sleepMillis(1)
+        }
+    }
+
+    fun PimoroniLEDShim.framesTest() {
+        println("Setting pixels")
+        for (x in 0 until width)
+            pixelColor(x, Color.RED.darker().darker(), 0)
+        for (x in 0 until width)
+            pixelColor(x, Color.GREEN.darker().darker(), 1)
+        for (x in 0 until width)
+            pixelColor(x, Color.BLUE.darker().darker(), 2)
+
+        println("Running")
+        autoPlay(500)
+        while (running()) {
+//            setFrame(0, true)
+//            SleepUtil.sleepSeconds(1)
+//            setFrame(1, true)
+//            SleepUtil.sleepSeconds(1)
+//            setFrame(2, true)
+            SleepUtil.sleepSeconds(1)
+        }
+    }
 }
 
 fun main() {
@@ -74,7 +103,9 @@ fun main() {
 
     PimoroniLEDShim().use {
 //        it.rainbow()
-        it.blinkTest()
+//        it.blinkTest()
+//        it.fillTest()
+        it.framesTest()
     }
     LEDShimExamples.crickit.close()
 }

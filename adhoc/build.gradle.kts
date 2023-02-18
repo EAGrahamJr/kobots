@@ -10,8 +10,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4-native-mt")
 }
 
-//val sshTarget = "marvin.local"
-val sshTarget = "useless.local"
+val sshTarget = "marvin.local"
+//val sshTarget = "useless.local"
 
 tasks {
     shadowJar {
@@ -43,5 +43,6 @@ application {
 //    mainClass.set("dork.CB1ThreadsKt")
 //    mainClass.set("dork.SteppingKt")
 //    mainClass.set("kobots.ops.SchwingKt")
-    mainClass.set("qwiic.oled.WithSensorKt")
+//    mainClass.set("qwiic.oled.WithSensorKt")
+    mainClass.set("device.examples.LEDShimKt")
 }
