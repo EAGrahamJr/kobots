@@ -26,22 +26,25 @@ class PimoroniLEDShim(shimDevice: I2CDevice = DEFAULT_SHIM_DEVICE) : IS31FL3731(
     override val height = 3
     override val width = 28
 
-    private fun setPixel(x: Int, y: Int, what: Int) {
-        super.pixel(x, y, what, false, getFrame())
+    private fun setPixel(x: Int, y: Int, what: Int, frame: Int = getFrame()) {
+        super.pixel(x, y, what, false, frame)
     }
 
-    fun pixelRGB(x: Int, r: Int, g: Int, b: Int) {
-        setPixel(x, 0, r)
-        setPixel(x, 1, g)
-        setPixel(x, 2, b)
+    fun pixelRGB(x: Int, r: Int, g: Int, b: Int, frame: Int = getFrame()) {
+        setPixel(x, 0, r, frame)
+        setPixel(x, 1, g, frame)
+        setPixel(x, 2, b, frame)
     }
 
-    fun pixelColor(x: Int, color: Color) {
-        setPixel(x, 0, color.red)
-        setPixel(x, 1, color.green)
-        setPixel(x, 2, color.blue)
+    fun pixelColor(x: Int, color: Color, frame: Int = getFrame()) {
+        setPixel(x, 0, color.red, frame)
+        setPixel(x, 1, color.green, frame)
+        setPixel(x, 2, color.blue, frame)
     }
 
+    /**
+     * Someone else already did all the math...
+     */
     override fun pixelAddress(x: Int, y: Int): Int {
         return when (y) {
             0 -> {
