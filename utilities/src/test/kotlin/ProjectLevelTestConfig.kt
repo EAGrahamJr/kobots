@@ -26,3 +26,5 @@ class ProjectLevelTestConfig : AbstractProjectConfig() {
         System.setProperty(DEVICE_FACTORY_PROP, "com.diozero.internal.provider.mock.MockDeviceFactory")
     }
 }
+
+fun List<Int>.bytes() = map { it.toByte() }
