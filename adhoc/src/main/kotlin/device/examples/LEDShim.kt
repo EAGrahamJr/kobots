@@ -19,7 +19,9 @@ package device.examples
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import crackers.kobots.devices.lighting.PimoroniLEDShim
-import device.examples.LEDShimExamples.framesTest
+import crackers.kobots.utilities.colorInterval
+import crackers.kobots.utilities.colorIntervalFromHSB
+import device.examples.LEDShimExamples.hueRange
 import java.awt.Color
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
@@ -72,7 +74,7 @@ object LEDShimExamples {
             SleepUtil.sleepSeconds(.5)
         }
         while (running()) {
-            SleepUtil.sleepMillis(1)
+            SleepUtil.sleepMillis(250)
         }
     }
 
@@ -96,6 +98,23 @@ object LEDShimExamples {
             SleepUtil.sleepSeconds(1)
         }
     }
+
+    fun PimoroniLEDShim.hueRange() {
+        setFrame(2, true)
+        colorIntervalFromHSB(0f, 240f, width).forEachIndexed { index, color ->
+            pixelColor(index, color, 0)
+        }
+        colorInterval(Color.RED, Color.BLUE, width).forEachIndexed { index, color ->
+            pixelColor(index, color, 1)
+        }
+
+        while (running()) {
+            setFrame(0, true)
+            SleepUtil.sleepSeconds(1)
+            setFrame(1, true)
+            SleepUtil.sleepSeconds(1)
+        }
+    }
 }
 
 fun main() {
@@ -105,7 +124,8 @@ fun main() {
 //        it.rainbow()
 //        it.blinkTest()
 //        it.fillTest()
-        it.framesTest()
+//        it.framesTest()
+        it.hueRange()
     }
     LEDShimExamples.crickit.close()
 }

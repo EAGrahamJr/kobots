@@ -20,14 +20,26 @@ import com.diozero.devices.HCSR04
 import crackers.kobots.devices.at
 import crackers.kobots.devices.set
 import crackers.kobots.utilities.SimpleAverageMeasurement
-import crackers.kobots.utilities.withDelay
 import java.time.LocalTime
 import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+
+/**
+ * Run with delay
+ */
+fun ScheduledExecutorService.withDelay(
+    initialDelay: Duration,
+    delay: Duration,
+    execute: () -> Unit
+) {
+    scheduleWithFixedDelay(execute, initialDelay.inWholeNanoseconds, delay.inWholeNanoseconds, TimeUnit.NANOSECONDS)
+}
 
 /**
  * CB1 configuration with multiple threads reading the sensors
