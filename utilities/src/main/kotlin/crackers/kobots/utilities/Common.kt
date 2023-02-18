@@ -17,12 +17,11 @@
 package crackers.kobots.utilities
 
 import com.diozero.util.Hex
+import java.awt.Color
 import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
-import java.util.concurrent.ScheduledExecutorService
-import java.util.concurrent.TimeUnit
 
 /**
  * Ignore exceptions, for those occasions where you truly don't care.
@@ -48,28 +47,6 @@ fun Short.hex() = Hex.encode(this)
 fun Byte.hex() = Hex.encode(this)
 
 /**
- * Run with delay
- */
-fun ScheduledExecutorService.withDelay(
-    initialDelay: kotlin.time.Duration,
-    delay: kotlin.time.Duration,
-    execute: () -> Unit
-) {
-    scheduleWithFixedDelay(execute, initialDelay.inWholeNanoseconds, delay.inWholeNanoseconds, TimeUnit.NANOSECONDS)
-}
-
-/**
- * Run rate
- */
-fun ScheduledExecutorService.withRate(
-    initialDelay: kotlin.time.Duration,
-    delay: kotlin.time.Duration,
-    execute: () -> Unit
-) {
-    scheduleAtFixedRate(execute, initialDelay.inWholeNanoseconds, delay.inWholeNanoseconds, TimeUnit.NANOSECONDS)
-}
-
-/**
  * Captures data in a simple FIFO buffer for averaging. Probably not suitable for large sizes.
  */
 class SimpleAverageMeasurement(val bucketSize: Int, val initialValue: Float = Float.MAX_VALUE) {
@@ -85,3 +62,27 @@ class SimpleAverageMeasurement(val bucketSize: Int, val initialValue: Float = Fl
 }
 
 fun microDuration(micros: Long) = Duration.ofNanos(micros * 1000)
+
+/**
+ * Note this only extracts the HSB _hue_ component of the color.
+ */
+fun colorInterval(from: Color, to: Color, steps: Int): List<Color> =
+    colorIntervalFromHSB(
+        Color.RGBtoHSB(from.red, from.green, from.blue, null)[0] * 360f,
+        Color.RGBtoHSB(to.red, to.green, to.blue, null)[0] * 360f,
+        steps
+    )
+
+/**
+ * Generate a range of [n] colors based on the HSB hue (0==red) [angleFrom] to [angleTo]
+ */
+fun colorIntervalFromHSB(angleFrom: Float, angleTo: Float, n: Int): List<Color> {
+    val angleRange = angleTo - angleFrom
+    val stepAngle = angleRange / n
+    val colors = mutableListOf<Color>()
+    for (i in 0 until n) {
+        val angle = angleFrom + i * stepAngle
+        colors += Color.getHSBColor(angle / 360f, 1f, 1f)
+    }
+    return colors
+}
