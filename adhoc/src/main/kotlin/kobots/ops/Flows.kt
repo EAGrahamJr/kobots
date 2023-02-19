@@ -27,28 +27,52 @@ import java.time.Duration
 /**
  * A generic flow
  */
-val theFlow: MutableSharedFlow<Any> =
-    MutableSharedFlow(extraBufferCapacity = 5, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+val theFlow: MutableSharedFlow<Any> = createFlow()
 
-fun <V> registerPublisher(
-    f: MutableSharedFlow<V>,
+inline fun <reified R> createFlow(capacity: Int = 5): MutableSharedFlow<R> =
+    MutableSharedFlow(extraBufferCapacity = capacity, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+/**
+ * A default error handler that does nothing.
+ */
+private val DEFAULT_HANDLER: (t: Throwable) -> Unit = {}
+
+/**
+ * A flow-event publisher for **blocking** operations: calls the [eventProducer] every [pollInterval] and uses the
+ * `tryEmit` to publish to the flow. If an error occurs, the [errorHandler] is invoked with the error.
+ */
+fun <V> MutableSharedFlow<V>.registerPublisher(
     pollInterval: Duration = Duration.ofMillis(100),
+    errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER,
     eventProducer: () -> V
 ) {
     CoroutineScope(Dispatchers.Default).launch {
         // TODO this should be a system flag
         while (true) {
             delay(pollInterval.toMillis())
-            withContext(Dispatchers.IO) { eventProducer().let { f.tryEmit(it) } }
+            withContext(Dispatchers.IO) {
+                try {
+                    eventProducer().let { tryEmit(it) }
+                } catch (t: Throwable) {
+                    errorHandler(t)
+                }
+            }
         }
     }
 }
 
 /**
- * Consumer is responsible for filtering.
+ * A flow event consumer for **blocking** operations. When a message arrives, it is passed to the [eventConsumer]. If
+ * an error occurs, the [errorHandler] is invoked with the error.
  */
-fun <V> registerConsumer(f: Flow<V>, eventConsumer: (V) -> Unit) {
-    f.onEach { message ->
-        withContext(Dispatchers.IO) { eventConsumer(message) }
+fun <V> Flow<V>.registerConsumer(errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER, eventConsumer: (V) -> Unit) {
+    onEach { message ->
+        withContext(Dispatchers.IO) {
+            try {
+                eventConsumer(message)
+            } catch (t: Throwable) {
+                errorHandler(t)
+            }
+        }
     }.launchIn(CoroutineScope(Dispatchers.Default))
 }

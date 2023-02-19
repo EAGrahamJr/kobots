@@ -58,12 +58,12 @@ fun main() {
         it.fontMetrics.height + 3
     }
 
-    registerPublisher(theFlow) {
+    theFlow.registerPublisher {
         Triple(sensor.proximity, sensor.luminosity, sensor.whiteLight)
     }
 
     // draw a graph for the 3 values - could use some better scaling here
-    registerConsumer(theFlow) {
+    theFlow.registerConsumer {
         if (it is Triple<*, *, *>) {
             graphics.clearRect(0, offset, 127, 127)
 
