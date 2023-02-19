@@ -27,9 +27,10 @@ import java.time.Duration
 /**
  * A generic flow
  */
-val theFlow: MutableSharedFlow<Any> = createFlow()
+val theFlow: MutableSharedFlow<Any> = createEventBus()
 
-inline fun <reified R> createFlow(capacity: Int = 5): MutableSharedFlow<R> =
+// TODO wrap this in another class so it doesn't look like we're using it?
+inline fun <reified R> createEventBus(capacity: Int = 5): MutableSharedFlow<R> =
     MutableSharedFlow(extraBufferCapacity = capacity, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
 /**
@@ -39,7 +40,7 @@ private val DEFAULT_HANDLER: (t: Throwable) -> Unit = {}
 
 /**
  * A flow-event publisher for **blocking** operations: calls the [eventProducer] every [pollInterval] and uses the
- * `tryEmit` to publish to the flow. If an error occurs, the [errorHandler] is invoked with the error.
+ * `tryEmit` to publish to the flow. If an error occurs, the [errorHandler] is invoked with it.
  */
 fun <V> MutableSharedFlow<V>.registerPublisher(
     pollInterval: Duration = Duration.ofMillis(100),
@@ -63,7 +64,7 @@ fun <V> MutableSharedFlow<V>.registerPublisher(
 
 /**
  * A flow event consumer for **blocking** operations. When a message arrives, it is passed to the [eventConsumer]. If
- * an error occurs, the [errorHandler] is invoked with the error.
+ * an error occurs, the [errorHandler] is invoked with it.
  */
 fun <V> Flow<V>.registerConsumer(errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER, eventConsumer: (V) -> Unit) {
     onEach { message ->

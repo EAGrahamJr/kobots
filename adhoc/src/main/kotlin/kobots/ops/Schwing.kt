@@ -27,9 +27,9 @@ import java.nio.file.Paths
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 
-val zFlow = createFlow<Boolean>()
-val xFlow = createFlow<Float>()
-val yFlow = createFlow<Float>()
+val zFlow = createEventBus<Boolean>()
+val xFlow = createEventBus<Float>()
+val yFlow = createEventBus<Float>()
 private val running = AtomicBoolean(true)
 
 /**

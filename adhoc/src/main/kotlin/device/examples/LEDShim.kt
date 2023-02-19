@@ -21,33 +21,34 @@ import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import crackers.kobots.devices.lighting.PimoroniLEDShim
 import crackers.kobots.utilities.colorInterval
 import crackers.kobots.utilities.colorIntervalFromHSB
-import device.examples.LEDShimExamples.hueRange
+import device.examples.LEDShimExamples.rainbow
+import kobots.ops.createEventBus
+import kobots.ops.registerConsumer
+import kobots.ops.registerPublisher
 import java.awt.Color
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 
-object LEDShimExamples {
-    val running = AtomicBoolean(true)
 
+object LEDShimExamples {
+    // manage applicaiton run state
     val crickit by lazy {
         CRICKITHatDeviceFactory()
     }
 
-    val zButton by lazy {
-        crickit.signalDigitalIn(8)
-    }.apply {
-    }
+    val running = AtomicBoolean(true).also { run ->
+        createEventBus<Boolean>().apply {
+            val button = crickit.signalDigitalIn(8)
 
-    private fun running(): Boolean {
-        if (zButton.value) {
-            running.set(false)
+            // if the button is pressed, stop running
+            registerPublisher { button.value }
+            registerConsumer { if (it) run.set(false) }
         }
-        return running.get()
     }
 
     fun PimoroniLEDShim.rainbow() {
         val spacing = 360.0 / 16.0
-        while (running()) {
+        while (running.get()) {
             val hue = ((Instant.now().epochSecond * 100) % 360).toInt()
             for (x in 0 until 28) {
                 val offset = x * spacing
@@ -62,7 +63,7 @@ object LEDShimExamples {
     fun PimoroniLEDShim.blinkTest() {
         for (i in 0..9) pixelRGB(i, 100, 0, 0)
         setBlink(1000)
-        while (running()) {
+        while (running.get()) {
             SleepUtil.sleepMillis(1)
         }
         setBlink(0)
@@ -73,7 +74,7 @@ object LEDShimExamples {
             fill(i * 10)
             SleepUtil.sleepSeconds(.5)
         }
-        while (running()) {
+        while (running.get()) {
             SleepUtil.sleepMillis(250)
         }
     }
@@ -89,7 +90,7 @@ object LEDShimExamples {
 
         println("Running")
         autoPlay(500)
-        while (running()) {
+        while (running.get()) {
 //            setFrame(0, true)
 //            SleepUtil.sleepSeconds(1)
 //            setFrame(1, true)
@@ -108,7 +109,7 @@ object LEDShimExamples {
             pixelColor(index, color, 1)
         }
 
-        while (running()) {
+        while (running.get()) {
             setFrame(0, true)
             SleepUtil.sleepSeconds(1)
             setFrame(1, true)
@@ -121,11 +122,11 @@ fun main() {
     System.setProperty("diozero.remote.hostname", "marvin.local")
 
     PimoroniLEDShim().use {
-//        it.rainbow()
+        it.rainbow()
 //        it.blinkTest()
 //        it.fillTest()
 //        it.framesTest()
-        it.hueRange()
+//        it.hueRange()
     }
     LEDShimExamples.crickit.close()
 }
