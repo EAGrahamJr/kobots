@@ -86,3 +86,13 @@ fun colorIntervalFromHSB(angleFrom: Float, angleTo: Float, n: Int): List<Color> 
     }
     return colors
 }
+
+fun Color.scale(percent: Int) = percent.let { pct ->
+    if (pct !in (1..100)) throw IllegalArgumentException("Percentage is out of range")
+    val p = pct / 100f
+    Color(
+        Math.round(this.red * p),
+        Math.round(this.green * p),
+        Math.round(this.blue * p)
+    )
+}
