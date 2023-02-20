@@ -22,6 +22,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.time.Duration
 
 /**
@@ -68,6 +70,29 @@ fun <V> MutableSharedFlow<V>.registerPublisher(
  */
 fun <V> Flow<V>.registerConsumer(errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER, eventConsumer: (V) -> Unit) {
     onEach { message ->
+        withContext(Dispatchers.IO) {
+            try {
+                eventConsumer(message)
+            } catch (t: Throwable) {
+                errorHandler(t)
+            }
+        }
+    }.launchIn(CoroutineScope(Dispatchers.Default))
+}
+
+/**
+ * A flow and producer specifically for the platform's CPU
+ */
+private val cpuBus by lazy {
+    createEventBus<Double>().also {
+        it.registerPublisher(Duration.ofSeconds(1)) {
+            Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toDouble() / 1000
+        }
+    }
+}
+
+fun registerCPUTempConsumer(errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER, eventConsumer: (Double) -> Unit) {
+    cpuBus.onEach { message ->
         withContext(Dispatchers.IO) {
             try {
                 eventConsumer(message)

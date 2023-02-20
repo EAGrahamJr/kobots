@@ -3,10 +3,12 @@ plugins {
 }
 
 dependencies {
-    // TODO make this configurable somehow
-    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
-    // requires root to run, but makes everything much faster
-//    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
+    if (gradle.startParameter.taskNames.contains("deployMe")) {
+        println("Using PIGPIO")
+        // requires root to run, but makes everything much faster
+        implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
+    } else
+        implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4-native-mt")
 }
 

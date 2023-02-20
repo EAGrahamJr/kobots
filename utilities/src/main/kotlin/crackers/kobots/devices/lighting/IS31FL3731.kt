@@ -28,18 +28,15 @@ private const val DEFAULT_ADDRESS = 0x74
 private val DEFAULT_DEVICE = I2CDevice(1, DEFAULT_ADDRESS)
 
 /**
- * Represents an IS31LF3731 charlieplex IC.
- *
+ * Represents an IS31LF3731 charlieplex IC. All pixel operations are **direct write** to the device, no buffering.
  * The display has (by default) 8 addressable "frames" (memory buffers) that contain the display information.
  *
- * Functionality that cannot be tested with the LED shim are marked as `protected`.
+ * Some base methods are protected so that the individual users of this chip can adjust inputs based on the device.
  *
- * Addtional information from the [docs](https://www.lumissil.com/assets/pdf/core/IS31FL3731_DS.pdf)
+ * Additional information from the [docs](https://www.lumissil.com/assets/pdf/core/IS31FL3731_DS.pdf)
  */
-abstract class IS31FL3731(
-    private val i2CDevice: I2CDevice = DEFAULT_DEVICE,
-    frames: Iterable<Int> = (0..7)
-) : DeviceInterface {
+abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, frames: Iterable<Int> = (0..7)) :
+    DeviceInterface {
     abstract val width: Int
     abstract val height: Int
     private val currentBank = AtomicInteger(-1)
@@ -104,17 +101,17 @@ abstract class IS31FL3731(
     }
 
     /**
-     * Start "auto play" on the number of [frames] (default all), with a limited number of [loops] (default
-     * `0`=infinite) and an approximate [delay] in milliseconds.
+     * Start "autoplay" (rotate through) the number of [frames] (default all), with a limited number of [loops]
+     * (default `0`=infinite) and an approximate [delay] in milliseconds.
      *
      * **NOTE** the delay must be less than `704` due to register limitations. Values < `11` are effectively `0`.
      */
+    @JvmOverloads
     fun autoPlay(delay: Int = 0, loops: Int = 0, frames: Int = 0) {
         if (delay == 0) {
             mode(_PICTURE_MODE)
             return
         }
-
 
         val dly = delay.inRange("delay", (1..704))
             .floorDiv(11).inRange("delay", 1..64) // why 11?
@@ -136,6 +133,7 @@ abstract class IS31FL3731(
     /**
      * Fade in and out
      */
+    @JvmOverloads
     protected fun fade(fadeIn: Int? = null, fadeOut: Int? = null, pause: Int = 0) {
         if (fadeIn == null && fadeOut == null) {
             breathe()
@@ -151,8 +149,16 @@ abstract class IS31FL3731(
     }
 
     /**
-     * Set the current frame
+     * Specifically show a frame - does _not_ set the current default frame.
      */
+    fun showFrame(f: Int) {
+        writeToRegister(_CONFIG_BANK, _FRAME_REGISTER, f)
+    }
+
+    /**
+     * Set the current default frame, optionally [show]ing it.
+     */
+    @JvmOverloads
     fun setFrame(f: Int, show: Boolean = false) {
         frame.set(f.inRange("frame", FOUR_BITS_RANGE))
         if (show) writeToRegister(_CONFIG_BANK, _FRAME_REGISTER, f)
@@ -168,6 +174,7 @@ abstract class IS31FL3731(
     /**
      * Set up the audio play.
      */
+    @JvmOverloads
     protected fun audioPlay(sampleRate: Int, audioGain: Int = 0, agcEnable: Boolean = false, agcFast: Boolean = false) {
         if (sampleRate == 0) {
             mode(_PICTURE_MODE)
@@ -189,6 +196,7 @@ abstract class IS31FL3731(
     /**
      * Set and enable blink. [rate] in milliseconds is a multiple of `270` up to `1890`, or `0` to disable.
      */
+    @JvmOverloads
     fun setBlink(rate: Int = 0) {
         if (rate == 0) {
             writeToRegister(_CONFIG_BANK, _BLINK_REGISTER, 0x00)
@@ -201,6 +209,7 @@ abstract class IS31FL3731(
      * Fills the entire display with a _white_ color at the indicated [brightness] percentage (1 to 100) and selected
      * [frame].
      */
+    @JvmOverloads
     fun fill(brightness: Int, blink: Boolean = false, frame: Int = getFrame()) {
         setBank(frame)
         brightness.inRange("brightness", 1..100).let {
@@ -223,7 +232,8 @@ abstract class IS31FL3731(
     /**
      * Set a pixel to a [color] (brightness), with optional [blink]ing and [frame]
      */
-    fun pixel(x: Int, y: Int, color: Int, blink: Boolean = false, frame: Int = getFrame()) {
+    @JvmOverloads
+    protected fun pixel(x: Int, y: Int, color: Int, blink: Boolean = false, frame: Int = getFrame()) {
         if (x !in (0..width) || y !in (0..height)) return
         color.inRange("color", 0..255)
         val address = pixelAddress(x, y)
@@ -241,6 +251,7 @@ abstract class IS31FL3731(
 //        writeToRegister(frame, _BLINK_OFFSET + addr, bits)
     }
 
+    @JvmOverloads
     protected fun image(img: Any, blink: Boolean = false, frame: Int = getFrame()) {
         TODO("Adafruit source indicates 'Python image' as the input")
     }

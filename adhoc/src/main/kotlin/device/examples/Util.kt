@@ -26,26 +26,15 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- *
+ * Uses a button attached to crickit signal 8 to flip the "running" flag.
  */
-interface RunManager : AutoCloseable {
-    val running: AtomicBoolean
-
-    fun waitForIt(duration: Duration = 1.milliseconds, doSomething: () -> Unit = {}) {
-        while (running.get()) {
-            doSomething()
-            SleepUtil.sleepMillis(duration.inWholeMilliseconds)
-        }
-    }
-}
-
-class DefaultRunManager : RunManager {
-    // manage applicaiton run state
+abstract class RunManager : AutoCloseable {
+    // manage application run state
     val crickit by lazy {
         CRICKITHatDeviceFactory()
     }
 
-    override val running = AtomicBoolean(true).also { run ->
+    val running = AtomicBoolean(true).also { run ->
         createEventBus<Boolean>().apply {
             val button = crickit.signalDigitalIn(8)
 
@@ -57,5 +46,12 @@ class DefaultRunManager : RunManager {
 
     override fun close() {
         crickit.close()
+    }
+
+    fun waitForIt(duration: Duration = 1.milliseconds, doSomething: () -> Unit = {}) {
+        while (running.get()) {
+            doSomething()
+            SleepUtil.sleepMillis(duration.inWholeMilliseconds)
+        }
     }
 }

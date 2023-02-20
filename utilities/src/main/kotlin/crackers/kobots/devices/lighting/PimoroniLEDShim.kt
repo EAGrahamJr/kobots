@@ -20,7 +20,7 @@ import com.diozero.api.I2CDevice
 import java.awt.Color
 
 private val DEFAULT_SHIM_ADDRESS = 0x75
-private val DEFAULT_SHIM_DEVICE = I2CDevice(1, DEFAULT_SHIM_ADDRESS)
+private val DEFAULT_SHIM_DEVICE by lazy { I2CDevice(1, DEFAULT_SHIM_ADDRESS) }
 
 class PimoroniLEDShim(shimDevice: I2CDevice = DEFAULT_SHIM_DEVICE) : IS31FL3731(shimDevice) {
     override val height = 3

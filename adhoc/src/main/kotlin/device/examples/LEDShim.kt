@@ -16,94 +16,88 @@
 
 package device.examples
 
-import com.diozero.util.SleepUtil
+import crackers.kobots.devices.at
 import crackers.kobots.devices.lighting.PimoroniLEDShim
 import crackers.kobots.utilities.colorInterval
-import crackers.kobots.utilities.colorIntervalFromHSB
 import crackers.kobots.utilities.scale
-import device.examples.LEDShimExamples.framesTest
+import kobots.ops.createEventBus
+import kobots.ops.registerCPUTempConsumer
+import kobots.ops.registerConsumer
+import kobots.ops.registerPublisher
 import java.awt.Color
-import java.time.Instant
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 
+class LEDShim() : RunManager() {
+    private val shim = PimoroniLEDShim()
 
-object LEDShimExamples : RunManager by DefaultRunManager() {
+    override fun close() {
+        super.close()
+        shim.close()
+    }
 
-    fun PimoroniLEDShim.rainbow() {
-        val spacing = 360.0 / 16.0
-        waitForIt {
-            val hue = ((Instant.now().epochSecond * 100) % 360).toInt()
-            for (x in 0 until 28) {
-                val offset = x * spacing
-                val h = (((hue + offset) % 360) / 360.0).toFloat()
-                val rgb = Color.getHSBColor(h, 1f, 1f)
-                pixelColor(x, rgb)
+    // mame use lf "last" values to avoid lots of unnecessary updates
+    init {
+        with(shim) {
+            // CPU temperature in the upper 10
+            val cpuColors = colorInterval(Color.RED, Color.GREEN, 10).map { it.scale(5) }.reversed()
+            var lastTemp = -1
+            registerCPUTempConsumer { temp ->
+                println("Temp $temp")
+                val x = ((temp - 40) * 10 / 30).roundToInt() + 18
+                if (x != lastTemp) {
+                    cpuColors.forEachIndexed { index, color -> pixelColor(index + 18, color) }
+                    pixelColor(x, Color.WHITE)
+                }
+                lastTemp = x
             }
-        }
-    }
 
-    fun PimoroniLEDShim.blinkTest() {
-        for (i in 0..9) pixelRGB(i, 100, 0, 0)
-        setBlink(1000)
-        waitForIt()
-        setBlink(0)
-    }
+            // show x-axis in the lower 15
+            createEventBus<Float>().also { bus ->
+                val joyStickColors = (
+                    colorInterval(Color.GREEN, Color.BLUE, 7).reversed() +
+                        listOf(Color.GREEN) +
+                        colorInterval(Color.GREEN, Color.BLUE, 7)
+                    ).map { it.scale(5) }
 
-    fun PimoroniLEDShim.fillTest() {
-        for (i in 1..10) {
-            fill(i * 10)
-            SleepUtil.sleepSeconds(.5)
-        }
-        waitForIt(250.milliseconds)
-    }
+                var lastX = -1
+                bus.registerConsumer { x ->
+                    val w = (14.0 * x).roundToInt()
+                    if (w != lastX) {
+                        joyStickColors.forEachIndexed { index, color -> pixelColor(index, color) }
+                        pixelColor(w, Color.YELLOW)
+                    }
+                    lastX = w
+                }
+                val xAxis = crickit.signalAnalogIn(6)
+                bus.registerPublisher { xAxis.unscaledValue }
+            }
 
-    fun PimoroniLEDShim.framesTest() {
-        println("Setting pixels")
-        for (x in 0 until width)
-            pixelColor(x, Color.RED.scale(15), 0)
-        for (x in 0 until width)
-            pixelColor(x, Color.GREEN.scale(15), 1)
-        for (x in 0 until width)
-            pixelColor(x, Color.BLUE.scale(15), 2)
-
-        println("Running")
-        autoPlay(500, frames = 3)
-        waitForIt(1.seconds) {
-//            setFrame(0, true)
-//            SleepUtil.sleepSeconds(1)
-//            setFrame(1, true)
-//            SleepUtil.sleepSeconds(1)
-//            setFrame(2, true)
-        }
-    }
-
-    fun PimoroniLEDShim.hueRange() {
-        setFrame(2, true)
-        colorIntervalFromHSB(0f, 240f, width).forEachIndexed { index, color ->
-            pixelColor(index, color, 0)
-        }
-        colorInterval(Color.RED, Color.BLUE, width).forEachIndexed { index, color ->
-            pixelColor(index, color, 1)
-        }
-
-        waitForIt(1.seconds) {
-            setFrame(0, true)
-            SleepUtil.sleepSeconds(1)
-            setFrame(1, true)
+            // show y-axis on pixel 16 and servo
+            createEventBus<Float>().also { bus ->
+                var lastC = Color.BLUE
+                bus.registerConsumer { y ->
+                    val c = when {
+                        y < 0.4 -> Color.RED
+                        y > 0.6 -> Color.GREEN
+                        else -> Color.BLACK
+                    }
+                    if (c != lastC) pixelColor(16, c)
+                    lastC = c
+                }
+                val servo = crickit.servo(2)
+                bus.registerConsumer { y ->
+                    servo at 180 * y
+                }
+                val yAxis = crickit.signalAnalogIn(7)
+                bus.registerPublisher { yAxis.unscaledValue }
+            }
         }
     }
 }
 
 fun main() {
-    System.setProperty("diozero.remote.hostname", "marvin.local")
-    LEDShimExamples.use {
-        PimoroniLEDShim().use {
-//            it.rainbow()
-//        it.blinkTest()
-//        it.fillTest()
-            it.framesTest()
-//        it.hueRange()
-        }
+    LEDShim().use {
+        it.waitForIt(.5.seconds)
     }
 }

@@ -22,9 +22,6 @@ import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import crackers.kobots.devices.set
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 
 val zFlow = createEventBus<Boolean>()
@@ -51,8 +48,8 @@ fun main() {
         xFlow.registerConsumer {
             servo at 180 * it
         }
-        theFlow.registerConsumer {
-            if (it is Double) println("Temp $it")
+        registerCPUTempConsumer {
+            println("Temp $it")
         }
         yFlow.registerConsumer {
             noodle set (it > .5f)
@@ -61,7 +58,6 @@ fun main() {
         xFlow.registerPublisher { xAxis.unscaledValue }
         yFlow.registerPublisher { yAxis.unscaledValue }
         zFlow.registerPublisher { zButton.value }
-        theFlow.registerPublisher(Duration.ofSeconds(1)) { cpuTemp() }
 
         runBlocking {
             while (running.get()) yield()
@@ -69,5 +65,3 @@ fun main() {
         }
     }
 }
-
-private fun cpuTemp() = Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toDouble() / 1000

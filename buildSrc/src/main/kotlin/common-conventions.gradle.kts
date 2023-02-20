@@ -16,10 +16,10 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.3")
 }
 
+group = "crackers.kobots"
+
 kotlin {
-    jvmToolchain {
-        languageVersion.set(JavaLanguageVersion.of("17"))
-    }
+    jvmToolchain(17)
 }
 
 kotlinter {
