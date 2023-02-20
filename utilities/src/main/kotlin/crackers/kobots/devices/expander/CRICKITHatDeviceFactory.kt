@@ -98,8 +98,8 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
             .build()
 
     /**
-     * Convenience function to use the Motor block for bidirectional motors. Note that these **SHOULD** be done in
-     * appropriate pairs.
+     * Convenience function to use the Motor block for bidirectional motors, where [index] is the motor _number_ (0 or
+     * 1).
      */
     fun motor(index: Int): PwmMotor {
         val pins = if (index == 1) MOTOR1A to MOTOR1B else MOTOR2A to MOTOR2B

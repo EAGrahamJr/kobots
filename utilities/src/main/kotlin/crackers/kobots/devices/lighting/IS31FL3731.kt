@@ -233,7 +233,7 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
      * Set a pixel to a [color] (brightness), with optional [blink]ing and [frame]
      */
     @JvmOverloads
-    protected fun pixel(x: Int, y: Int, color: Int, blink: Boolean = false, frame: Int = getFrame()) {
+    internal fun pixel(x: Int, y: Int, color: Int, blink: Boolean = false, frame: Int = getFrame()) {
         if (x !in (0..width) || y !in (0..height)) return
         color.inRange("color", 0..255)
         val address = pixelAddress(x, y)
