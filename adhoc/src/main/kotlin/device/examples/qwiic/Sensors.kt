@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package qwiic
+package device.examples.qwiic
 
 import base.minutes
 import crackers.kobots.devices.qwiicKill

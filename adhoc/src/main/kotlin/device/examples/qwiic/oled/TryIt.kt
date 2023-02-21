@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package qwiic.oled
+package device.examples.qwiic.oled
 
 import crackers.kobots.devices.display.GrayOled
 import crackers.kobots.devices.display.SSD1327
