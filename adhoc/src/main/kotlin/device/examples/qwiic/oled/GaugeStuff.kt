@@ -19,11 +19,12 @@ package device.examples.qwiic.oled
 import crackers.kobots.devices.display.SSD1327
 import crackers.kobots.devices.qwiicKill
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.utilities.Gauge
+import crackers.kobots.utilities.PointerGauge
 import kobots.ops.createEventBus
 import kobots.ops.registerConsumer
 import kobots.ops.registerPublisher
 import java.awt.Color
+import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.lang.Thread.sleep
@@ -49,9 +50,16 @@ object GaugeStuff {
             running.set(false)
         }
 
-        val gauge: Gauge
+        val gauge: PointerGauge
         val image = BufferedImage(128, 128, BufferedImage.TYPE_BYTE_GRAY).apply {
-            gauge = Gauge(graphics as Graphics2D, 128, 128, label = "LUM", fontColor = Color.GREEN)
+            gauge = PointerGauge(
+                graphics as Graphics2D,
+                128,
+                128,
+                label = "LUM",
+                fontColor = Color.GREEN,
+                font = Font.SERIF
+            )
         }
 
         createEventBus<Float>().also { bus ->

@@ -16,25 +16,37 @@
 
 package crackers.kobots.utilities
 
+import crackers.kobots.utilities.PointerGauge.Shape
 import java.awt.*
 import java.awt.geom.*
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.floor
 
 /**
- * A very simple circular- or arc-style "gauge", without resorting to large libraries.
+ * A very simple circular- or arc-style "gauge" (e.g. "dial", "dial pointer"), without resorting to large libraries.
+ *
+ * - [graphics] = the canvas to draw on
+ * - [width], [height] = the drawing area size
+ * - [minimumValue], [maximumValue] = range of expected values: the pointer won't go beyond these (default **0-100**)
+ * - [label] = optional label in the center of the dial
+ * - [shape] = either [Shape.SEMICIRCLE] (default) or [Shape.CIRCLE]
+ * - [foreground] = color for the dial, ticks, and pointer (default `Color.WHITE`)
+ * - [background] = color of the middle of the dial (default `Color.BLACK`)
+ * - [font] = name of the font to use for the tick labels and the optional dial label (default "SansSerif")
+ * - [fontColor] = color for said font (defaults to `foreground`)
  */
-class Gauge @JvmOverloads constructor(
+class PointerGauge @JvmOverloads constructor(
     val graphics: Graphics2D,
-    val width: Int,
-    val height: Int,
-    val label: String? = null,
+    width: Int,
+    height: Int,
     val minimumValue: Double = 0.0,
     val maximumValue: Double = 100.0,
+    val label: String? = null,
     shape: Shape = Shape.SEMICIRCLE,
     val foreground: Color = Color.WHITE,
     val background: Color = Color.BLACK,
-    val font: String = Font.SANS_SERIF,
-    val fontColor: Color = Color.WHITE
+    font: String = Font.SANS_SERIF,
+    val fontColor: Color = foreground
 ) {
     enum class Shape {
         CIRCLE, SEMICIRCLE
@@ -114,45 +126,35 @@ class Gauge @JvmOverloads constructor(
     private val labelStartPoint = Point2D.Double(xMidpoint - radius + 2 * TICK_LENGTH, yMidpoint)
     private val fontMetrics = graphics.fontMetrics
 
+    private val backgroundIsDrawn = AtomicBoolean(false)
+
     /**
-     * Render this crackers.kobots.utilities.Gauge
-     *
-     * @param g   The graphics object to use
+     * Render the gauge.
      */
     fun paint() {
-        // draw the circle/arc
-        graphics.color = foreground
-        graphics.stroke = OUTLINE_STROKE
-        graphics.draw(graphShape)
+        // only do the "background" (e.g. nothing in the middle) once -------------------------------------------------
+        if (!backgroundIsDrawn.compareAndSet(false, true)) {
+            // draw the circle/arc
+            graphics.color = foreground
+            graphics.stroke = OUTLINE_STROKE
+            graphics.draw(graphShape)
 
-        // draw tick-marks
-        graphics.color = foreground
-        graphics.stroke = TICK_STROKE
-        var a = 0.0
+            // draw tick-marks (actually radial spokes - see next)
+            graphics.color = foreground
+            graphics.stroke = TICK_STROKE
+            var tickMarkRotationAngle = 0.0
 
-        for (i in 0..TICKS) {
-            val at = AffineTransform.getRotateInstance(
-                Math.toRadians(a),
-                xMidpoint, yMidpoint
-            )
-            graphics.draw(at.createTransformedShape(radial))
-            a += degreesPerTick
+            for (i in 0..TICKS) {
+                val at = AffineTransform.getRotateInstance(
+                    Math.toRadians(tickMarkRotationAngle),
+                    xMidpoint, yMidpoint
+                )
+                graphics.draw(at.createTransformedShape(radial))
+                tickMarkRotationAngle += degreesPerTick
+            }
         }
 
         // fill in the middle of the gauge - this chops off the above lines to make tick-marks ------------------------
-        // TODO Fill the highlight
-//        if (highlight != null) {
-//            gradientColors = arrayOf(background, background)
-//            gradientFractions = floatArrayOf(0.00f,0.80f)
-//            gradient = RadialGradientPaint(
-//                xMid.toFloat(), yMid.toFloat(), radius.toFloat(),
-//                gradientFractions,
-//                gradientColors
-//            )
-//            graphics.paint = gradient
-//            graphics.fill(middle)
-//        }
-
         graphics.color = background
         graphics.fill(middle)
 
@@ -168,36 +170,34 @@ class Gauge @JvmOverloads constructor(
             )
         }
 
-        // and then the ticks
-        a = 0.0
-        var label = 0.0
-        val q = Point2D.Double()
+        // and then the tick labels
+        var textRotationAngles = 0.0
+        var label = minimumValue
         for (i in 0 until maxLabelRange) {
-            val nextTransformation = AffineTransform.getRotateInstance(
-                Math.toRadians(a),
+            val textLocation = AffineTransform.getRotateInstance(
+                Math.toRadians(textRotationAngles),
                 xMidpoint, yMidpoint
-            )
-            nextTransformation.transform(labelStartPoint, q)
-            val printThis = String.format("%3.0f", label + minimumValue).trim()
+            ).transform(labelStartPoint, null)
+
+            val printThis = String.format("%3.0f", label).trim()
             val labelBounds = fontMetrics.getStringBounds(printThis, graphics).let {
                 it.width.toFloat() to it.height.toFloat()
             }
             graphics.drawString(
                 printThis,
-                q.x.toFloat() - labelBounds.first / 2f, // center it
-                q.y.toFloat() + labelBounds.second / 4f // move "up" approx. 1/4 font size
+                textLocation.x.toFloat() - labelBounds.first / 2f, // center it
+                textLocation.y.toFloat() + labelBounds.second / 4f // move "up" approx. 1/4 font size
             )
-            a += degreesPerTick
+            textRotationAngles += degreesPerTick
             label += labelIncrement
         }
-
 
         // Draw the pointer
         val at = AffineTransform.getRotateInstance(
             Math.toRadians(value / maximumValue * degrees),
             xMidpoint, yMidpoint
         )
-        graphics.color = if (background != Color.BLACK) Color.BLACK else Color.WHITE
+        graphics.color = foreground
         graphics.draw(at.createTransformedShape(pointer))
         graphics.fill(pivot)
     }
