@@ -16,6 +16,7 @@
 
 package crackers.kobots.devices.expander
 
+import com.diozero.api.DeviceAlreadyOpenedException
 import com.diozero.api.InvalidModeException
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.ADC_BASE
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.ADC_CHANNEL_OFFSET
@@ -205,6 +206,16 @@ class CrickitHatSignalsTest : FunSpec(
                     }
                 }
             }
+        }
+        context("Device conflicts") {
+            test("Between digital out and analog in on the same port") {
+                factory.signalAnalogIn(1).use {
+                    shouldThrowWithMessage<DeviceAlreadyOpenedException>("Device 'CRICKIT-SIGNAL-101' is already opened") {
+                        factory.signalDigitalOut(1)
+                    }
+                }
+            }
+
         }
     }
 ) {
