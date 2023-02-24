@@ -89,6 +89,16 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
     fun signalAnalogIn(pin: Int) = AnalogInputDevice(this, SIGNAL.deviceNumber(pin))
 
     /**
+     * Convenience function to get a digital input on one of the touchpads.
+     */
+    fun touchDigitalIn(pin: Int) = DigitalInputDevice(this, TOUCH.deviceNumber(pin))
+
+    /**
+     * Convenience function to get an analog input on one of the touchpads.
+     */
+    fun touchAnalogIn(pin: Int) = AnalogInputDevice(this, TOUCH.deviceNumber(pin))
+
+    /**
      * Convenience function to get a servo device on the Servo block [pin] (1-4)
      */
     fun servo(pin: Int, servoTrim: ServoTrim = ServoTrim.DEFAULT) =
@@ -98,8 +108,8 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
             .build()
 
     /**
-     * Convenience function to use the Motor block for bidirectional motors, where [index] is the motor _number_ (0 or
-     * 1).
+     * Convenience function to use the Motor block for bidirectional motors, where [index] is the motor _number_ (1 or
+     * 2).
      */
     fun motor(index: Int): PwmMotor {
         val pins = if (index == 1) MOTOR1A to MOTOR1B else MOTOR2A to MOTOR2B
