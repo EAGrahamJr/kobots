@@ -20,3 +20,7 @@ Learnin' stuff and experiments not intended to be taken seriously.
 - Servo
   - has an "arrow" stuck on the spindle
   - reacts based on range-finder
+
+# In Memorium: Illy 2/24/2023
+
+Goodbye, my friend.
