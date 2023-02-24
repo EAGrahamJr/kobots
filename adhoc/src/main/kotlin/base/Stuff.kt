@@ -16,6 +16,7 @@
 package base
 
 import crackers.kobots.utilities.elapsed
+import dork.DiozeroRelay
 import java.time.Instant
 
 infix fun Int.minutes(block: () -> Unit) {
@@ -29,3 +30,16 @@ infix fun Int.minutes(block: () -> Unit) {
 const val REMOTE_PI = "diozero.remote.hostname"
 
 fun Float.stringify(digits: Int = 5) = String.format("%$digits.2f", this)
+
+fun main() {
+    // select remote system (or not)
+//    System.setProperty(REMOTE_PI, "useless.local")
+//    System.setProperty(REMOTE_PI, "marvin.local")
+
+    // select the thing to run
+//    GaugeStuff.run()
+//    LEDShim().use {
+//        it.waitForIt(.5.seconds)
+//    }
+    DiozeroRelay().run()
+}

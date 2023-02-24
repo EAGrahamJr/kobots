@@ -26,7 +26,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Uses a button attached to crickit signal 8 to flip the "running" flag.
+ * Uses touchpad 4 to flip the "running" flag.
  */
 abstract class RunManager : AutoCloseable {
     // manage application run state
@@ -34,14 +34,14 @@ abstract class RunManager : AutoCloseable {
         CRICKITHatDeviceFactory()
     }
 
-    val running = AtomicBoolean(true).also { run ->
-        createEventBus<Boolean>().apply {
-            val button = crickit.signalDigitalIn(8)
+    // putting "true" on this will flip the `running` flag to false
+    val shutdownEventBus = createEventBus<Boolean>()
 
-            // if the button is pressed, stop running
-            registerPublisher { button.value }
-            registerConsumer { if (it) run.set(false) }
-        }
+    val running = AtomicBoolean(true).also { run ->
+        val touchMe = crickit.touchDigitalIn(4)
+        // if the button is pressed, stop running
+        shutdownEventBus.registerPublisher { touchMe.value }
+        shutdownEventBus.registerConsumer { if (it) run.set(false) }
     }
 
     override fun close() {

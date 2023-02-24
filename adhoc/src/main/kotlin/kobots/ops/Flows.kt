@@ -16,18 +16,18 @@
 
 package kobots.ops
 
+import com.diozero.sbc.LocalSystemInfo
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import java.nio.file.Files
-import java.nio.file.Paths
+import org.slf4j.LoggerFactory
 import java.time.Duration
 
 /**
- * A generic flow
+ * A generic flow.
  */
 val theFlow: MutableSharedFlow<Any> = createEventBus()
 
@@ -36,13 +36,24 @@ inline fun <reified R> createEventBus(capacity: Int = 5): MutableSharedFlow<R> =
     MutableSharedFlow(extraBufferCapacity = capacity, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
 /**
- * A default error handler that does nothing.
+ * A default error handler that only logs.
  */
-private val DEFAULT_HANDLER: (t: Throwable) -> Unit = {}
+private val errorHandlerLogger = LoggerFactory.getLogger("Default EventBus ErrorHandler")
+private val DEFAULT_HANDLER: (t: Throwable) -> Unit = { t -> errorHandlerLogger.error("Unhandled error", t) }
+private fun withErrorHandler(handler: (t: Throwable) -> Unit, block: () -> Unit) {
+    try {
+        block()
+    } catch (t: Throwable) {
+        handler(t)
+    }
+}
 
 /**
  * A flow-event publisher for **blocking** operations: calls the [eventProducer] every [pollInterval] and uses the
- * `tryEmit` to publish to the flow. If an error occurs, the [errorHandler] is invoked with it.
+ * `tryEmit` to publish to the flow. If an error occurs, the [errorHandler] is invoked with it. Errors will **not**
+ * stop the polling cycle, just in case the device becomes available again.
+ *
+ * Note that since this runs in a coroutine, the timing on the poll cycle is not likely to be exact.
  */
 fun <V> MutableSharedFlow<V>.registerPublisher(
     pollInterval: Duration = Duration.ofMillis(100),
@@ -50,15 +61,11 @@ fun <V> MutableSharedFlow<V>.registerPublisher(
     eventProducer: () -> V
 ) {
     CoroutineScope(Dispatchers.Default).launch {
-        // TODO this should be a system flag
+        // TODO this should be a system flag?
         while (true) {
             delay(pollInterval.toMillis())
             withContext(Dispatchers.IO) {
-                try {
-                    eventProducer().let { tryEmit(it) }
-                } catch (t: Throwable) {
-                    errorHandler(t)
-                }
+                withErrorHandler(errorHandler) { eventProducer().let { tryEmit(it) } }
             }
         }
     }
@@ -71,34 +78,25 @@ fun <V> MutableSharedFlow<V>.registerPublisher(
 fun <V> Flow<V>.registerConsumer(errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER, eventConsumer: (V) -> Unit) {
     onEach { message ->
         withContext(Dispatchers.IO) {
-            try {
-                eventConsumer(message)
-            } catch (t: Throwable) {
-                errorHandler(t)
-            }
+            withErrorHandler(errorHandler) { eventConsumer(message) }
         }
     }.launchIn(CoroutineScope(Dispatchers.Default))
 }
 
 /**
- * A flow and producer specifically for the platform's CPU
+ * A flow and producer specifically for the platform's CPU.
  */
 private val cpuBus by lazy {
     createEventBus<Double>().also {
-        it.registerPublisher(Duration.ofSeconds(1)) {
-            Files.readAllLines(Paths.get("/sys/class/thermal/thermal_zone0/temp")).first().toDouble() / 1000
+        it.registerPublisher(Duration.ofMillis(500)) {
+            LocalSystemInfo.getInstance().getCpuTemperature().toDouble()
         }
     }
 }
 
+/**
+ * Add a consumer to get the CPU temperature.
+ */
 fun registerCPUTempConsumer(errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER, eventConsumer: (Double) -> Unit) {
-    cpuBus.onEach { message ->
-        withContext(Dispatchers.IO) {
-            try {
-                eventConsumer(message)
-            } catch (t: Throwable) {
-                errorHandler(t)
-            }
-        }
-    }.launchIn(CoroutineScope(Dispatchers.Default))
+    cpuBus.registerConsumer(errorHandler, eventConsumer)
 }

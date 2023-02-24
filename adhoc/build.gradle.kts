@@ -7,19 +7,24 @@ dependencies {
         println("Using PIGPIO")
         // requires root to run, but makes everything much faster
         implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
+        // just in case
+        // TODO needs to be implemenation for the "relay" app to work
+        compileOnly("com.diozero:diozero-provider-remote:$DIOZERO_VER")
     } else
         implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4-native-mt")
 }
 
-val sshTarget = "marvin.local"
-//val sshTarget = "useless.local"
+//val sshTarget = "marvin.local"
+val sshTarget = "useless.local"
 
 tasks {
     shadowJar {
         archiveBaseName.set("marvin-pi")
         archiveVersion.set("")
         archiveClassifier.set("")
+        // this is important for sing the remote client at the same time as other providers
+        mergeServiceFiles()
     }
     create("deployMe") {
         mustRunAfter("shadowJar")
@@ -37,14 +42,6 @@ tasks {
 }
 
 application {
-//    mainClass.set("freenovekit.FreenoveKt")
-//    mainClass.set("dork.DorkOneKt")
-//    mainClass.set("lcd.LCDTestingKt")
-//    mainClass.set("dork.CatBonker1Kt")
-//    mainClass.set("freenovekit.SoftPWMJitterTestKt")
-//    mainClass.set("dork.CB1ThreadsKt")
-//    mainClass.set("dork.SteppingKt")
-//    mainClass.set("kobots.ops.SchwingKt")
-//    mainClass.set("qwiic.oled.WithSensorKt")
-    mainClass.set("device.examples.LEDShimKt")
+    // change this class to run other things on deployment
+    mainClass.set("base.StuffKt")
 }

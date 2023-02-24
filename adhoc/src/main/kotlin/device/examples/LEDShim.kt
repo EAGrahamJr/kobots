@@ -16,6 +16,7 @@
 
 package device.examples
 
+import base.REMOTE_PI
 import crackers.kobots.devices.at
 import crackers.kobots.devices.lighting.PimoroniLEDShim
 import crackers.kobots.utilities.colorInterval
@@ -40,34 +41,38 @@ class LEDShim() : RunManager() {
     init {
         with(shim) {
             // CPU temperature in the upper 10
-            val cpuColors = colorInterval(Color.RED, Color.GREEN, 10).map { it.scale(5) }.reversed()
+            val OFFSET = 18
+            val cpuColors = colorInterval(Color.RED, Color.GREEN, 10).map { it.scale(5) }.reversed().apply {
+                forEachIndexed { index, color -> pixelColor(index + OFFSET, color) }
+            }
             var lastTemp = -1
             registerCPUTempConsumer { temp ->
                 println("Temp $temp")
-                val x = ((temp - 40) * 10 / 30).roundToInt() + 18
-                if (x != lastTemp) {
-                    cpuColors.forEachIndexed { index, color -> pixelColor(index + 18, color) }
-                    pixelColor(x, Color.WHITE)
+                val x = ((temp - 40) * 10 / 30).roundToInt()
+                if (x in (0..9) && x != lastTemp) {
+                    if (lastTemp != -1) pixelColor(lastTemp + OFFSET, cpuColors[lastTemp])
+                    pixelColor(x + OFFSET, Color.WHITE)
+                    lastTemp = x
                 }
-                lastTemp = x
             }
 
             // show x-axis in the lower 15
             createEventBus<Float>().also { bus ->
-                val joyStickColors = (
-                    colorInterval(Color.GREEN, Color.BLUE, 7).reversed() +
-                        listOf(Color.GREEN) +
-                        colorInterval(Color.GREEN, Color.BLUE, 7)
-                    ).map { it.scale(5) }
-
+                val g2b = colorInterval(Color.GREEN, Color.BLUE, 7)
+                // blue on outside to greed on inside
+                val joyStickColors = (g2b.reversed() + listOf(Color.GREEN) + g2b).map { it.scale(5) }.apply {
+                    forEachIndexed { index, color -> pixelColor(index, color) }
+                }
                 var lastX = -1
                 bus.registerConsumer { x ->
                     val w = (14.0 * x).roundToInt()
-                    if (w != lastX) {
-                        joyStickColors.forEachIndexed { index, color -> pixelColor(index, color) }
+                    if (w in (0..14) && w != lastX) {
+                        if (lastX != -1) pixelColor(lastX, joyStickColors[lastX])
                         pixelColor(w, Color.YELLOW)
+                        lastX = w
+                    } else {
+                        pixelColor(7, Color.YELLOW)
                     }
-                    lastX = w
                 }
                 val xAxis = crickit.signalAnalogIn(6)
                 bus.registerPublisher { xAxis.unscaledValue }
@@ -94,10 +99,14 @@ class LEDShim() : RunManager() {
             }
         }
     }
-}
 
-fun main() {
-    LEDShim().use {
-        it.waitForIt(.5.seconds)
+    companion object {
+        @JvmStatic
+        fun main(args: Array<String>) {
+            System.setProperty(REMOTE_PI, "marvin.local")
+            LEDShim().use {
+                it.waitForIt(.5.seconds)
+            }
+        }
     }
 }

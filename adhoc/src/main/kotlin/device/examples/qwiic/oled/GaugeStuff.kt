@@ -36,13 +36,13 @@ import java.util.concurrent.atomic.AtomicBoolean
 object GaugeStuff {
     private val running = AtomicBoolean(true)
 
-    val sensor by lazy {
+    private val sensor by lazy {
         VCNL4040().apply {
             ambientLightEnabled = true
         }
     }
 
-    val oled by lazy { SSD1327(SSD1327.ADAFRUIT_STEMMA) }
+    private val oled by lazy { SSD1327(SSD1327.ADAFRUIT_STEMMA) }
 
     init {
         qwiicKill.whenPressed {
@@ -82,9 +82,4 @@ object GaugeStuff {
         oled.close()
         qwiicKill.close()
     }
-}
-
-fun main() {
-    System.setProperty("diozero.remote.hostname", "useless.local")
-    GaugeStuff.run()
 }
