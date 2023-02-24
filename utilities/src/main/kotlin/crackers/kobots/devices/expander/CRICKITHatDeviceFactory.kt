@@ -133,6 +133,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
 
     override fun close() {
         try {
+            super.close()
             seeSaw.close()
         } catch (_: Throwable) {
         }

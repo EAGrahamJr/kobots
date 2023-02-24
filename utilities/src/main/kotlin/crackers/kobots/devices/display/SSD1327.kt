@@ -119,7 +119,7 @@ class SSD1327(delegate: SsdOledCommunicationChannel) :
             }
 
         // Adafruit default address and device
-        const val ADAFRUIT_I2C_ADDRESS = 0x3D
-        val ADAFRUIT_STEMMA by lazy { I2cCommunicationChannel(I2CDevice(1, ADAFRUIT_I2C_ADDRESS)) }
+        const val QWIIC_I2C_ADDRESS = 0x3D
+        val ADAFRUIT_STEMMA by lazy { I2cCommunicationChannel(I2CDevice(1, QWIIC_I2C_ADDRESS)) }
     }
 }

@@ -28,7 +28,10 @@ import java.util.concurrent.atomic.AtomicInteger
  * * [Datasheet](https://www.vishay.com/docs/84274/vcnl4040.pdf)
  * * [Adafruit guide](https://learn.adafruit.com/adafruit-vcnl4040-proximity-sensor?view=all)
  */
-class VCNL4040 @JvmOverloads constructor(controller: Int = 1, address: Int = ADDRESS) : LuminositySensorInterface {
+class VCNL4040(private val delegate: I2CDevice) : LuminositySensorInterface {
+    @JvmOverloads
+    constructor(controller: Int = 1, address: Int = QWIIC_I2C_ADDRESS) : this(I2CDevice(controller, address))
+
     // Ambient light sensor integration times - ordinal matches data
     enum class AmbientLightIntegrationTime(m: Int) {
         ALS_80MS(80), ALS_160MS(160), ALS_320MS(320), ALS_640MS(640);
@@ -72,10 +75,7 @@ class VCNL4040 @JvmOverloads constructor(controller: Int = 1, address: Int = ADD
         PS_MS_NORMAL, PS_MS_OUTPUT
     }
 
-    private val delegate: I2CDevice
-
     init {
-        delegate = I2CDevice(controller, address)
         val deviceAddress = delegate.readWordData(ID_REGISTER)
         if (deviceAddress.toInt() != DEVICE_ID) {
             delegate.close()
@@ -289,7 +289,7 @@ class VCNL4040 @JvmOverloads constructor(controller: Int = 1, address: Int = ADD
     // convenience ----------------------------------------------------------------------------------------------------
 
     companion object {
-        const val ADDRESS = 0x60
+        const val QWIIC_I2C_ADDRESS = 0x60
         const val DEVICE_ID = 0x0186
 
         // the device uses 16-bit registers

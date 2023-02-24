@@ -116,12 +116,18 @@ class AdafruitSeeSaw(
         }
     }
 
+    /**
+     * Write an on/off value to a digital I/O port.
+     */
     fun digitalWrite(pin: Int, value: Boolean) {
         val selector = pin.digitalPin()
         val registerCommand = if (value) GPIO_BULK_SET else GPIO_BULK_CLEAR
         write(GPIO_BASE, registerCommand, selector)
     }
 
+    /**
+     * Read an on/off value from a digital I/O port.
+     */
     fun digitalRead(pin: Int): Boolean {
         val bPort = pin >= 32
         val (size, shift) = if (bPort) Pair(8, pin - 32) else Pair(4, pin)
@@ -154,6 +160,7 @@ class AdafruitSeeSaw(
     /**
      * Read value from [pin] as an Int (to avoid any potential negative values).
      */
+    @Throws(UnsupportedOperationException::class, IllegalArgumentException::class)
     fun analogRead(pin: Byte): Int {
         if (!::analogInputPins.isInitialized) {
             throw UnsupportedOperationException("No analog input pins defined for device.")
@@ -166,6 +173,7 @@ class AdafruitSeeSaw(
     /**
      * Write value to [pin] as a PWM value
      */
+    @Throws(UnsupportedOperationException::class, IllegalArgumentException::class)
     fun analogWrite(pin: Byte, value: Short, twoBytes: Boolean = true) {
         if (!::pwmOutputPins.isInitialized) {
             throw UnsupportedOperationException("No analog output pins defined for device.")
@@ -185,6 +193,7 @@ class AdafruitSeeSaw(
      * Setting the PWM frequency goes hand-in-hand with the [analogWrite] function (same pins). Together, these values
      * set the basic pulsed output from the PWM pins on the device.
      */
+    @Throws(UnsupportedOperationException::class, IllegalArgumentException::class)
     fun setPWMFreq(pin: Byte, freq: Short) {
         if (!::pwmOutputPins.isInitialized) {
             throw UnsupportedOperationException("No analog output pins defined for device.")
