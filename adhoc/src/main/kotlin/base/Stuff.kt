@@ -16,7 +16,7 @@
 package base
 
 import crackers.kobots.utilities.elapsed
-import dork.DiozeroRelay
+import device.examples.adafruit.CRICKITHatNeoPixels
 import java.time.Instant
 
 infix fun Int.minutes(block: () -> Unit) {
@@ -41,5 +41,6 @@ fun main() {
 //    LEDShim().use {
 //        it.waitForIt(.5.seconds)
 //    }
-    DiozeroRelay().run()
+//    DiozeroRelay().run()
+    CRICKITHatNeoPixels().execute()
 }

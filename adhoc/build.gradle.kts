@@ -15,8 +15,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4-native-mt")
 }
 
-//val sshTarget = "marvin.local"
-val sshTarget = "useless.local"
+val sshTarget = "marvin.local"
+//val sshTarget = "useless.local"
 
 tasks {
     shadowJar {

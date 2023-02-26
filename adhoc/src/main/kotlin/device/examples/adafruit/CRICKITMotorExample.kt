@@ -14,9 +14,10 @@
  * permissions and limitations under the License.
  */
 
-package device.examples
+package device.examples.adafruit
 
 import crackers.kobots.devices.at
+import device.examples.RunManager
 import kobots.ops.createEventBus
 import kobots.ops.registerConsumer
 import kobots.ops.registerPublisher

@@ -136,3 +136,6 @@ fun Int.kelvinToRGB(): Color {
 
     return Color(r, g, b)
 }
+
+val PURPLE = Color(0xB4, 0, 0xFF)
+val GOLDENROD = Color(255, 150, 0)

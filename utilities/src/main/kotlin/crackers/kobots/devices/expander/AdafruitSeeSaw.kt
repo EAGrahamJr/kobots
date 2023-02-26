@@ -22,6 +22,8 @@ import com.diozero.api.I2CDevice
 import com.diozero.api.RuntimeIOException
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.SignalMode.*
+import crackers.kobots.devices.toBytes
+import crackers.kobots.devices.twoBytesAndBuffer
 import crackers.kobots.utilities.*
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -326,17 +328,16 @@ class AdafruitSeeSaw(
         return write(registerBase, register, byteArrayOf(value))
     }
 
-    private fun writeShort(registerBase: Byte, register: Byte, value: Short) {
-        val hiByte = value.toUInt() shr 8
-        val loByte = value and 0xFF
-        write(registerBase, register, byteArrayOf(hiByte.toByte(), loByte.toByte()))
+    internal fun writeShort(registerBase: Byte, register: Byte, value: Short) {
+        val (hiByte, loByte) = value.toBytes()
+        write(registerBase, register, byteArrayOf(hiByte, loByte))
     }
 
     /**
      * Read an arbitrary I2C register range from the device
      */
     @Synchronized
-    private fun read(
+    internal fun read(
         registerBase: Byte,
         register: Byte,
         bytesToRead: Int,
@@ -357,15 +358,9 @@ class AdafruitSeeSaw(
      * Write an arbitrary I2C register data to the device
      */
     @Synchronized
-    private fun write(registerBase: Byte, register: Byte, buffer: ByteArray = ByteArray(0)): Boolean {
-        val output = ByteArray(2 + buffer.size)
+    internal fun write(registerBase: Byte, register: Byte, buffer: ByteArray = ByteArray(0)): Boolean {
+        val output = twoBytesAndBuffer(registerBase, register, buffer)
 
-        output[0] = registerBase
-        output[1] = register
-
-        buffer.forEachIndexed { index, byte ->
-            output[index + 2] = byte
-        }
         if (buffer.isEmpty()) output.hex("Register") else output.hex("Wrote")
 
         readyOutput?.apply {
@@ -389,7 +384,7 @@ class AdafruitSeeSaw(
         const val INTERRUPT_BASE = 0x0B
         const val DAP_BASE = 0x0C
         const val EEPROM_BASE = 0x0D
-        const val NEOPIXEL_BASE = 0x0E
+        const val NEOPIXEL_BASE = 0x0E.toByte()
         const val TOUCH_BASE = 0x0F.toByte()
         const val ENCODER_BASE = 0x11
 
@@ -433,11 +428,11 @@ class AdafruitSeeSaw(
         const val SERCOM_DATA = 0x05
 
         const val NEOPIXEL_STATUS = 0x00
-        const val NEOPIXEL_PIN = 0x01
+        const val NEOPIXEL_PIN = 0x01.toByte()
         const val NEOPIXEL_SPEED = 0x02
-        const val NEOPIXEL_BUF_LENGTH = 0x03
-        const val NEOPIXEL_BUF = 0x04
-        const val NEOPIXEL_SHOW = 0x05
+        const val NEOPIXEL_BUF_LENGTH = 0x03.toByte()
+        const val NEOPIXEL_BUF = 0x04.toByte()
+        const val NEOPIXEL_SHOW = 0x05.toByte()
 
         const val TOUCH_CHANNEL_OFFSET = 0x10.toByte()
 

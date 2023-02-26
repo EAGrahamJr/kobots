@@ -54,7 +54,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
     constructor(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = true) :
         this(CRICKITHat(i2CDevice, initReset))
 
-    private val seeSaw: AdafruitSeeSaw
+    internal val seeSaw: AdafruitSeeSaw
 
     init {
         seeSaw = theHat.seeSaw
