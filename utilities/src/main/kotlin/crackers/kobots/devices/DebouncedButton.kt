@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2022 by E. A. Graham, Jr.
+ * Copyright 2022-2023 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,19 +56,3 @@ class DebouncedButton @JvmOverloads constructor(
         whenDeactivated(buttonConsumer)
     }
 }
-
-/**
- * Convert a float representing degrees C to F.
- */
-fun Float.asDegreesF(): Float = (this * 9f / 5f) + 32.0f
-
-/**
- * Checks to see if an Int is in the specified range
- */
-fun Int.inRange(name: String, range: IntRange) =
-    if (this !in range) throw IllegalArgumentException("'$name' is out of bounds") else this
-
-/**
- * Convert a boolean to integer "equivalent"
- */
-fun Boolean.toInt() = if (this) 1 else 0

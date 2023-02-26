@@ -18,10 +18,15 @@ package crackers.kobots.utilities
 
 import com.diozero.util.Hex
 import java.awt.Color
+import java.lang.Integer.max
+import java.lang.Integer.min
+import java.lang.Math.pow
 import java.time.Duration
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
+import kotlin.math.ln
+import kotlin.math.roundToInt
 
 /**
  * Ignore exceptions, for those occasions where you truly don't care.
@@ -45,6 +50,7 @@ fun Instant.elapsed() = Duration.between(this, Instant.now())
 fun Int.hex() = Hex.encode(this)
 fun Short.hex() = Hex.encode(this)
 fun Byte.hex() = Hex.encode(this)
+fun ByteArray.hex() = joinToString(separator = "") { it.hex() }
 
 /**
  * Captures data in a simple FIFO buffer for averaging. Probably not suitable for large sizes.
@@ -95,4 +101,38 @@ fun Color.scale(percent: Int) = percent.let { pct ->
         Math.round(this.green * p),
         Math.round(this.blue * p)
     )
+}
+
+fun Int.kelvinToRGB(): Color {
+    val tempK = (min(40000, max(1000, this)) / 100.0).roundToInt()
+
+    fun Double.limit(): Int = (if (this < 0) 0.0
+    else if (this > 255) 255.0
+    else this).roundToInt()
+
+    val r: Int = if (tempK <= 66) 255
+    else {
+        var temp = tempK - 60.0
+        temp = 329.698727446 * pow(temp, -0.1332047592)
+        temp.limit()
+    }
+
+    val g: Int = if (tempK <= 66) {
+        val temp = 99.4708025861 * ln(tempK.toDouble()) - 161.1195681661
+        temp.limit()
+    } else {
+        var temp = tempK - 60.0
+        temp = 288.1221695283 * pow(temp, -0.0755148492)
+        temp.limit()
+    }
+
+    val b: Int = if (tempK >= 66) 255
+    else if (tempK <= 19) 0
+    else {
+        var temp = tempK - 10.0
+        temp = 138.5177312231 * ln(temp) - 305.0447927307
+        temp.limit()
+    }
+
+    return Color(r, g, b)
 }
