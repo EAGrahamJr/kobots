@@ -34,18 +34,24 @@ val qwiicKill by lazy {
 }
 
 /**
- * Creates a read/write sub-register (e.g. bit-mapped values).
+ * Creates a read/write sub-register (e.g. bit-mapped values). The values read/write are based on a bit-mask - e.g.
+ * this will extract and write only a _subset_ of a register value. This is for those occassions that an I2C register
+ * contains multiple values.
+ *
+ * - the `read` operation will shift the value "down" to provide the value
+ * - the `write` operation will shift the value "up" to its proper bit-location and not change or influence other
+ * bits in the register
  */
 interface I2CSubRegister<N : Number> {
+    val mask: Int
     fun read(): N
     fun write(data: N)
 }
 
 /**
- * An implementation that builds up which bits to whack based on the mask. No checking for appropriate data-sizes is
- * done since everything gets turned into an `Int`.
+ * More or less concrete implemenation of the sub-register.
  */
-private abstract class SubRegister<N : Number>(mask: Int) : I2CSubRegister<N> {
+private abstract class SubRegister<N : Number>(final override val mask: Int) : I2CSubRegister<N> {
     protected abstract fun readRegister(): N
     protected abstract fun writeRegister(data: N)
 
@@ -90,7 +96,7 @@ private abstract class SubRegister<N : Number>(mask: Int) : I2CSubRegister<N> {
 }
 
 /**
- * 16-bit registers (short)
+ * Read and write from 16-bit registers (short) using a mask to extract/write values.
  */
 fun I2CDevice.shortSubRegister(register: Int, mask: Int): I2CSubRegister<Short> {
     val i2c = this
