@@ -21,6 +21,7 @@ import com.diozero.util.SleepUtil.sleepSeconds
 import crackers.kobots.devices.expander.NeoPixel.Companion.neoPixelStrand
 import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.PURPLE
+import crackers.kobots.utilities.colorIntervalFromHSB
 import crackers.kobots.utilities.kelvinToRGB
 import device.examples.RunManager
 import kotlinx.coroutines.runBlocking
@@ -57,6 +58,14 @@ class CRICKITHatNeoPixels : RunManager() {
             strand.fill(Color.BLACK)
             sleepSeconds(1)
         }
+    }
+
+    fun rainbow() {
+        strand.brightness = .01f
+        colorIntervalFromHSB(0f, 300f, 30).forEachIndexed { index, color ->
+            strand[index] = color
+        }
+        waitForIt()
     }
 
     fun larson() {
@@ -107,7 +116,8 @@ class CRICKITHatNeoPixels : RunManager() {
 
     fun execute() = runBlocking {
 //            simpleLoop()
-        larson()
+//        larson()
+        rainbow()
     }
 
     companion object {
