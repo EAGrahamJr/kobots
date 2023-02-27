@@ -20,9 +20,7 @@ import com.diozero.util.SleepUtil
 import crackers.kobots.devices.display.SSD1327
 import crackers.kobots.devices.qwiicKill
 import crackers.kobots.devices.sensors.VCNL4040
-import kobots.ops.registerConsumer
-import kobots.ops.registerPublisher
-import kobots.ops.theFlow
+import kobots.ops.theBus
 import kotlinx.coroutines.runBlocking
 import java.awt.Color
 import java.awt.Font
@@ -58,12 +56,12 @@ fun main() {
         it.fontMetrics.height + 3
     }
 
-    theFlow.registerPublisher {
+    theBus.registerPublisher {
         Triple(sensor.proximity, sensor.luminosity, sensor.whiteLight)
     }
 
     // draw a graph for the 3 values - could use some better scaling here
-    theFlow.registerConsumer {
+    theBus.registerConsumer {
         if (it is Triple<*, *, *>) {
             graphics.clearRect(0, offset, 127, 127)
 

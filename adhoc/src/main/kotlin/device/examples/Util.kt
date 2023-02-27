@@ -19,8 +19,6 @@ package device.examples
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import kobots.ops.createEventBus
-import kobots.ops.registerConsumer
-import kobots.ops.registerPublisher
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -41,7 +39,12 @@ abstract class RunManager : AutoCloseable {
         val touchMe = crickit.touchDigitalIn(4)
         // if the button is pressed, stop running
         shutdownEventBus.registerPublisher { touchMe.value }
-        shutdownEventBus.registerConsumer { if (it) run.set(false) }
+        shutdownEventBus.registerConsumer {
+            if (it) {
+                run.set(false)
+                shutdownEventBus.close()
+            }
+        }
     }
 
     override fun close() {

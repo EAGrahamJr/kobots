@@ -18,6 +18,7 @@ package base
 import crackers.kobots.utilities.elapsed
 import device.examples.adafruit.CRICKITHatNeoPixels
 import java.time.Instant
+import kotlin.system.exitProcess
 
 infix fun Int.minutes(block: () -> Unit) {
     val start = Instant.now()
@@ -42,5 +43,6 @@ fun main() {
 //        it.waitForIt(.5.seconds)
 //    }
 //    DiozeroRelay().run()
-    CRICKITHatNeoPixels().execute()
+    CRICKITHatNeoPixels().use { it.execute() }
+    exitProcess(0)
 }

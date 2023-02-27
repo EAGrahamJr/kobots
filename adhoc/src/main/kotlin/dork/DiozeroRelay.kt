@@ -31,8 +31,6 @@ import crackers.kobots.utilities.colorInterval
 import crackers.kobots.utilities.scale
 import kobots.ops.createEventBus
 import kobots.ops.registerCPUTempConsumer
-import kobots.ops.registerConsumer
-import kobots.ops.registerPublisher
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics2D

@@ -17,6 +17,7 @@
 package device.examples.adafruit
 
 import base.REMOTE_PI
+import com.diozero.util.SleepUtil
 import com.diozero.util.SleepUtil.sleepSeconds
 import crackers.kobots.devices.expander.NeoPixel.Companion.neoPixelStrand
 import crackers.kobots.utilities.GOLDENROD
@@ -24,9 +25,11 @@ import crackers.kobots.utilities.PURPLE
 import crackers.kobots.utilities.colorIntervalFromHSB
 import crackers.kobots.utilities.kelvinToRGB
 import device.examples.RunManager
-import kotlinx.coroutines.runBlocking
+import kobots.ops.KobotsEventBus
+import kobots.ops.createEventBus
 import java.awt.Color
 import java.lang.Thread.sleep
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * TODO fill this in
@@ -68,6 +71,31 @@ class CRICKITHatNeoPixels : RunManager() {
         waitForIt()
     }
 
+    private val larsonDelay = AtomicInteger(30)
+
+    fun adjustLarson() {
+        createEventBus<Boolean>(name = "Up Larson").apply {
+            val touch = crickit.touchDigitalIn(1)
+            registerPublisher(errorHandler = KobotsEventBus.NOOP_HANDLER) {
+                touch.value
+            }
+            registerConditionalConsumer(messageCondition = { it }) {
+                larsonDelay.addAndGet(50)
+                println("up")
+            }
+        }
+        createEventBus<Boolean>(name = "Down Larson").apply {
+            val touch = crickit.touchDigitalIn(2)
+            registerPublisher(errorHandler = KobotsEventBus.NOOP_HANDLER) {
+                touch.value
+            }
+            registerConditionalConsumer(messageCondition = { it }) {
+                if (larsonDelay.get() > 50) larsonDelay.addAndGet(-50)
+                println("down")
+            }
+        }
+    }
+
     fun larson() {
         strand.brightness = .1f
         strand.autoWrite = false
@@ -76,7 +104,8 @@ class CRICKITHatNeoPixels : RunManager() {
         var center = -1
         var direction = 1
         var previous = -1
-        while (running.get()) {
+        waitForIt {
+            SleepUtil.sleepMillis(larsonDelay.get().toLong())
             // wipe out previous
             val paintItBlack = if (previous != -1) {
                 // heading right, make left-most black
@@ -109,25 +138,28 @@ class CRICKITHatNeoPixels : RunManager() {
             if (center + 1 < 30) strand[center + 1] = otherColor
             strand.show()
             previous = center
-            sleep(30)
         }
         strand.autoWrite = true
+        println("larson done")
     }
 
-    fun execute() = runBlocking {
+    fun execute() {
 //            simpleLoop()
-//        larson()
-        rainbow()
+        adjustLarson()
+        larson()
+//        rainbow()
+
+        println("Execute done")
+        strand.fill(Color.BLACK)
+        sleep(100)
+        println("Bye now")
     }
 
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
             System.setProperty(REMOTE_PI, "marvin.local")
-            CRICKITHatNeoPixels().use {
-                it.execute()
-                it.strand.fill(Color.BLACK)
-            }
+            CRICKITHatNeoPixels().use { it.execute() }
         }
     }
 }

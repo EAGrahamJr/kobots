@@ -17,79 +17,145 @@
 package kobots.ops
 
 import com.diozero.sbc.LocalSystemInfo
-import kotlinx.coroutines.*
+import kobots.ops.KobotsEventBus.Companion.NOOP_HANDLER
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.function.Predicate
+import kotlin.concurrent.thread
+
+const val MAX_SCHEDULER = "kobots.max.scheduler.threads"
+
+private val scheduler: ScheduledExecutorService by lazy {
+    Executors.newScheduledThreadPool(System.getProperty(MAX_SCHEDULER, "5").toInt()).also { svc ->
+        Runtime.getRuntime().addShutdownHook(thread(start = false) { svc.shutdownNow() })
+    }
+}
+
+class KobotsEventBus<V>(capacity: Int, name: String? = null) : AutoCloseable {
+    private val logger = LoggerFactory.getLogger(name ?: this::class.java.simpleName)
+    private val flow = MutableSharedFlow<V>(
+        extraBufferCapacity = capacity,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    private val busRunning = AtomicBoolean(true)
+
+    /**
+     * Expose a shared flow for anyone that wants it.
+     */
+    val sharedFlow: SharedFlow<V> = flow.asSharedFlow()
+
+    init {
+        Runtime.getRuntime().addShutdownHook(thread(start = false) { busRunning.set(false) })
+    }
+
+    override fun close() {
+        logger.warn("bus closed")
+        busRunning.set(false)
+    }
+
+    /**
+     * A flow-event publisher for **blocking** operations: calls the [eventProducer] every [pollInterval] and uses the
+     * `tryEmit` to publish to the flow. If an error occurs, the [errorHandler] is invoked with it. Errors will **not**
+     * stop the polling cycle, just in case the device becomes available again.
+     *
+     * Each pubsliher is running in a separate thread.
+     */
+    fun registerPublisher(
+        pollInterval: Duration = Duration.ofMillis(100),
+        errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER,
+        eventProducer: () -> V
+    ) {
+        scheduler.scheduleAtFixedRate(
+            Runnable {
+                if (busRunning.get()) withErrorHandler(errorHandler) { eventProducer().let { flow.tryEmit(it) } }
+            },
+            pollInterval.toNanos(),
+            pollInterval.toNanos(),
+            TimeUnit.NANOSECONDS
+        )
+    }
+
+    /**
+     * A flow event consumer for **blocking** operations. When a message arrives, it is passed to the [eventConsumer].
+     * The [errorHandler] is invoked with any errors that occur.
+     */
+    fun registerConsumer(errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER, eventConsumer: (V) -> Unit) {
+        sharedFlow.onEach { message ->
+            withContext(Dispatchers.IO) {
+                withErrorHandler(errorHandler) { eventConsumer(message) }
+            }
+        }.launchIn(CoroutineScope(Dispatchers.Default))
+    }
+
+    /**
+     * A flow event consumer for **blocking** operations. When a message arrives, it is evaluated against the
+     * [messageCondition] and, if accepted, passed to the [eventConsumer]. The [errorHandler] is invoked with any
+     * errors that occur.
+     */
+    fun registerConditionalConsumer(
+        errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER,
+        messageCondition: Predicate<V>,
+        eventConsumer: (V) -> Unit
+    ) {
+        sharedFlow.onEach { message ->
+            if (messageCondition.test(message)) {
+                withContext(Dispatchers.IO) {
+                    withErrorHandler(errorHandler) { eventConsumer(message) }
+                }
+            }
+        }.launchIn(CoroutineScope(Dispatchers.Default))
+    }
+
+    /**
+     * A default error handler that only logs.
+     */
+    private fun withErrorHandler(handler: (t: Throwable) -> Unit, block: () -> Unit) {
+        try {
+            block()
+        } catch (t: Throwable) {
+            handler(t)
+        }
+    }
+
+    companion object {
+        private val errorHandlerLogger = LoggerFactory.getLogger("Default EventBus ErrorHandler")
+
+        /**
+         * Default handler that simply logs the errors and continues.
+         */
+        val DEFAULT_HANDLER: (t: Throwable) -> Unit = { t -> errorHandlerLogger.error("Unhandled error", t) }
+
+        /**
+         * No-op handler: ignores errors.
+         */
+        val NOOP_HANDLER: (t: Throwable) -> Unit = {}
+    }
+}
 
 /**
  * A generic flow.
  */
-val theFlow: MutableSharedFlow<Any> = createEventBus()
+val theBus: KobotsEventBus<Any> = createEventBus()
 
-// TODO wrap this in another class so it doesn't look like we're using it?
-inline fun <reified R> createEventBus(capacity: Int = 5): MutableSharedFlow<R> =
-    MutableSharedFlow(extraBufferCapacity = capacity, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-
-/**
- * A default error handler that only logs.
- */
-private val errorHandlerLogger = LoggerFactory.getLogger("Default EventBus ErrorHandler")
-private val DEFAULT_HANDLER: (t: Throwable) -> Unit = { t -> errorHandlerLogger.error("Unhandled error", t) }
-private fun withErrorHandler(handler: (t: Throwable) -> Unit, block: () -> Unit) {
-    try {
-        block()
-    } catch (t: Throwable) {
-        handler(t)
-    }
-}
-
-/**
- * A flow-event publisher for **blocking** operations: calls the [eventProducer] every [pollInterval] and uses the
- * `tryEmit` to publish to the flow. If an error occurs, the [errorHandler] is invoked with it. Errors will **not**
- * stop the polling cycle, just in case the device becomes available again.
- *
- * Note that since this runs in a coroutine, the timing on the poll cycle is not likely to be exact.
- */
-fun <V> MutableSharedFlow<V>.registerPublisher(
-    pollInterval: Duration = Duration.ofMillis(100),
-    errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER,
-    eventProducer: () -> V
-) {
-    CoroutineScope(Dispatchers.Default).launch {
-        // TODO this should be a system flag?
-        while (true) {
-            delay(pollInterval.toMillis())
-            withContext(Dispatchers.IO) {
-                withErrorHandler(errorHandler) { eventProducer().let { tryEmit(it) } }
-            }
-        }
-    }
-}
-
-/**
- * A flow event consumer for **blocking** operations. When a message arrives, it is passed to the [eventConsumer]. If
- * an error occurs, the [errorHandler] is invoked with it.
- */
-fun <V> Flow<V>.registerConsumer(errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER, eventConsumer: (V) -> Unit) {
-    onEach { message ->
-        withContext(Dispatchers.IO) {
-            withErrorHandler(errorHandler) { eventConsumer(message) }
-        }
-    }.launchIn(CoroutineScope(Dispatchers.Default))
-}
+inline fun <reified R> createEventBus(capacity: Int = 5, name: String? = null) = KobotsEventBus<R>(capacity, name)
 
 /**
  * A flow and producer specifically for the platform's CPU.
  */
 private val cpuBus by lazy {
-    createEventBus<Double>().also {
-        it.registerPublisher(Duration.ofMillis(500)) {
-            LocalSystemInfo.getInstance().getCpuTemperature().toDouble()
+    createEventBus<Double>().apply {
+        registerPublisher(Duration.ofMillis(500)) {
+            LocalSystemInfo.getInstance().cpuTemperature.toDouble()
         }
     }
 }
@@ -97,6 +163,6 @@ private val cpuBus by lazy {
 /**
  * Add a consumer to get the CPU temperature.
  */
-fun registerCPUTempConsumer(errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER, eventConsumer: (Double) -> Unit) {
+fun registerCPUTempConsumer(errorHandler: (t: Throwable) -> Unit = NOOP_HANDLER, eventConsumer: (Double) -> Unit) {
     cpuBus.registerConsumer(errorHandler, eventConsumer)
 }
