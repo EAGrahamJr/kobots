@@ -16,6 +16,11 @@ jobs:
   build_everything:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout build plugins
+        uses: actions/checkout@v2
+        with:
+          repository: EAGrahamJr/gradle-scripts
+          path: gradle-scripts
       - name: Checkout diozero
         uses: actions/checkout@v2
         with:
@@ -31,9 +36,15 @@ jobs:
         with:
           java-version: '17'
           distribution: "temurin"
-      - name: Build It!
+      - name: Build diozero
         run: |
           cd diozero
-          mvn --batch-mode -DskipTests install
-          cd ../kobots
-          ./gradlew --no-daemon build
+          mvn --quiet --batch-mode -DskipTests install
+      - name: Build plugins
+        run: |
+          cd gradle-scripts
+          ./gradlew --no-daemon --quiet build publishToMavenLocal
+      - name: Build Kobots
+        run: |
+          cd kobots
+          ./gradlew --no-daemon --quiet build
