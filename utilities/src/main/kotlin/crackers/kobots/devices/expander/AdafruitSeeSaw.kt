@@ -209,7 +209,7 @@ class AdafruitSeeSaw(
      * Hardware chip determines if a straight "offset" is used or a pin-mapping
      */
     private fun IntArray.pwmOffsets(pinToFind: Byte): Byte = indexOf(pinToFind.toInt()).let {
-        if (it < 0) throw IllegalArgumentException("Unknown analog pin ${pinToFind.debug()}")
+        if (it < 0) throw IllegalArgumentException("Unknown analog pin ${pinToFind.hex()}")
         // hardware differences (this is interesting)
         when (chipId) {
             DeviceType.SAMD09_HW_ID_CODE.pid -> it

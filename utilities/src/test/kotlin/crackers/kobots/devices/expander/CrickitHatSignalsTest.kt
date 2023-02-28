@@ -163,9 +163,9 @@ class CrickitHatSignalsTest : FunSpec(
             }
 
             context("Signal $signal diozero:") {
-                val factory = CRICKITHatDeviceFactory(testHat)
+                val deviceFactory = CRICKITHatDeviceFactory(testHat)
                 test("DigitalInput") {
-                    factory.signalDigitalIn(signal, true).use {
+                    deviceFactory.signalDigitalIn(signal, true).use {
                         mockRequests shouldContainExactly inputPullDownSetupCommands(pinSelectorBytes)
                         mockRequests.clear()
 
@@ -176,7 +176,7 @@ class CrickitHatSignalsTest : FunSpec(
                     }
                 }
                 test("DigitalOutput") {
-                    factory.signalDigitalOut(signal).use {
+                    deviceFactory.signalDigitalOut(signal).use {
                         mockRequests shouldContainExactly digitalOutputSetupCommands(pinSelectorBytes)
                         mockRequests.clear()
 
@@ -186,7 +186,7 @@ class CrickitHatSignalsTest : FunSpec(
                     }
                 }
                 test("AnalogInput") {
-                    factory.signalAnalogIn(signal).use {
+                    deviceFactory.signalAnalogIn(signal).use {
                         mockRequests shouldContainExactly analogInputSetupCommands(pinSelectorBytes)
                         mockRequests.clear()
 

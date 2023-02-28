@@ -21,8 +21,8 @@ import com.diozero.api.I2CDevice
 /**
  * A CRICKIT Hat pin definitions. Includes the default setup for the SeeSaw controller.
  */
-internal class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = true) : AutoCloseable {
-    internal val seeSaw = AdafruitSeeSaw(i2CDevice, initReset = initReset).apply {
+class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = true) : AutoCloseable {
+    val seeSaw = AdafruitSeeSaw(i2CDevice, initReset = initReset).apply {
         analogInputPins = DIGITAL_PINS
         pwmOutputPins = PWM_PINS
     }

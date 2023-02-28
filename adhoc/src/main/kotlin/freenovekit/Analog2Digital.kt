@@ -7,12 +7,13 @@ import crackers.kobots.devices.expander.ADS7830
 import crackers.kobots.utilities.elapsed
 import java.lang.Thread.sleep
 import java.time.Instant
+import kotlin.math.ln
 
 fun `lesson 7`() {
     ADS7830().apply {
         val start = Instant.now()
         while (start.elapsed().seconds < 300) {
-            val data = getValue(0)
+            val data = get(0)
             println("Voltage ${data * 3.3f}")
             sleep(100)
         }
@@ -24,9 +25,9 @@ fun `lesson 9 but using my stuff`() {
     ADS7830().apply {
         val start = Instant.now()
         while (start.elapsed().seconds < 300) {
-            val red = getValue(0)
-            val green = getValue(1)
-            val blue = getValue(2)
+            val red = get(0)
+            val green = get(1)
+            val blue = get(2)
             println("RGB = $red, $green, $blue")
             rgb.setValues(red, green, blue)
             sleep(100)
@@ -38,7 +39,7 @@ fun `lesson 11`() {
     ADS7830().apply {
         val start = Instant.now()
         while (start.elapsed().seconds < 300) {
-            println(getTemperature(getValue(0).toDouble()).asDegreesF())
+            println(getTemperature(get(0).toDouble()).asDegreesF())
         }
     }
 }
@@ -64,7 +65,7 @@ fun getTemperature(value: Double, referenceVoltage: Float = 3.3f): Float {
     val voltageRatio = voltage / (referenceVoltage - voltage)
     // 25 is the "reference" temperature
     // 3950 is the "thermal index"
-    val k = 1 / (1 / (KELVIN + 25) + Math.log(voltageRatio) / 3950.0)
+    val k = 1 / (1 / (KELVIN + 25) + ln(voltageRatio) / 3950.0)
     println("V $voltage R $voltageRatio K $k")
     return (k - KELVIN).toFloat()
 }

@@ -258,7 +258,7 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
 
     companion object {
         const val DEFAULT_ADDRESS = 0x74
-        private val DEFAULT_DEVICE = I2CDevice(1, DEFAULT_ADDRESS)
+        private val DEFAULT_DEVICE by lazy { I2CDevice(1, DEFAULT_ADDRESS) }
 
         // TODO magic number range
         private val MAGICFILLRANGE = 0..6

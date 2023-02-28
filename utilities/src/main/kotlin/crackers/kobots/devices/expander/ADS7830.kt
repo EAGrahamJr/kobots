@@ -57,7 +57,7 @@ class ADS7830(val i2CDevice: I2CDevice = I2CDevice(1, DEFAULT_ADDRESS)) :
     /**
      * Returns a scaled value (0.0 to 1.0) for the given channel.
      */
-    @Deprecated("`get` or direct index access is preferred", replaceWith = ReplaceWith("ads[channel]"))
+    @Deprecated("`get` or direct index access is preferred", replaceWith = ReplaceWith("get(channel)"))
     fun getValue(channel: Int): Float = get(channel)
 
     /**

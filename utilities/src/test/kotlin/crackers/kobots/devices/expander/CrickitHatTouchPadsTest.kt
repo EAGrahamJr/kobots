@@ -69,10 +69,13 @@ class CrickitHatTouchPadsTest : FunSpec(
             }
 
             context("TouchPad $touchPad diozero:") {
-                val factory = CRICKITHatDeviceFactory(testHat)
+                val deviceFactory = CRICKITHatDeviceFactory(testHat)
                 test("Create analog device") {
                     // N.B. this should not trigger the calibration reads
-                    AnalogInputDevice(factory, CRICKITHatDeviceFactory.Types.TOUCH.deviceNumber(touchPad)).use { d ->
+                    AnalogInputDevice(
+                        deviceFactory,
+                        CRICKITHatDeviceFactory.Types.TOUCH.deviceNumber(touchPad)
+                    ).use { d ->
                         d.unscaledValue shouldBe 0.043010753f
                         d.unscaledValue shouldBe 0.50048876f
                         d.scaledValue shouldBe 1023f
@@ -93,7 +96,7 @@ class CrickitHatTouchPadsTest : FunSpec(
                     }
 
                     DigitalInputDevice(
-                        factory,
+                        deviceFactory,
                         CRICKITHatDeviceFactory.Types.TOUCH.deviceNumber(touchPad),
                         GpioPullUpDown.NONE,
                         GpioEventTrigger.NONE

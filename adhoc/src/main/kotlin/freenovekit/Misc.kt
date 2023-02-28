@@ -63,7 +63,7 @@ fun `lesson 13`() {
 
     ADS7830().also { adc ->
         5 minutes {
-            adc.getValue(0).let {
+            adc[0].let {
                 val data = 0.5f - it
                 println("Data $data - control ${motor.value}")
                 if (abs(data) > 0.05f) motor.value = data * 2f else motor.stop()

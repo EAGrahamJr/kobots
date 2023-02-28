@@ -18,7 +18,7 @@ fun GpioExpander.writeByte(value: Int) = setValues(0, value.toByte())
 // waterfall with multi-segment LED display
 fun `lesson 17`() {
     OutputShiftRegister(17, 22, 27, 8).apply {
-        var x = 0
+        var x: Int
         2 minutes {
             x = 1
             for (i in 0..7) {
