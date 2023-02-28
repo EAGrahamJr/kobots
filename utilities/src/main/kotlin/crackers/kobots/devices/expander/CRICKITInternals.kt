@@ -105,11 +105,11 @@ internal class CRICKITSignal(private val seeSaw: AdafruitSeeSaw, private val see
             seeSaw.digitalWrite(seeSawPin, value)
         }
 
-    fun read(): Int = seeSaw.analogRead(seeSawPin.toByte()).toInt()
+    fun read(): Int = seeSaw.analogRead(seeSawPin.toByte())
 }
 
 /**
- * "Internal device" of the Crickit for the signal block, digial (input/output) flavor.
+ * "Internal device" of the Crickit for the signal block, digital (input/output) flavor.
  */
 internal class SignalDigitalDevice(
     key: String,
@@ -151,7 +151,7 @@ internal class SignalAnalogInputDevice(
 /**
  * Internal PWM class for the Servo pins on the CRICKIT.
  */
-internal class CRICKITnternalPwm(
+internal class CRICKIInternalPwm(
     private val key: String,
     private val pwmNumber: Int,
     private val seeSaw: AdafruitSeeSaw,

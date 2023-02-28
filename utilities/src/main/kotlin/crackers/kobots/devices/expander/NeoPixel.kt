@@ -26,7 +26,7 @@ import crackers.kobots.devices.to2Bytes
 import crackers.kobots.devices.twoBytesAndBuffer
 
 /**
- * NeoPixel handlng via the SeeSaw
+ * NeoPixel handling via the SeeSaw
  */
 class NeoPixel internal constructor(
     private val seeSaw: AdafruitSeeSaw,
@@ -54,7 +54,7 @@ class NeoPixel internal constructor(
         internal const val CRICKIT_PIN = 20.toByte()
         internal const val CRICKIT_STATUS = 27.toByte()
 
-        // magic buffer size as deermined by Adafruit
+        // magic buffer size as determined by Adafruit
         private const val OUTPUT_BUFFER_SIZE = 24
 
         fun neoPixelStrand(factory: CRICKITHatDeviceFactory, numPixels: Int, bitsPerPixel: Int = 3): NeoPixel =

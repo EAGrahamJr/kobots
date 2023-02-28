@@ -16,6 +16,8 @@
 
 package crackers.kobots.utilities
 
+import com.diozero.util.Hex
+
 /**
  * This has probably been defined a million ways in that many variations.
  */
@@ -31,3 +33,11 @@ fun Short.toByteArray() = toInt().let {
     val lower = it and 0x00FF
     byteArrayOf((upper shr 8).toByte(), lower.toByte())
 }
+
+/**
+ * Short form to get unsigned hex strings
+ */
+fun Int.hex(): String = Hex.encode(this)
+fun Short.hex(): String = Hex.encode(this)
+fun Byte.hex(): String = Hex.encode(this)
+fun ByteArray.hex(): String = joinToString(separator = "") { it.hex() }

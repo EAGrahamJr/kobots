@@ -11,8 +11,8 @@ import com.diozero.devices.LcdInterface
 import com.diozero.devices.imu.invensense.MPU6050
 import com.diozero.devices.motor.TB6612FNGMotor
 import crackers.kobots.devices.DebouncedButton
-import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
-import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
+import crackers.kobots.devices.display.HD44780Lcd.Pi2Line
+import crackers.kobots.devices.display.HD44780Lcd.Pi4Line
 import crackers.kobots.devices.expander.ADS7830
 import java.lang.Math.abs
 import java.lang.Thread.sleep

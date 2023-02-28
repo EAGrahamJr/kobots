@@ -16,41 +16,27 @@
 
 package crackers.kobots.utilities
 
-import com.diozero.util.Hex
+import com.diozero.internal.spi.NativeDeviceFactoryInterface
+import com.diozero.sbc.DeviceFactoryHelper
 import java.awt.Color
 import java.lang.Integer.max
 import java.lang.Integer.min
-import java.lang.Math.pow
 import java.time.Duration
 import java.time.Instant
-import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 import kotlin.math.ln
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 /**
- * Ignore exceptions, for those occasions where you truly don't care.
+ * Default device factory.
  */
-fun <R : Any> ignoreErrors(block: () -> R?): Optional<R> =
-    try {
-        Optional.ofNullable(block())
-    } catch (_: Throwable) {
-        // ignored
-        Optional.empty()
-    }
+val nativeDeviceFactory: NativeDeviceFactoryInterface by lazy { DeviceFactoryHelper.getNativeDeviceFactory() }
 
 /**
  * Elapsed time.
  */
-fun Instant.elapsed() = Duration.between(this, Instant.now())
-
-/**
- * Short form to get unsigned hex strings
- */
-fun Int.hex() = Hex.encode(this)
-fun Short.hex() = Hex.encode(this)
-fun Byte.hex() = Hex.encode(this)
-fun ByteArray.hex() = joinToString(separator = "") { it.hex() }
+fun Instant.elapsed(): Duration = Duration.between(this, Instant.now())
 
 /**
  * Captures data in a simple FIFO buffer for averaging. Probably not suitable for large sizes.
@@ -67,7 +53,7 @@ class SimpleAverageMeasurement(val bucketSize: Int, val initialValue: Float = Fl
     }
 }
 
-fun microDuration(micros: Long) = Duration.ofNanos(micros * 1000)
+fun microDuration(micros: Long): Duration = Duration.ofNanos(micros * 1000)
 
 /**
  * Note this only extracts the HSB _hue_ component of the color.
@@ -97,23 +83,30 @@ fun Color.scale(percent: Int) = percent.let { pct ->
     if (pct !in (1..100)) throw IllegalArgumentException("Percentage is out of range")
     val p = pct / 100f
     Color(
-        Math.round(this.red * p),
-        Math.round(this.green * p),
-        Math.round(this.blue * p)
+        (red * p).roundToInt(),
+        (green * p).roundToInt(),
+        (blue * p).roundToInt()
     )
 }
 
 fun Int.kelvinToRGB(): Color {
     val tempK = (min(40000, max(1000, this)) / 100.0).roundToInt()
 
-    fun Double.limit(): Int = (if (this < 0) 0.0
-    else if (this > 255) 255.0
-    else this).roundToInt()
+    fun Double.limit(): Int = (
+        if (this < 0) {
+            0.0
+        } else if (this > 255) {
+            255.0
+        } else {
+            this
+        }
+        ).roundToInt()
 
-    val r: Int = if (tempK <= 66) 255
-    else {
+    val r: Int = if (tempK <= 66) {
+        255
+    } else {
         var temp = tempK - 60.0
-        temp = 329.698727446 * pow(temp, -0.1332047592)
+        temp = 329.698727446 * temp.pow(-0.1332047592)
         temp.limit()
     }
 
@@ -122,13 +115,15 @@ fun Int.kelvinToRGB(): Color {
         temp.limit()
     } else {
         var temp = tempK - 60.0
-        temp = 288.1221695283 * pow(temp, -0.0755148492)
+        temp = 288.1221695283 * temp.pow(-0.0755148492)
         temp.limit()
     }
 
-    val b: Int = if (tempK >= 66) 255
-    else if (tempK <= 19) 0
-    else {
+    val b: Int = if (tempK >= 66) {
+        255
+    } else if (tempK <= 19) {
+        0
+    } else {
         var temp = tempK - 10.0
         temp = 138.5177312231 * ln(temp) - 305.0447927307
         temp.limit()

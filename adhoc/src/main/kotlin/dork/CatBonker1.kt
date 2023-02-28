@@ -25,7 +25,7 @@ import com.diozero.devices.PwmLed
 import com.diozero.util.SleepUtil.busySleep
 import com.diozero.util.SleepUtil.sleepSeconds
 import crackers.kobots.devices.at
-import crackers.kobots.devices.display.HD44780_Lcd
+import crackers.kobots.devices.display.HD44780Lcd
 import crackers.kobots.devices.display.LcdProgressBar
 import crackers.kobots.devices.plusAssign
 import crackers.kobots.devices.position
@@ -53,7 +53,7 @@ val servo: ServoDevice by lazy { ServoDevice.Builder(17).setTrim(ServoTrim.TOWER
 val led by lazy { PwmLed(27) }
 
 val LCD by lazy {
-    HD44780_Lcd.Pi4Line.apply {
+    HD44780Lcd.Pi4Line.apply {
         cursorOff()
         blinkOff()
         println(KOBOT_NAME)

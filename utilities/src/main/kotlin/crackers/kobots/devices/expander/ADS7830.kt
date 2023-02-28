@@ -16,13 +16,15 @@
 
 package crackers.kobots.devices.expander
 
-import com.diozero.api.*
+import com.diozero.api.AnalogInputEvent
+import com.diozero.api.DeviceAlreadyOpenedException
+import com.diozero.api.I2CDevice
+import com.diozero.api.PinInfo
 import com.diozero.internal.spi.AbstractDeviceFactory
 import com.diozero.internal.spi.AbstractInputDevice
 import com.diozero.internal.spi.AnalogInputDeviceFactoryInterface
 import com.diozero.internal.spi.AnalogInputDeviceInterface
 import com.diozero.sbc.BoardPinInfo
-import java.util.*
 
 /**
  * The [ADS7830 ](https://cdn.datasheetspdf.com/pdf-down/A/D/S/ADS7830-etcTI.pdf) is a single-supply, low-power,
@@ -44,28 +46,8 @@ class ADS7830(val i2CDevice: I2CDevice = I2CDevice(1, DEFAULT_ADDRESS)) :
     override fun createAnalogInputDevice(key: String, pinInfo: PinInfo) =
         ChannelDevice(pinInfo.deviceNumber, this, key) as AnalogInputDeviceInterface
 
-    companion object {
-        const val NAME = "ADS7830"
-        const val DEFAULT_ADDRESS = 0x4b
-        const val VREF = 255f
-
-        /**
-         * The default read command
-         */
-        private const val CMD = 0x84
-
-        /**
-         * Convert the ADC address channel to the I2C register/offset to read from.
-         */
-        fun channelToRegister(channel: Int): Int {
-            val innerMost = ((channel shl 2) or (channel shr 1)) and 0x07
-            val shiftLeft = innerMost shl 4
-            return CMD or shiftLeft
-        }
-    }
-
     /**
-     * Read data from the [channel] (0-7).
+     * Read raw data from the [channel] (0-7).
      */
     fun readFromChannel(channel: Int): Short {
         if (channel !in (0..7)) throw IllegalArgumentException("Channel $channel is out of range (0 to 7)")
@@ -73,10 +55,15 @@ class ADS7830(val i2CDevice: I2CDevice = I2CDevice(1, DEFAULT_ADDRESS)) :
     }
 
     /**
-     * Returns a percentage value (0.0 to 1.0) for the given channel.
+     * Returns a scaled value (0.0 to 1.0) for the given channel.
      */
-    @Deprecated("Channel device is better")
-    fun getValue(channel: Int): Float = readFromChannel(channel) / 255.0f
+    @Deprecated("`get` or direct index access is preferred", replaceWith = ReplaceWith("ads[channel]"))
+    fun getValue(channel: Int): Float = get(channel)
+
+    /**
+     * Returns a scaled value (0.0 to 1.0) for the given channel.
+     */
+    operator fun get(channel: Int) = readFromChannel(channel) / VREF
 
     /**
      * Class to implement an input device.
@@ -93,5 +80,25 @@ class ADS7830(val i2CDevice: I2CDevice = I2CDevice(1, DEFAULT_ADDRESS)) :
         override fun getAdcNumber() = channel
 
         override fun getValue() = parent.readFromChannel(channel).toFloat()
+    }
+
+    companion object {
+        const val NAME = "ADS7830"
+        const val DEFAULT_ADDRESS = 0x4b
+        const val VREF = 255f
+
+        /**
+         * The default read command
+         */
+        private const val CMD = 0x84
+
+        /**
+         * Convert the ADC address channel to the I2C register/offset to read from.
+         */
+        internal fun channelToRegister(channel: Int): Int {
+            val innerMost = ((channel shl 2) or (channel shr 1)) and 0x07
+            val shiftLeft = innerMost shl 4
+            return CMD or shiftLeft
+        }
     }
 }

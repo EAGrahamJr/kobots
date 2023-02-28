@@ -29,7 +29,6 @@ import io.kotest.matchers.shouldBe
 import java.awt.Color
 import crackers.kobots.devices.MockI2CDevice.requests as mockRequests
 
-
 /**
  * Direct usage of NeoPixel (PixelBuf) objects.
  */
@@ -144,4 +143,5 @@ class CrickitHatNeoPixelTest : FunSpec(
                 }
             }
         }
-    })
+    }
+)

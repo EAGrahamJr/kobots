@@ -21,11 +21,11 @@ import java.awt.Color
 import kotlin.math.roundToInt
 
 /**
- * Wrapper for colors that includes an optional white level for devices that support that. An optional [bribhtness]
+ * Wrapper for colors that includes an optional white level for devices that support that. An optional [brightness]
  * can also be applied.
  */
 class PixelColor(val color: Color, val white: Int = 0, val brightness: Float? = null) : Cloneable {
-    override public fun clone() = PixelColor(color, white, brightness)
+    public override fun clone() = PixelColor(color, white, brightness)
 }
 
 /**
@@ -38,7 +38,7 @@ class PixelColor(val color: Color, val white: Int = 0, val brightness: Float? = 
  * TODO dotStar implementation is probably incorrect - needs device to test with
  */
 abstract class PixelBuf(
-    val size: Int,  // size
+    val size: Int, // size
     val byteOrder: String = "BGR",
     brightness: Float = 1f,
     autoWriteEnabled: Boolean = false,
@@ -55,7 +55,7 @@ abstract class PixelBuf(
     private val pixelStep: Int
 
     private val pixelBuffer: ByteArray
-    private val currentColors: Array<PixelColor> = Array(size) { i -> PixelColor(Color.BLACK, 0) }
+    private val currentColors: Array<PixelColor> = Array(size) { PixelColor(Color.BLACK, 0) }
 
     private val BUFFER_RANGE = 0 until size
 
@@ -126,27 +126,25 @@ abstract class PixelBuf(
 
         pixelStep = if (dotstarMode) 4 else bpp
         effectiveSize = pixelStep * size
-        val baseSize = effectiveSize +
-            (if (header == null) 0 else header.size) +
-            (if (trailer == null) 0 else trailer.size)
+        val baseSize = effectiveSize + (header?.size ?: 0) + (trailer?.size ?: 0)
 
         pixelBuffer = ByteArray(baseSize)
         // if there's a header
-        if (header != null) {
+        bufferOffset = if (header != null) {
             header.copyInto(pixelBuffer)
-            bufferOffset = header.size
-        } else bufferOffset = 0
+            header.size
+        } else {
+            0
+        }
         // if there's a trailer
-        if (trailer != null) trailer.copyInto(pixelBuffer, bufferOffset + size)
+        trailer?.copyInto(pixelBuffer, bufferOffset + size)
 
         // pre-set the brightness value
         if (dotstarMode) {
             for (i in bufferOffset..effectiveSize step 4) pixelBuffer[i] = DOTSTAR_LED_START_FULL_BRIGHT
         }
         _brightness = brightness
-
     }
-
 
     /**
      * Fill the entire device with this color. If [autoWrite] is enabled, the results are immediately uploaded.
@@ -243,7 +241,7 @@ abstract class PixelBuf(
         pixelBuffer[offset + colorOrder[2]] = color.blue.brightness(pixelBrightness)
     }
 
-    abstract protected fun sendBuffer(buffer: ByteArray)
+    protected abstract fun sendBuffer(buffer: ByteArray)
 
     /**
      * Dork with white values based on the setup.
@@ -256,23 +254,32 @@ abstract class PixelBuf(
         val useWhite = hasWhite && Color.red == Color.green && Color.green == Color.blue
 
         // adjust white value
-        val w = (if (bpp == 4) {
-            // LED startframe is three "1" bits, followed by 5 brightness bits
-            // then 8 bits for each of R, G, and B. The order of those 3 are configurable and
-            //vary based on hardware
-            if (dotstarMode) {
-                ((whiteValue * 31) and 0b00011111) or DOTSTAR_LED_START
-            } else {
-                if (useWhite)
-                    whiteValue
-                else 0
+        val w = (
+            if (bpp == 4) {
+                // LED startframe is three "1" bits, followed by 5 brightness bits
+                // then 8 bits for each of R, G, and B. The order of those 3 are configurable and
+                // vary based on hardware
+                if (dotstarMode) {
+                    ((whiteValue * 31) and 0b00011111) or DOTSTAR_LED_START
+                } else {
+                    if (useWhite) {
+                        whiteValue
+                    } else {
+                        0
+                    }
+                }
             }
-        }
-        // not usable
-        else 0).toByte()
+            // not usable
+            else {
+                0
+            }
+            ).toByte()
 
-        return if (useWhite) PixelBufColor(0, 0, 0, w, bright)
-        else PixelBufColor(color.red.toByte(), color.green.toByte(), color.blue.toByte(), w, bright)
+        return if (useWhite) {
+            PixelBufColor(0, 0, 0, w, bright)
+        } else {
+            PixelBufColor(color.red.toByte(), color.green.toByte(), color.blue.toByte(), w, bright)
+        }
     }
 
     protected class PixelBufColor(val red: Byte, val green: Byte, val blue: Byte, val white: Byte, val bright: Float?)

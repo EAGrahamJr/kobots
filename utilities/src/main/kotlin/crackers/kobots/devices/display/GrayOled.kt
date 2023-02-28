@@ -23,6 +23,8 @@ import java.awt.color.ColorSpace
 import java.awt.image.BufferedImage
 import java.awt.image.ColorConvertOp
 import java.awt.image.DataBufferByte
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 /**
  * Abstract B/W display.
@@ -71,9 +73,9 @@ abstract class GrayOled(
             if (imageWd == width && imageHt == height) {
                 image
             } else {
-                val scale = Math.min(width.toFloat() / imageWd, height.toFloat() / imageHt)
-                val w = Math.round(scale * imageWd)
-                val h = Math.round(scale * imageHt)
+                val scale = min(width.toFloat() / imageWd, height.toFloat() / imageHt)
+                val w = (scale * imageWd).roundToInt()
+                val h = (scale * imageHt).roundToInt()
 
                 val scaled = image.getScaledInstance(w, h, Image.SCALE_DEFAULT)
                 val type = if (image.type != 0) image.type else BufferedImage.TYPE_USHORT_GRAY
@@ -112,11 +114,11 @@ abstract class GrayOled(
         // TODO the non-gray images will need to force the values to 0 or 1
         when (displayType) {
             DisplayType.WHITE -> {
-                for (offset in 0 until rasterized.size) sendBuffer += (rasterized[offset].toInt())
+                for (element in rasterized) sendBuffer += (element.toInt())
             }
 
             DisplayType.BLACK -> {
-                for (offset in 0 until rasterized.size) sendBuffer += ((rasterized[offset].toInt()).inv() and 0x00FF)
+                for (element in rasterized) sendBuffer += ((element.toInt()).inv() and 0x00FF)
             }
 
             DisplayType.INVERSE -> {
@@ -124,7 +126,7 @@ abstract class GrayOled(
             }
 
             DisplayType.FOUR_BITS -> {
-                for (offset in 0 until rasterized.size step 2) {
+                for (offset in rasterized.indices step 2) {
                     val hiPixel = rasterized[offset].convert4Bits()
                     val loPixel = rasterized[offset + 1].convert4Bits()
 
@@ -151,7 +153,7 @@ abstract class GrayOled(
         if (it == 0 || it == 255) {
             it
         } else {
-            Math.round(((it and 0xFF) * 4f) / 255)
+            (((it and 0xFF) * 4f) / 255).roundToInt()
         }
     }
 
@@ -180,7 +182,7 @@ abstract class GrayOled(
 
     /**
      * Issue multiple bytes of data, using I2C or hard/soft SPI as needed.
-     *  @param values the commands to write
+     *  @param dataBuffer the commands to write
      */
     protected fun data(dataBuffer: IntArray) = writeBuffer(dataCommand, dataBuffer)
 

@@ -21,7 +21,7 @@ import com.diozero.devices.LcdConnection
 /**
  * Pre-defined LCD objects. Closes the back-pack when the display is closed.
  */
-object HD44780_Lcd {
+object HD44780Lcd {
     /**
      * Backpack
      */

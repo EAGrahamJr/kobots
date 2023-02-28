@@ -32,6 +32,7 @@ import crackers.kobots.devices.expander.CRICKITHat.Companion.MOTOR2B
 import crackers.kobots.devices.expander.CRICKITHat.Companion.MOTORS
 import crackers.kobots.devices.expander.CRICKITHat.Companion.SERVOS
 import crackers.kobots.devices.expander.CRICKITHat.Companion.TOUCH_PAD_PINS
+import crackers.kobots.devices.expander.CRICKITHat.Companion.defaultI2CDevice
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory.Types.*
 import javax.naming.OperationNotSupportedException
 
@@ -101,7 +102,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
     /**
      * Convenience function to get a servo device on the Servo block [pin] (1-4)
      */
-    fun servo(pin: Int, servoTrim: ServoTrim = ServoTrim.DEFAULT) =
+    fun servo(pin: Int, servoTrim: ServoTrim = ServoTrim.DEFAULT): ServoDevice =
         ServoDevice.Builder.builder(SERVO.deviceNumber(pin))
             .setDeviceFactory(this)
             .setTrim(servoTrim)
@@ -126,7 +127,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
     /**
      * Get a device for the indicated signal (1-8)
      */
-    internal fun signal(index: Int) = DIGITAL_PINS[index - 1].let { pin -> CRICKITSignal(seeSaw, pin) }
+    internal fun signal(index: Int) = CRICKITSignal(seeSaw, DIGITAL_PINS[index - 1])
 
     // -----------------------------------------------------------------------------------------------------------------
     // diozero device and factory stuff
@@ -196,7 +197,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
         pin: Int,
         pinModes: Collection<DeviceMode>,
         vRef: Float = -1f
-    ) = PinInfo(type.name, getName(), type.deviceNumber(deviceId), pin, "$type-$deviceId", pinModes, vRef)
+    ) = PinInfo(type.name, name, type.deviceNumber(deviceId), pin, "$type-$deviceId", pinModes, vRef)
 
     override fun getBoardPinInfo() = boardInfo
 
@@ -268,7 +269,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
         initialPulseWidthUs: Int
     ): InternalServoDeviceInterface {
         val pwm = pinInfo.let {
-            CRICKITnternalPwm(key, it.deviceNumber, seeSaw, it.physicalPin, frequencyHz)
+            CRICKIInternalPwm(key, it.deviceNumber, seeSaw, it.physicalPin, frequencyHz)
         }
         return PwmServoDevice(key, this, pwm, minPulseWidthUs, maxPulseWidthUs, initialPulseWidthUs)
     }
@@ -285,7 +286,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
         pwmFrequency: Int,
         initialValue: Float
     ): InternalPwmOutputDeviceInterface = pinInfo.let {
-        CRICKITnternalPwm(key, it.deviceNumber, seeSaw, it.physicalPin, 50).apply {
+        CRICKIInternalPwm(key, it.deviceNumber, seeSaw, it.physicalPin, 50).apply {
             value = initialValue
         }
     }

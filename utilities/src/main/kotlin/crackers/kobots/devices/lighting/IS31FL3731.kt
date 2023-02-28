@@ -23,9 +23,7 @@ import crackers.kobots.devices.inRange
 import crackers.kobots.devices.toInt
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.log2
-
-private const val DEFAULT_ADDRESS = 0x74
-private val DEFAULT_DEVICE = I2CDevice(1, DEFAULT_ADDRESS)
+import kotlin.math.roundToInt
 
 /**
  * Represents an IS31LF3731 charlieplex IC. All pixel operations are **direct write** to the device, no buffering.
@@ -45,15 +43,15 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
     init {
         // Clear config: sets to Picture Mode, no audio sync, maintains sleep
         sleep(true)
-        setBank(_CONFIG_BANK)
+        setBank(CONFIG_BANK)
         i2CDevice.writeBytes(*ByteArray(14) { 0 })
-        val enableData = ByteArray(19) { if (it == 0) _ENABLE_OFFSET.toByte() else 0xFF.toByte() }
+        val enableData = ByteArray(19) { if (it == 0) ENABLE_OFFSET.toByte() else 0xFF.toByte() }
         val fillData = ByteArray(25) { 0 }
         (frames).forEach { frame ->
             setBank(frame)
             i2CDevice.writeBytes(*enableData)
             for (row in 0..5) {
-                fillData[0] = (_COLOR_OFFSET + row * 24).toByte()
+                fillData[0] = (COLOR_OFFSET + row * 24).toByte()
                 i2CDevice.writeBytes(*fillData)
             }
         }
@@ -71,11 +69,11 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
     protected fun setBank(bank: Int) {
         if (currentBank.get() != bank) {
             currentBank.set(bank)
-            i2CDevice.writeByteData(_BANK_ADDRESS, bank)
+            i2CDevice.writeByteData(BANK_ADDRESS, bank)
         }
     }
 
-    protected fun readBank() = i2CDevice.readByteData(_BANK_ADDRESS).toInt()
+    protected fun readBank() = i2CDevice.readByteData(BANK_ADDRESS).toInt()
 
     protected fun readFromRegister(bank: Int, register: Int): Int {
         setBank(bank)
@@ -87,11 +85,11 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
         i2CDevice.writeByteData(register, value)
     }
 
-    protected fun mode(mode: Int) = writeToRegister(_CONFIG_BANK, _MODE_REGISTER, mode)
+    protected fun mode(mode: Int) = writeToRegister(CONFIG_BANK, MODE_REGISTER, mode)
 
     // public stuff ---------------------------------------------------------------------------------------------------
     fun sleep(goToSleep: Boolean) {
-        writeToRegister(_CONFIG_BANK, _SHUTDOWN_REGISTER, if (goToSleep) 0 else 1)
+        writeToRegister(CONFIG_BANK, SHUTDOWN_REGISTER, if (goToSleep) 0 else 1)
     }
 
     fun reset() {
@@ -109,7 +107,7 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
     @JvmOverloads
     fun autoPlay(delay: Int = 0, loops: Int = 0, frames: Int = 0) {
         if (delay == 0) {
-            mode(_PICTURE_MODE)
+            mode(PICTURE_MODE)
             return
         }
 
@@ -118,16 +116,16 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
         loops.inRange("loops", FOUR_BITS_RANGE)
         frames.inRange("frames", FOUR_BITS_RANGE)
 
-        writeToRegister(_CONFIG_BANK, _AUTOPLAY1_REGISTER, (loops shl 4) or frames)
-        writeToRegister(_CONFIG_BANK, _AUTOPLAY2_REGISTER, dly % 64)
-        mode(_AUTOPLAY_MODE or frame.get())
+        writeToRegister(CONFIG_BANK, AUTOPLAY1_REGISTER, (loops shl 4) or frames)
+        writeToRegister(CONFIG_BANK, AUTOPLAY2_REGISTER, dly % 64)
+        mode(AUTOPLAY_MODE or frame.get())
     }
 
     /**
      * Starts the automatic "breathe" fade in/out
      */
     protected fun breathe() {
-        writeToRegister(_CONFIG_BANK, _BREATH2_REGISTER, 0)
+        writeToRegister(CONFIG_BANK, BREATH2_REGISTER, 0)
     }
 
     /**
@@ -144,15 +142,15 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
         val fout = log2((fadeOut ?: fadeIn)!!.toDouble() / 26.0).toInt().inRange("fadeOut", FOUR_BITS_RANGE)
         val ps = log2(pause / 26.0).toInt().inRange("pause", FOUR_BITS_RANGE)
 
-        writeToRegister(_CONFIG_BANK, _BREATH1_REGISTER, (fout shl 4) or fin)
-        writeToRegister(_CONFIG_BANK, _BREATH2_REGISTER, (1 shl 4) or ps)
+        writeToRegister(CONFIG_BANK, BREATH1_REGISTER, (fout shl 4) or fin)
+        writeToRegister(CONFIG_BANK, BREATH2_REGISTER, (1 shl 4) or ps)
     }
 
     /**
      * Specifically show a frame - does _not_ set the current default frame.
      */
     fun showFrame(f: Int) {
-        writeToRegister(_CONFIG_BANK, _FRAME_REGISTER, f)
+        writeToRegister(CONFIG_BANK, FRAME_REGISTER, f)
     }
 
     /**
@@ -161,7 +159,7 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
     @JvmOverloads
     fun setFrame(f: Int, show: Boolean = false) {
         frame.set(f.inRange("frame", FOUR_BITS_RANGE))
-        if (show) writeToRegister(_CONFIG_BANK, _FRAME_REGISTER, f)
+        if (show) writeToRegister(CONFIG_BANK, FRAME_REGISTER, f)
     }
 
     fun getFrame() = frame.get()
@@ -169,7 +167,7 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
     /**
      * Enable/disable the audio sync functionality.
      */
-    protected fun audioSync(enable: Boolean) = writeToRegister(_CONFIG_BANK, _AUDIOSYNC_REGISTER, if (enable) 1 else 0)
+    protected fun audioSync(enable: Boolean) = writeToRegister(CONFIG_BANK, AUDIOSYNC_REGISTER, if (enable) 1 else 0)
 
     /**
      * Set up the audio play.
@@ -177,32 +175,32 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
     @JvmOverloads
     protected fun audioPlay(sampleRate: Int, audioGain: Int = 0, agcEnable: Boolean = false, agcFast: Boolean = false) {
         if (sampleRate == 0) {
-            mode(_PICTURE_MODE)
+            mode(PICTURE_MODE)
             return
         }
 
         sampleRate.floorDiv(46).inRange("sampleRate", 1..256).run {
-            writeToRegister(_CONFIG_BANK, _ADC_REGISTER, this % 256)
+            writeToRegister(CONFIG_BANK, ADC_REGISTER, this % 256)
         }
 
         audioGain.floorDiv(3).inRange("audioGain", FOUR_BITS_RANGE).run {
-            writeToRegister(_CONFIG_BANK, _GAIN_REGISTER, (agcEnable.toInt() shl 3) or (agcFast.toInt() shl 4) or this)
+            writeToRegister(CONFIG_BANK, GAIN_REGISTER, (agcEnable.toInt() shl 3) or (agcFast.toInt() shl 4) or this)
         }
-        mode(_AUDIOPLAY_MODE)
+        mode(AUDIOPLAY_MODE)
     }
 
-    fun getBlink() = (readFromRegister(_CONFIG_BANK, _BLINK_REGISTER) and 0x07) * 270
+    fun getBlink() = (readFromRegister(CONFIG_BANK, BLINK_REGISTER) and 0x07) * 270
 
     /**
      * Set and enable blink. [rate] in milliseconds is a multiple of `270` up to `1890`, or `0` to disable.
      */
     @JvmOverloads
     fun setBlink(rate: Int = 0) {
-        if (rate == 0) {
-            writeToRegister(_CONFIG_BANK, _BLINK_REGISTER, 0x00)
-        } else rate.inRange("rate", (270..1890)).let { r ->
-            writeToRegister(_CONFIG_BANK, _BLINK_REGISTER, (r.floorDiv(270) and 0x07) or 0x08)
-        }
+        writeToRegister(
+            CONFIG_BANK,
+            BLINK_REGISTER,
+            if (rate == 0) 0x00 else (rate.inRange("rate", (270..1890)).floorDiv(270) and 0x07) or 0x08
+        )
     }
 
     /**
@@ -213,11 +211,11 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
     fun fill(brightness: Int, blink: Boolean = false, frame: Int = getFrame()) {
         setBank(frame)
         brightness.inRange("brightness", 1..100).let {
-            val b = Math.round(brightness * 2.55f).toByte()
+            val b = (brightness * 2.55f).roundToInt().toByte()
             val data = ByteArray(25) { b }
 
             MAGICFILLRANGE.forEach { row ->
-                data[0] = (_COLOR_OFFSET + row * 24).toByte()
+                data[0] = (COLOR_OFFSET + row * 24).toByte()
                 i2CDevice.writeBytes(*data)
             }
         }
@@ -237,7 +235,7 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
         if (x !in (0..width) || y !in (0..height)) return
         color.inRange("color", 0..255)
         val address = pixelAddress(x, y)
-        writeToRegister(frame, _COLOR_OFFSET + address, color)
+        writeToRegister(frame, COLOR_OFFSET + address, color)
 
         // TODO verify some working variation of this in Python
 //        val addr = address / 8
@@ -259,37 +257,38 @@ abstract class IS31FL3731(private val i2CDevice: I2CDevice = DEFAULT_DEVICE, fra
     open fun pixelAddress(x: Int, y: Int) = x + y * 16
 
     companion object {
+        const val DEFAULT_ADDRESS = 0x74
+        private val DEFAULT_DEVICE = I2CDevice(1, DEFAULT_ADDRESS)
+
         // TODO magic number range
         private val MAGICFILLRANGE = 0..6
-
         private val FOUR_BITS_RANGE = 0..7
+
+        internal const val MODE_REGISTER = 0x00
+        internal const val FRAME_REGISTER = 0x01
+        internal const val AUTOPLAY1_REGISTER = 0x02
+        internal const val AUTOPLAY2_REGISTER = 0x03
+
+        // actually DISPLAY_OPTION
+        internal const val BLINK_REGISTER = 0x05
+        internal const val AUDIOSYNC_REGISTER = 0x06
+        internal const val BREATH1_REGISTER = 0x08
+        internal const val BREATH2_REGISTER = 0x09
+        internal const val SHUTDOWN_REGISTER = 0x0A
+        internal const val GAIN_REGISTER = 0x0B
+        internal const val ADC_REGISTER = 0x0C
+
+        internal const val CONFIG_BANK = 0x0B
+        internal const val BANK_ADDRESS = 0xFD
+
+        internal const val PICTURE_MODE = 0x00
+        internal const val AUTOPLAY_MODE = 0x08
+        internal const val AUDIOPLAY_MODE = 0x18
+
+        internal const val ENABLE_OFFSET = 0x00
+        internal const val BLINK_OFFSET = 0x12
+
+        // PWM register
+        internal const val COLOR_OFFSET = 0x24
     }
 }
-
-
-internal const val _MODE_REGISTER = 0x00
-internal const val _FRAME_REGISTER = 0x01
-internal const val _AUTOPLAY1_REGISTER = 0x02
-internal const val _AUTOPLAY2_REGISTER = 0x03
-
-// actually DISPLAY_OPTION
-internal const val _BLINK_REGISTER = 0x05
-internal const val _AUDIOSYNC_REGISTER = 0x06
-internal const val _BREATH1_REGISTER = 0x08
-internal const val _BREATH2_REGISTER = 0x09
-internal const val _SHUTDOWN_REGISTER = 0x0A
-internal const val _GAIN_REGISTER = 0x0B
-internal const val _ADC_REGISTER = 0x0C
-
-internal const val _CONFIG_BANK = 0x0B
-internal const val _BANK_ADDRESS = 0xFD
-
-internal const val _PICTURE_MODE = 0x00
-internal const val _AUTOPLAY_MODE = 0x08
-internal const val _AUDIOPLAY_MODE = 0x18
-
-internal const val _ENABLE_OFFSET = 0x00
-internal const val _BLINK_OFFSET = 0x12
-
-// PWM register
-internal const val _COLOR_OFFSET = 0x24

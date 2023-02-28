@@ -62,37 +62,37 @@ class SSD1327(delegate: SsdOledCommunicationChannel) :
         var HEIGHT = 128
         var WIDTH = 128
 
-        const val CMD_MODE = 0x00
-        const val DATA_MODE = 0x40
+        internal const val CMD_MODE = 0x00
+        internal const val DATA_MODE = 0x40
 
-        const val SET_COL_ADDR = 0x15
-        const val SET_SCROLL_DEACTIVATE = 0x2E
-        const val SET_ROW_ADDR = 0x75
-        const val SET_CONTRAST = 0x81
-        const val SET_SEG_REMAP = 0xA0
-        const val SET_DISP_START_LINE = 0xA1
-        const val SET_DISP_OFFSET = 0xA2
-        const val SET_DISP_NORMAL = 0xA4
-        const val SET_DISP_INVERT = 0xA7
+        internal const val SET_COL_ADDR = 0x15
+        internal const val SET_SCROLL_DEACTIVATE = 0x2E
+        internal const val SET_ROW_ADDR = 0x75
+        internal const val SET_CONTRAST = 0x81
+        internal const val SET_SEG_REMAP = 0xA0
+        internal const val SET_DISP_START_LINE = 0xA1
+        internal const val SET_DISP_OFFSET = 0xA2
+        internal const val SET_DISP_NORMAL = 0xA4
+        internal const val SET_DISP_INVERT = 0xA7
 
         //        const val DISPLAYALLON = 0xA5
 //        const val DISPLAYALLOFF = 0xA6
-        const val SET_MUX_RATIO = 0xA8
-        const val SET_FN_SELECT_A = 0xAB
-        const val SET_DISP = 0xAE // private in SsdOled
+        internal const val SET_MUX_RATIO = 0xA8
+        internal const val SET_FN_SELECT_A = 0xAB
+        internal const val SET_DISP = 0xAE // private in SsdOled
 
         //        const val DISPLAYON = 0xAF      // private in SsdOled
-        const val SET_PHASE_LEN = 0xB1
-        const val SET_DISP_CLK_DIV = 0xB3
-        const val SET_SECOND_PRECHARGE = 0xB6
-        const val SET_GRAYSCALE_TABLE = 0xB8
-        const val SET_GRAYSCALE_LINEAR = 0xB9
-        const val SET_PRECHARGE = 0xBC
-        const val SET_VCOM_DESEL = 0xBE
-        const val SET_FN_SELECT_B = 0xD5
-        const val SET_COMMAND_LOCK = 0xFD
+        internal const val SET_PHASE_LEN = 0xB1
+        internal const val SET_DISP_CLK_DIV = 0xB3
+        internal const val SET_SECOND_PRECHARGE = 0xB6
+        internal const val SET_GRAYSCALE_TABLE = 0xB8
+        internal const val SET_GRAYSCALE_LINEAR = 0xB9
+        internal const val SET_PRECHARGE = 0xBC
+        internal const val SET_VCOM_DESEL = 0xBE
+        internal const val SET_FN_SELECT_B = 0xD5
+        internal const val SET_COMMAND_LOCK = 0xFD
 
-        fun initSequence(height: Int, width: Int) =
+        internal fun initSequence(height: Int, width: Int) =
             Math.floorDiv((128 - width), 4).let { elements ->
                 intArrayOf(
                     SET_COMMAND_LOCK, 0x12,

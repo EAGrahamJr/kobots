@@ -155,8 +155,7 @@ class AdafruitSeeSaw(
     private fun Int.digitalPin(): ByteArray {
         val bMode = this >= 32
         val pinValue = 1 shl (if (bMode) this - 32 else this)
-        val cmd = if (bMode) writeToByteArray(pinValue, 8, 4) else writeToByteArray(pinValue, 4, 0)
-        return cmd
+        return if (bMode) writeToByteArray(pinValue, 8, 4) else writeToByteArray(pinValue, 4, 0)
     }
 
     /**
@@ -210,7 +209,7 @@ class AdafruitSeeSaw(
      * Hardware chip determines if a straight "offset" is used or a pin-mapping
      */
     private fun IntArray.pwmOffsets(pinToFind: Byte): Byte = indexOf(pinToFind.toInt()).let {
-        if (it < 0) throw IllegalArgumentException("Unknown analog pin ${pinToFind.hex()}")
+        if (it < 0) throw IllegalArgumentException("Unknown analog pin ${pinToFind.debug()}")
         // hardware differences (this is interesting)
         when (chipId) {
             DeviceType.SAMD09_HW_ID_CODE.pid -> it
@@ -322,7 +321,7 @@ class AdafruitSeeSaw(
 
     private fun readShort(registerBase: Byte, register: Byte): Int = read(registerBase, register, 2).toShort()
 
-    private fun readByte(registerBase: Byte, register: Byte): Byte = read(registerBase, register, 1).get(0)
+    private fun readByte(registerBase: Byte, register: Byte): Byte = read(registerBase, register, 1)[0]
 
     private fun writeByte(registerBase: Byte, register: Byte, value: Byte): Boolean {
         return write(registerBase, register, byteArrayOf(value))
@@ -350,7 +349,7 @@ class AdafruitSeeSaw(
         } ?: SleepUtil.busySleep(delay.toNanos())
         // read what we got
         return i2CDevice.readBytes(bytesToRead).also { ba ->
-            ba.hex("Read")
+            ba.debug("Read")
         }
     }
 
@@ -361,7 +360,7 @@ class AdafruitSeeSaw(
     internal fun write(registerBase: Byte, register: Byte, buffer: ByteArray = ByteArray(0)): Boolean {
         val output = twoBytesAndBuffer(registerBase, register, buffer)
 
-        if (buffer.isEmpty()) output.hex("Register") else output.hex("Wrote")
+        if (buffer.isEmpty()) output.debug("Register") else output.debug("Wrote")
 
         readyOutput?.apply {
             while (!value) Thread.onSpinWait()
@@ -371,8 +370,8 @@ class AdafruitSeeSaw(
         return true
     }
 
-    private fun ByteArray.hex(prefix: String) {
-        logger.debug("$prefix ${joinToString(separator = "") { it.hex() }}")
+    private fun ByteArray.debug(prefix: String) {
+        logger.debug("$prefix ${hex()}")
     }
 
     companion object {

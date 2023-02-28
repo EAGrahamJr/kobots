@@ -18,6 +18,10 @@ package crackers.kobots.devices.lighting
 
 import bytes
 import crackers.kobots.devices.expander.clearBeforeTest
+import crackers.kobots.devices.lighting.IS31FL3731.Companion.BANK_ADDRESS
+import crackers.kobots.devices.lighting.IS31FL3731.Companion.COLOR_OFFSET
+import crackers.kobots.devices.lighting.IS31FL3731.Companion.CONFIG_BANK
+import crackers.kobots.devices.lighting.IS31FL3731.Companion.SHUTDOWN_REGISTER
 import crackers.kobots.utilities.hex
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
@@ -56,7 +60,7 @@ class IS31FL3731Test : FunSpec(
             // slice up the requests and check each piece: this first one selects the config bank and turns off the
             // display
             mockRequests.subList(0, 4).apply {
-                this shouldContainExactly listOf(_BANK_ADDRESS, _CONFIG_BANK, _SHUTDOWN_REGISTER, 0).bytes()
+                this shouldContainExactly listOf(BANK_ADDRESS, CONFIG_BANK, SHUTDOWN_REGISTER, 0).bytes()
                 clear()
             }
 
@@ -69,7 +73,7 @@ class IS31FL3731Test : FunSpec(
             (0..7).forEach { frame ->
                 mockRequests.subList(0, 2).apply {
                     testLogger.debug("block1 ${this.map { it.hex() }.joinToString("")}")
-                    this shouldContainExactly listOf(_BANK_ADDRESS, frame).bytes()
+                    this shouldContainExactly listOf(BANK_ADDRESS, frame).bytes()
                     clear()
                 }
                 mockRequests.subList(0, regConfig.size).apply {
@@ -78,10 +82,9 @@ class IS31FL3731Test : FunSpec(
                     this shouldContainExactly regConfig
                     clear()
                 }
-
             }
             // the remainder should be a config select and turn the display on
-            mockRequests shouldContainExactly listOf(_BANK_ADDRESS, _CONFIG_BANK, _SHUTDOWN_REGISTER, 1)
+            mockRequests shouldContainExactly listOf(BANK_ADDRESS, CONFIG_BANK, SHUTDOWN_REGISTER, 1)
                 .bytes()
         }
 
@@ -97,8 +100,11 @@ class IS31FL3731Test : FunSpec(
                         shim.pixel(i - 1, y, pixelColor)
                         val addr = shim.pixelAddress(i - 1, y)
                         mockRequests shouldContainExactly
-                            if (i == 1 && y == 0) listOf(_BANK_ADDRESS, 0x00, _COLOR_OFFSET + addr, pixelColor).bytes()
-                            else listOf(_COLOR_OFFSET + addr, pixelColor).bytes()
+                            if (i == 1 && y == 0) {
+                                listOf(BANK_ADDRESS, 0x00, COLOR_OFFSET + addr, pixelColor).bytes()
+                            } else {
+                                listOf(COLOR_OFFSET + addr, pixelColor).bytes()
+                            }
                     }
             }
         }

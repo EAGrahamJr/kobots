@@ -18,7 +18,7 @@ package lcd
 
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.LcdInterface.Characters
-import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
+import crackers.kobots.devices.display.HD44780Lcd.Pi4Line
 import java.lang.Thread.sleep
 
 fun FAIL(text: String) = println("$text not supported by hardware")

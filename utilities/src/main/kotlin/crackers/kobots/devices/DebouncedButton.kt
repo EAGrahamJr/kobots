@@ -34,7 +34,7 @@ class DebouncedButton @JvmOverloads constructor(
     deviceFactory: GpioDeviceFactoryInterface = nativeDeviceFactory
 ) : DebouncedDigitalInputDevice(
     deviceFactory,
-    deviceFactory.getBoardPinInfo().getByGpioNumberOrThrow(gpio),
+    deviceFactory.boardPinInfo.getByGpioNumberOrThrow(gpio),
     pud,
     activeHigh,
     debounceTime.toMillis().toInt()

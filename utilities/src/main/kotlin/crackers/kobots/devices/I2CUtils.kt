@@ -35,7 +35,7 @@ val qwiicKill by lazy {
 
 /**
  * Creates a read/write sub-register (e.g. bit-mapped values). The values read/write are based on a bit-mask - e.g.
- * this will extract and write only a _subset_ of a register value. This is for those occassions that an I2C register
+ * this will extract and write only a _subset_ of a register value. This is for those occasions that an I2C register
  * contains multiple values.
  *
  * - the `read` operation will shift the value "down" to provide the value
@@ -49,7 +49,7 @@ interface I2CSubRegister<N : Number> {
 }
 
 /**
- * More or less concrete implemenation of the sub-register.
+ * More or less concrete implementation of the sub-register.
  */
 private abstract class SubRegister<N : Number>(final override val mask: Int) : I2CSubRegister<N> {
     protected abstract fun readRegister(): N

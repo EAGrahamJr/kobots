@@ -21,6 +21,7 @@ import com.diozero.api.PwmOutputDevice
 import com.diozero.api.ServoDevice
 import com.diozero.devices.LcdInterface
 import com.diozero.devices.motor.MotorInterface
+import kotlin.math.abs
 
 /**
  * Adds DSL-like capabilities to `diozero`
@@ -99,7 +100,7 @@ operator fun LcdInterface<*>.plusAssign(special: Int) {
  */
 infix fun MotorInterface.at(speed: Float) {
     if (speed < 0) {
-        backward(Math.abs(speed))
+        backward(abs(speed))
     } else {
         forward(speed)
     }

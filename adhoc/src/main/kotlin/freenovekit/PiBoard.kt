@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2022 by E. A. Graham, Jr.
+ * Copyright 2022-2023 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,11 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.utilities
+package freenovekit
 
 import com.diozero.api.PinInfo
-import com.diozero.internal.spi.NativeDeviceFactoryInterface
 import com.diozero.sbc.BoardPinInfo
-import com.diozero.sbc.DeviceFactoryHelper
+import crackers.kobots.utilities.nativeDeviceFactory
 
 /**
  * Probably specific to the Raspberry Pi.
@@ -35,29 +34,30 @@ fun BoardPinInfo.byName(name: String, header: String = PI_HEADER) =
     } ?: throw NoSuchElementException("Header '$name' not found")
 
 /**
- * Default device factory.
- */
-val nativeDeviceFactory: NativeDeviceFactoryInterface by lazy { DeviceFactoryHelper.getNativeDeviceFactory() }
-
-/**
  * Default board pin info.
  */
-val defaultPins: BoardPinInfo by lazy { nativeDeviceFactory.getBoardPinInfo() }
+val defaultPins: BoardPinInfo by lazy { nativeDeviceFactory.boardPinInfo }
 
 /**
- * Pin information for all the Raspbarry Pi pins.
+ * Pin information for all the Raspberry Pi pins.
  */
 val piPins: Collection<PinInfo>? by lazy { defaultPins.headers[PI_HEADER]?.values }
 
 /**
  * Pretty-print the pin names, device number, and physical pin.
  */
-fun `pretty print pins`() {
+fun prettyPrintPins() {
     val columnWidth = piPins!!.maxOf { it.name.length }
     val template = "| %-${columnWidth}s | %3s | %3d |"
     println("| %${columnWidth}s | Num | Pin |".format("Name"))
     println("|${"-".repeat(columnWidth + 2)}|-----|-----|")
     piPins!!.forEach {
-        println(template.format(it.name, if (it.deviceNumber == -1) "" else "%3d".format(it.deviceNumber), it.physicalPin))
+        println(
+            template.format(
+                it.name,
+                if (it.deviceNumber == -1) "" else "%3d".format(it.deviceNumber),
+                it.physicalPin
+            )
+        )
     }
 }

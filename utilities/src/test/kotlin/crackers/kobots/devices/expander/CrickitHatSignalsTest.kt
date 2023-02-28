@@ -215,7 +215,6 @@ class CrickitHatSignalsTest : FunSpec(
                     }
                 }
             }
-
         }
     }
 ) {

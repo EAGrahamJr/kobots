@@ -19,8 +19,8 @@ package dork
 import base.REMOTE_PI
 import base.minutes
 import com.diozero.devices.LcdInterface
-import crackers.kobots.devices.display.HD44780_Lcd.Pi2Line
-import crackers.kobots.devices.display.HD44780_Lcd.Pi4Line
+import crackers.kobots.devices.display.HD44780Lcd.Pi2Line
+import crackers.kobots.devices.display.HD44780Lcd.Pi4Line
 import crackers.kobots.devices.display.LcdProgressBar
 import java.lang.Thread.sleep
 import java.nio.file.Files

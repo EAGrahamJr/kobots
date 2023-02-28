@@ -20,8 +20,6 @@ import com.diozero.api.GpioPullUpDown
 import com.diozero.devices.*
 import crackers.kobots.devices.AnodeRgbPwmLed
 import crackers.kobots.devices.DebouncedButton
-import crackers.kobots.utilities.byName
-import crackers.kobots.utilities.defaultPins
 import java.awt.Color
 import java.lang.Thread.sleep
 import java.time.Duration

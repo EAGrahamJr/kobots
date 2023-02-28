@@ -21,6 +21,7 @@ import com.diozero.devices.LuminositySensorInterface
 import com.diozero.util.Hex
 import crackers.kobots.devices.shortSubRegister
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.roundToInt
 
 /**
  * Proximity and ambient light sensor on I2C bus.
@@ -106,7 +107,7 @@ class VCNL4040(private val delegate: I2CDevice) : LuminositySensorInterface {
         get() {
             val wh = delegate.readWordData(WHITE_DATA)
             // scale the light depending on the value of the integration time
-            return Math.round(wh * (0.1 / (1 shl ambientIntegrationValue.get()))).toShort()
+            return (wh * (0.1 / (1 shl ambientIntegrationValue.get()))).roundToInt().toShort()
         }
 
     // read and clear interrupt ---------------------------------------------------------------------------------------
@@ -192,7 +193,7 @@ class VCNL4040(private val delegate: I2CDevice) : LuminositySensorInterface {
      * The bit for this flag is actually _inverted_ as it's technically an "is shutdown" flag
      */
     var ambientLightEnabled: Boolean
-        get() = !(delegate.shortSubRegister(ALS_CONFIG, ALS_SD).read() == 0.toShort())
+        get() = delegate.shortSubRegister(ALS_CONFIG, ALS_SD).read() != 0.toShort()
         set(enable) = writeBit(ALS_CONFIG, ALS_SD, !enable)
 
     // PS Config 1 ----------------------------------------------------------------------------------------------------
@@ -219,7 +220,7 @@ class VCNL4040(private val delegate: I2CDevice) : LuminositySensorInterface {
      * The bit for this flag is actually _inverted_ as it's technically an "is shutdown" flag
      */
     var proximityEnabled: Boolean
-        get() = !(delegate.shortSubRegister(PS_CONFIG1, PS_SD).read() == 0.toShort())
+        get() = delegate.shortSubRegister(PS_CONFIG1, PS_SD).read() != 0.toShort()
         set(enable) = writeBit(PS_CONFIG1, PS_SD, !enable)
 
     // PS Config 2 ----------------------------------------------------------------------------------------------------
@@ -269,7 +270,7 @@ class VCNL4040(private val delegate: I2CDevice) : LuminositySensorInterface {
      * The bit for this flag is actually _inverted_
      */
     var whiteLightEnabled: Boolean
-        get() = !(delegate.shortSubRegister(PS_MS_H, WHITE_EN).read() == 0.toShort())
+        get() = delegate.shortSubRegister(PS_MS_H, WHITE_EN).read() != 0.toShort()
         set(enable) = writeBit(PS_MS_H, WHITE_EN, !enable)
 
     var proximityOperation: ProximityOperation

@@ -21,6 +21,8 @@ import java.awt.*
 import java.awt.geom.*
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.floor
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * A very simple circular- or arc-style "gauge" (e.g. "dial", "dial pointer"), without resorting to large libraries.
@@ -36,17 +38,17 @@ import kotlin.math.floor
  * - [fontColor] = color for said font (defaults to `foreground`)
  */
 class PointerGauge @JvmOverloads constructor(
-    val graphics: Graphics2D,
+    private val graphics: Graphics2D,
     width: Int,
     height: Int,
-    val minimumValue: Double = 0.0,
-    val maximumValue: Double = 100.0,
-    val label: String? = null,
+    private val minimumValue: Double = 0.0,
+    private val maximumValue: Double = 100.0,
+    private val label: String? = null,
     shape: Shape = Shape.SEMICIRCLE,
-    val foreground: Color = Color.WHITE,
-    val background: Color = Color.BLACK,
+    private val foreground: Color = Color.WHITE,
+    private val background: Color = Color.BLACK,
     font: String = Font.SANS_SERIF,
-    val fontColor: Color = foreground
+    private val fontColor: Color = foreground
 ) {
     enum class Shape {
         CIRCLE, SEMICIRCLE
@@ -72,30 +74,23 @@ class PointerGauge @JvmOverloads constructor(
 
         // Determine the geometry based on the type/shape of the gauge
         graphShape = if (shape == Shape.CIRCLE) {
-            radius = Math.min(width / 2.0, height / 2.0)
+            radius = min(width / 2.0, height / 2.0)
             xMidpoint = width / 2.0
             yMidpoint = height / 2.0
             degrees = 360.0
             degreesPerTick = degrees / TICKS
             labelIncrement = (maximumValue - minimumValue) / TICKS
             maxLabelRange = TICKS
-            Ellipse2D.Double(
-                xMidpoint - radius, yMidpoint - radius,
-                radius * 2.0, radius * 2.0
-            )
+            Ellipse2D.Double(xMidpoint - radius, yMidpoint - radius, radius * 2.0, radius * 2.0)
         } else {
-            radius = Math.min(width / 2.0, height.toDouble())
+            radius = min(width / 2.0, height.toDouble())
             xMidpoint = width / 2.0
             yMidpoint = height.toDouble() * .9 // move it off the bottom a little bit
             degrees = 180.0
             degreesPerTick = degrees / TICKS
             labelIncrement = (maximumValue - minimumValue) / TICKS
             maxLabelRange = TICKS + 1
-            Arc2D.Double(
-                xMidpoint - radius, yMidpoint - radius,
-                radius * 2.0, radius * 2.0,
-                0.0, degrees, Arc2D.OPEN
-            )
+            Arc2D.Double(xMidpoint - radius, yMidpoint - radius, radius * 2.0, radius * 2.0, 0.0, degrees, Arc2D.OPEN)
         }
 
         graphics.color = foreground
@@ -147,7 +142,8 @@ class PointerGauge @JvmOverloads constructor(
             for (i in 0..TICKS) {
                 val at = AffineTransform.getRotateInstance(
                     Math.toRadians(tickMarkRotationAngle),
-                    xMidpoint, yMidpoint
+                    xMidpoint,
+                    yMidpoint
                 )
                 graphics.draw(at.createTransformedShape(radial))
                 tickMarkRotationAngle += degreesPerTick
@@ -176,7 +172,8 @@ class PointerGauge @JvmOverloads constructor(
         for (i in 0 until maxLabelRange) {
             val textLocation = AffineTransform.getRotateInstance(
                 Math.toRadians(textRotationAngles),
-                xMidpoint, yMidpoint
+                xMidpoint,
+                yMidpoint
             ).transform(labelStartPoint, null)
 
             val printThis = String.format("%3.0f", label).trim()
@@ -195,7 +192,8 @@ class PointerGauge @JvmOverloads constructor(
         // Draw the pointer
         val at = AffineTransform.getRotateInstance(
             Math.toRadians(value / maximumValue * degrees),
-            xMidpoint, yMidpoint
+            xMidpoint,
+            yMidpoint
         )
         graphics.color = foreground
         graphics.draw(at.createTransformedShape(pointer))
@@ -208,7 +206,7 @@ class PointerGauge @JvmOverloads constructor(
      * @param value  The current value
      */
     fun setValue(value: Double) {
-        this.value = Math.min(maximumValue, Math.max(minimumValue, value))
+        this.value = min(maximumValue, max(minimumValue, value))
     }
 
     companion object {

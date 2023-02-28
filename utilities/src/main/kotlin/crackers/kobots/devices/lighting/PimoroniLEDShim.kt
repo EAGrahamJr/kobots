@@ -19,7 +19,7 @@ package crackers.kobots.devices.lighting
 import com.diozero.api.I2CDevice
 import java.awt.Color
 
-val DEFAULT_SHIM_ADDRESS = 0x75
+const val DEFAULT_SHIM_ADDRESS = 0x75
 private val DEFAULT_SHIM_DEVICE by lazy { I2CDevice(1, DEFAULT_SHIM_ADDRESS) }
 
 class PimoroniLEDShim(shimDevice: I2CDevice = DEFAULT_SHIM_DEVICE) : IS31FL3731(shimDevice) {
@@ -41,6 +41,8 @@ class PimoroniLEDShim(shimDevice: I2CDevice = DEFAULT_SHIM_DEVICE) : IS31FL3731(
         setPixel(x, 1, color.green, frame)
         setPixel(x, 2, color.blue, frame)
     }
+
+    operator fun set(x: Int, color: Color) = pixelColor(x, color)
 
     /**
      * Someone else already did all the math...
