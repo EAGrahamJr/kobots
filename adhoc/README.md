@@ -1,5 +1,11 @@
 Learnin' stuff and experiments not intended to be taken seriously.
 
+# In Memorium: Illy 5/2006 - 2/24/2023
+
+Goodbye, my friend.
+
+Aside from the image, the code is archived in the "learning" branch.
+
 ### Cat Bonker, Mark I
 
 - [diozero](https://www.diozero.com/) library
@@ -20,7 +26,3 @@ Learnin' stuff and experiments not intended to be taken seriously.
 - Servo
   - has an "arrow" stuck on the spindle
   - reacts based on range-finder
-
-# In Memorium: Illy 2/24/2023
-
-Goodbye, my friend.

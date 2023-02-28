@@ -14,26 +14,29 @@
  * permissions and limitations under the License.
  */
 
-package kobots.ops
+package device.examples.adafruit
 
+import base.REMOTE_PI
 import com.diozero.api.ServoTrim
 import crackers.kobots.devices.at
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import crackers.kobots.devices.set
+import kobots.ops.createEventBus
+import kobots.ops.registerCPUTempConsumer
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import java.util.concurrent.atomic.AtomicBoolean
 
-val zFlow = createEventBus<Boolean>()
-val xFlow = createEventBus<Float>()
-val yFlow = createEventBus<Float>()
-private val running = AtomicBoolean(true)
-
 /**
- * Use flows to take values from the joystick to move the servo using the CRICKIT board
+ * Use flows to take values from the joystick to move the servo using the CRICKIT board.
  */
 fun main() {
-    System.setProperty("diozero.remote.hostname", "marvin.local")
+    System.setProperty(REMOTE_PI, "marvin.local")
+
+    val zButtonBus = createEventBus<Boolean>()
+    val xAsisBus = createEventBus<Float>()
+    val yAxisBus = createEventBus<Float>()
+    val running = AtomicBoolean(true)
 
     CRICKITHatDeviceFactory().use {
         val servo = it.servo(2, ServoTrim.TOWERPRO_SG90)
@@ -42,22 +45,22 @@ fun main() {
         val zButton = it.signalDigitalIn(8)
         val noodle = it.signalDigitalOut(1)
 
-        zFlow.registerConsumer {
+        zButtonBus.registerConsumer {
             if (it) running.set(false)
         }
-        xFlow.registerConsumer {
+        xAsisBus.registerConsumer {
             servo at 180 * it
         }
         registerCPUTempConsumer {
             println("Temp $it")
         }
-        yFlow.registerConsumer {
+        yAxisBus.registerConsumer {
             noodle set (it > .5f)
         }
 
-        xFlow.registerPublisher { xAxis.unscaledValue }
-        yFlow.registerPublisher { yAxis.unscaledValue }
-        zFlow.registerPublisher { zButton.value }
+        xAsisBus.registerPublisher { xAxis.unscaledValue }
+        yAxisBus.registerPublisher { yAxis.unscaledValue }
+        zButtonBus.registerPublisher { zButton.value }
 
         runBlocking {
             while (running.get()) yield()

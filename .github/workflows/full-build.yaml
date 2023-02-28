@@ -1,0 +1,39 @@
+name: Build Kobots with dependent fork of 'diozero'
+on:
+  push:
+    branches: [ main ]
+    paths_ignore:
+      - "*.md"
+      - "docs/**"
+  pull_request:
+    branches: [ main ]
+    paths_ignore:
+      - "*.md"
+      - "docs/**"
+  workflow_dispatch:
+
+jobs:
+  build_everything:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout diozero
+        uses: actions/checkout@v2
+        with:
+          repository: EAGrahamJr/diozero
+          path: diozero
+      - name: Checkout kobots
+        uses: actions/checkout@v2
+        with:
+          repository: EAGrahamJr/kobots
+          path: kobots
+      - name: Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: "temurin"
+      - name: Build It!
+        run: |
+          cd diozero
+          mvn --batch-mode -DskipTests install
+          cd ../kobots
+          ./gradlew --no-daemon build

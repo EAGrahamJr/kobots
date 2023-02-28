@@ -30,8 +30,7 @@ infix fun Int.minutes(block: () -> Unit) {
 
 const val REMOTE_PI = "diozero.remote.hostname"
 
-fun Float.stringify(digits: Int = 5) = String.format("%$digits.2f", this)
-
+// generic launcher to keep from continually changing the build
 fun main() {
     // select remote system (or not)
 //    System.setProperty(REMOTE_PI, "useless.local")

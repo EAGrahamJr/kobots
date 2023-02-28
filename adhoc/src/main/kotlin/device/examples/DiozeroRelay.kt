@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package dork
+package device.examples
 
 import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SsdOledCommunicationChannel

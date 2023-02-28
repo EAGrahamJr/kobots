@@ -4,19 +4,16 @@ plugins {
 
 dependencies {
     if (gradle.startParameter.taskNames.contains("deployMe")) {
-        println("Using PIGPIO")
         // requires root to run, but makes everything much faster
         implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
-        // just in case
-        // TODO needs to be implemenation for the "relay" app to work
+        // TODO needs to be implementation for the "relay" app to work
         compileOnly("com.diozero:diozero-provider-remote:$DIOZERO_VER")
     } else
         implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4-native-mt")
 }
 
-val sshTarget = "marvin.local"
-//val sshTarget = "useless.local"
+val sshTarget = System.getProperty("remote", "marvin.local")
 
 tasks {
     shadowJar {
