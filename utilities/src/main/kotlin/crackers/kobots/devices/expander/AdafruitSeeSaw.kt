@@ -27,6 +27,8 @@ import crackers.kobots.devices.twoBytesAndBuffer
 import crackers.kobots.utilities.*
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 import kotlin.experimental.and
 
 /**
@@ -58,6 +60,8 @@ class AdafruitSeeSaw(
     lateinit var pwmOutputPins: IntArray
 
     private val logger = LoggerFactory.getLogger("SeeSaw")
+    private val lock = ReentrantLock()
+
     val chipId: Int
 
     init {
@@ -333,17 +337,17 @@ class AdafruitSeeSaw(
     }
 
     /**
-     * Read an arbitrary I2C register range from the device
+     * Read an arbitrary I2C register range from the device. The default delay is intended to accommodate mostly
+     * analog reads.
      */
-    @Synchronized
     internal fun read(
-        registerBase: Byte,
         register: Byte,
+        offset: Byte,
         bytesToRead: Int,
-        delay: Duration = Duration.ofMillis(8)
-    ): ByteArray {
+        delay: Duration = Duration.ofNanos(400_000)
+    ): ByteArray = lock.withLock {
         // set the register and wait for ready or just wait
-        write(registerBase, register)
+        write(register, offset)
         readyOutput?.apply {
             while (!value) Thread.onSpinWait()
         } ?: SleepUtil.busySleep(delay.toNanos())
@@ -354,11 +358,10 @@ class AdafruitSeeSaw(
     }
 
     /**
-     * Write an arbitrary I2C register data to the device
+     * Write arbitrary I2C data to the device.
      */
-    @Synchronized
-    internal fun write(registerBase: Byte, register: Byte, buffer: ByteArray = ByteArray(0)): Boolean {
-        val output = twoBytesAndBuffer(registerBase, register, buffer)
+    internal fun write(register: Byte, offset: Byte, buffer: ByteArray = ByteArray(0)): Boolean = lock.withLock {
+        val output = twoBytesAndBuffer(register, offset, buffer)
 
         if (buffer.isEmpty()) output.debug("Register") else output.debug("Wrote")
 
@@ -367,6 +370,8 @@ class AdafruitSeeSaw(
         }
 
         i2CDevice.writeBytes(*output)
+        // give the seesaw a bit of time to recover
+        SleepUtil.busySleep(50_000)
         return true
     }
 

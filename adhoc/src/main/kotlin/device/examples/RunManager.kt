@@ -28,21 +28,20 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 abstract class RunManager : AutoCloseable {
     // manage application run state
-    val crickit by lazy {
-        CRICKITHatDeviceFactory()
-    }
-
-    // putting "true" on this will flip the `running` flag to false
-    val shutdownEventBus = createEventBus<Boolean>()
+    val crickit by lazy { CRICKITHatDeviceFactory() }
 
     val running = AtomicBoolean(true).also { run ->
         val touchMe = crickit.touchDigitalIn(4)
-        // if the button is pressed, stop running
-        shutdownEventBus.registerPublisher { touchMe.value }
-        shutdownEventBus.registerConsumer {
-            if (it) {
-                run.set(false)
-                shutdownEventBus.close()
+
+        // putting "true" on this will flip the `running` flag to false
+        createEventBus<Boolean>(name = "Shutdown").apply {
+            // if the button is pressed, stop running
+            registerPublisher(errorHandler = errorMessageHandler) { touchMe.value }
+            registerConsumer {
+                if (it) {
+                    run.set(false)
+                    close()
+                }
             }
         }
     }

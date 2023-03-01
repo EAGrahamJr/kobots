@@ -19,13 +19,11 @@ package device.examples.adafruit
 import base.REMOTE_PI
 import com.diozero.util.SleepUtil
 import com.diozero.util.SleepUtil.sleepSeconds
-import crackers.kobots.devices.expander.NeoPixel.Companion.neoPixelStrand
 import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.PURPLE
 import crackers.kobots.utilities.colorIntervalFromHSB
 import crackers.kobots.utilities.kelvinToRGB
 import device.examples.RunManager
-import kobots.ops.KobotsEventBus
 import kobots.ops.createEventBus
 import java.awt.Color
 import java.lang.Thread.sleep
@@ -35,7 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * TODO fill this in
  */
 class CRICKITHatNeoPixels : RunManager() {
-    val strand = neoPixelStrand(crickit, 30)
+    val strand = crickit.neoPixel(30)
 
     fun simpleLoop() {
         val warmWhite = 2700.kelvinToRGB()
@@ -76,7 +74,7 @@ class CRICKITHatNeoPixels : RunManager() {
     fun adjustLarson() {
         createEventBus<Boolean>(name = "Up Larson").apply {
             val touch = crickit.touchDigitalIn(1)
-            registerPublisher(errorHandler = KobotsEventBus.NOOP_HANDLER) {
+            registerPublisher(errorHandler = errorMessageHandler) {
                 touch.value
             }
             registerConditionalConsumer(messageCondition = { it }) {
@@ -86,7 +84,7 @@ class CRICKITHatNeoPixels : RunManager() {
         }
         createEventBus<Boolean>(name = "Down Larson").apply {
             val touch = crickit.touchDigitalIn(2)
-            registerPublisher(errorHandler = KobotsEventBus.NOOP_HANDLER) {
+            registerPublisher(errorHandler = errorMessageHandler) {
                 touch.value
             }
             registerConditionalConsumer(messageCondition = { it }) {
@@ -104,7 +102,7 @@ class CRICKITHatNeoPixels : RunManager() {
         var center = -1
         var direction = 1
         var previous = -1
-        waitForIt {
+        while (running.get()) {
             SleepUtil.sleepMillis(larsonDelay.get().toLong())
             // wipe out previous
             val paintItBlack = if (previous != -1) {

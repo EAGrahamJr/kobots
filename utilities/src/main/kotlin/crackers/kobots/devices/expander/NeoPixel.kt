@@ -56,10 +56,5 @@ class NeoPixel internal constructor(
 
         // magic buffer size as determined by Adafruit
         private const val OUTPUT_BUFFER_SIZE = 24
-
-        fun neoPixelStrand(factory: CRICKITHatDeviceFactory, numPixels: Int, bitsPerPixel: Int = 3): NeoPixel =
-            NeoPixel(factory.seeSaw, numPixels, CRICKIT_PIN, bitsPerPixel)
-
-        fun statusNeoPixel(factory: CRICKITHatDeviceFactory) = NeoPixel(factory.seeSaw, 1, CRICKIT_STATUS, 3)
     }
 }

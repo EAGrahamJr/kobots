@@ -56,10 +56,13 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
         this(CRICKITHat(i2CDevice, initReset))
 
     internal val seeSaw: AdafruitSeeSaw
+    private lateinit var neoPixelPort: NeoPixel
 
     init {
         seeSaw = theHat.seeSaw
     }
+
+    private val statusPixel by lazy { NeoPixel(seeSaw, 1, NeoPixel.CRICKIT_STATUS, 3) }
 
     enum class Types(internal val offset: Int) {
         SIGNAL(100), TOUCH(110), SERVO(120), MOTOR(130), DRIVE(140), NEOPIXEL(150), SPEAKER(160);
@@ -69,7 +72,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
     }
 
     /**
-     * Convenience function to get a digital input on the Signal block [pin] (1-8), with optional [pullDown]
+     * Convenience function to get a digital input on the Signal port [pin] (1-8), with optional [pullDown]
      */
     fun signalDigitalIn(pin: Int, pullDown: Boolean = false) =
         DigitalInputDevice(
@@ -80,12 +83,12 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
         )
 
     /**
-     * Convenience function to get a digital output on the Signal block [pin] (1-8)
+     * Convenience function to get a digital output on the Signal port [pin] (1-8)
      */
     fun signalDigitalOut(pin: Int) = DigitalOutputDevice(this, SIGNAL.deviceNumber(pin), true, false)
 
     /**
-     * Convenience function to get an analog input on the  Signal block [pin] (1-8)
+     * Convenience function to get an analog input on the  Signal port [pin] (1-8)
      */
     fun signalAnalogIn(pin: Int) = AnalogInputDevice(this, SIGNAL.deviceNumber(pin))
 
@@ -100,7 +103,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
     fun touchAnalogIn(pin: Int) = AnalogInputDevice(this, TOUCH.deviceNumber(pin))
 
     /**
-     * Convenience function to get a servo device on the Servo block [pin] (1-4)
+     * Convenience function to get a servo device on the Servo ports [pin] (1-4)
      */
     fun servo(pin: Int, servoTrim: ServoTrim = ServoTrim.DEFAULT): ServoDevice =
         ServoDevice.Builder.builder(SERVO.deviceNumber(pin))
@@ -109,13 +112,30 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
             .build()
 
     /**
-     * Convenience function to use the Motor block for bidirectional motors, where [index] is the motor _number_ (1 or
+     * Convenience function to use the Motor ports for bidirectional motors, where [index] is the motor _number_ (1 or
      * 2).
      */
     fun motor(index: Int): PwmMotor {
         val pins = if (index == 1) MOTOR1A to MOTOR1B else MOTOR2A to MOTOR2B
         return PwmMotor(this, pins.first, pins.second)
     }
+
+    /**
+     * Convenience function to use the NeoPixel port. Note that this does **not** have a `diozero` equivalent,
+     * so acquisition through "normal" factory operations is not possible.
+     */
+    fun neoPixel(numPixels: Int, bitsPerPixel: Int = 3): NeoPixel =
+        if (::neoPixelPort.isInitialized) {
+            neoPixelPort
+        } else {
+            NeoPixel(seeSaw, numPixels, NeoPixel.CRICKIT_PIN, bitsPerPixel).also { neoPixelPort = it }
+        }
+
+    /**
+     * Convenience function to access the on-board status NeoPixel. Note that this does **not** have a `diozero`
+     * equivalent, so acquisition through "normal" factory operations is not possible.
+     */
+    fun statusPixel() = statusPixel
 
     // -----------------------------------------------------------------------------------------------------------------
     // internal quick-access functionality

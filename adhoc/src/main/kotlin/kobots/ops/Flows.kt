@@ -41,7 +41,7 @@ private val scheduler: ScheduledExecutorService by lazy {
     }
 }
 
-class KobotsEventBus<V>(capacity: Int, name: String? = null) : AutoCloseable {
+class KobotsEventBus<V>(capacity: Int, val name: String? = null) : AutoCloseable {
     private val logger = LoggerFactory.getLogger(name ?: this::class.java.simpleName)
     private val flow = MutableSharedFlow<V>(
         extraBufferCapacity = capacity,
@@ -53,6 +53,18 @@ class KobotsEventBus<V>(capacity: Int, name: String? = null) : AutoCloseable {
      * Expose a shared flow for anyone that wants it.
      */
     val sharedFlow: SharedFlow<V> = flow.asSharedFlow()
+
+    /**
+     * Default handler that logs the errors with stack-traces and continues.
+     */
+    val defaultErrorHandler: (t: Throwable) -> Unit by lazy { { t -> logger.error("Unhandled error", t) } }
+
+    /**
+     * Error handler that simply logs the error messages and continues.
+     */
+    val errorMessageHandler: (t: Throwable) -> Unit by lazy {
+        { t -> logger.error("Unhandled error: ${t.localizedMessage}") }
+    }
 
     init {
         Runtime.getRuntime().addShutdownHook(thread(start = false) { busRunning.set(false) })
@@ -72,7 +84,7 @@ class KobotsEventBus<V>(capacity: Int, name: String? = null) : AutoCloseable {
      */
     fun registerPublisher(
         pollInterval: Duration = Duration.ofMillis(100),
-        errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER,
+        errorHandler: (t: Throwable) -> Unit = defaultErrorHandler,
         eventProducer: () -> V
     ) {
         scheduler.scheduleAtFixedRate(
@@ -89,7 +101,7 @@ class KobotsEventBus<V>(capacity: Int, name: String? = null) : AutoCloseable {
      * A flow event consumer for **blocking** operations. When a message arrives, it is passed to the [eventConsumer].
      * The [errorHandler] is invoked with any errors that occur.
      */
-    fun registerConsumer(errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER, eventConsumer: (V) -> Unit) {
+    fun registerConsumer(errorHandler: (t: Throwable) -> Unit = defaultErrorHandler, eventConsumer: (V) -> Unit) {
         sharedFlow.onEach { message ->
             withContext(Dispatchers.IO) {
                 withErrorHandler(errorHandler) { eventConsumer(message) }
@@ -103,7 +115,7 @@ class KobotsEventBus<V>(capacity: Int, name: String? = null) : AutoCloseable {
      * errors that occur.
      */
     fun registerConditionalConsumer(
-        errorHandler: (t: Throwable) -> Unit = DEFAULT_HANDLER,
+        errorHandler: (t: Throwable) -> Unit = defaultErrorHandler,
         messageCondition: Predicate<V>,
         eventConsumer: (V) -> Unit
     ) {
@@ -128,13 +140,6 @@ class KobotsEventBus<V>(capacity: Int, name: String? = null) : AutoCloseable {
     }
 
     companion object {
-        private val errorHandlerLogger = LoggerFactory.getLogger("Default EventBus ErrorHandler")
-
-        /**
-         * Default handler that simply logs the errors and continues.
-         */
-        val DEFAULT_HANDLER: (t: Throwable) -> Unit = { t -> errorHandlerLogger.error("Unhandled error", t) }
-
         /**
          * No-op handler: ignores errors.
          */
