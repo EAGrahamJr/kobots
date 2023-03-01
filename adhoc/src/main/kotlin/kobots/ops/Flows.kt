@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
@@ -39,6 +40,16 @@ private val scheduler: ScheduledExecutorService by lazy {
     Executors.newScheduledThreadPool(System.getProperty(MAX_SCHEDULER, "5").toInt()).also { svc ->
         Runtime.getRuntime().addShutdownHook(thread(start = false) { svc.shutdownNow() })
     }
+}
+
+private val busRegistry by lazy {
+    Runtime.getRuntime().addShutdownHook(thread(start = false) { stopTheBus() })
+    CopyOnWriteArraySet<KobotsEventBus<*>>()
+}
+
+fun stopTheBus() {
+    busRegistry.forEach { it.close() }
+    scheduler.shutdownNow()
 }
 
 class KobotsEventBus<V>(capacity: Int, val name: String? = null) : AutoCloseable {
@@ -67,6 +78,8 @@ class KobotsEventBus<V>(capacity: Int, val name: String? = null) : AutoCloseable
     }
 
     init {
+        if (busRegistry.contains(this)) throw IllegalStateException("Bus cannot be instantiated multiple times")
+        busRegistry += this
         Runtime.getRuntime().addShutdownHook(thread(start = false) { busRunning.set(false) })
     }
 
@@ -103,7 +116,7 @@ class KobotsEventBus<V>(capacity: Int, val name: String? = null) : AutoCloseable
      */
     fun registerConsumer(errorHandler: (t: Throwable) -> Unit = defaultErrorHandler, eventConsumer: (V) -> Unit) {
         sharedFlow.onEach { message ->
-            withContext(Dispatchers.IO) {
+            if (busRunning.get()) withContext(Dispatchers.IO) {
                 withErrorHandler(errorHandler) { eventConsumer(message) }
             }
         }.launchIn(CoroutineScope(Dispatchers.Default))
@@ -120,7 +133,7 @@ class KobotsEventBus<V>(capacity: Int, val name: String? = null) : AutoCloseable
         eventConsumer: (V) -> Unit
     ) {
         sharedFlow.onEach { message ->
-            if (messageCondition.test(message)) {
+            if (messageCondition.test(message) && busRunning.get()) {
                 withContext(Dispatchers.IO) {
                     withErrorHandler(errorHandler) { eventConsumer(message) }
                 }

@@ -25,6 +25,7 @@ import crackers.kobots.utilities.colorIntervalFromHSB
 import crackers.kobots.utilities.kelvinToRGB
 import device.examples.RunManager
 import kobots.ops.createEventBus
+import kobots.ops.stopTheBus
 import java.awt.Color
 import java.lang.Thread.sleep
 import java.util.concurrent.atomic.AtomicInteger
@@ -143,7 +144,7 @@ class CRICKITHatNeoPixels : RunManager() {
 
     fun execute() {
 //            simpleLoop()
-        adjustLarson()
+//        adjustLarson()
         larson()
 //        rainbow()
 
@@ -151,6 +152,7 @@ class CRICKITHatNeoPixels : RunManager() {
         strand.fill(Color.BLACK)
         sleep(100)
         println("Bye now")
+        stopTheBus()
     }
 
     companion object {
