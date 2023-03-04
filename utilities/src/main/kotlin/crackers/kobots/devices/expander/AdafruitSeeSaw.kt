@@ -17,7 +17,6 @@
 package crackers.kobots.devices.expander
 
 import com.diozero.api.DeviceInterface
-import com.diozero.api.DigitalInputDevice
 import com.diozero.api.I2CDevice
 import com.diozero.api.RuntimeIOException
 import com.diozero.util.SleepUtil
@@ -43,11 +42,7 @@ import kotlin.experimental.and
  * The flow-control device is available, but typically not used.
  */
 
-class AdafruitSeeSaw(
-    private val i2CDevice: I2CDevice,
-    private val readyOutput: DigitalInputDevice? = null,
-    val initReset: Boolean = true
-) : DeviceInterface {
+open class AdafruitSeeSaw(private val i2CDevice: I2CDevice, val initReset: Boolean = true) : DeviceInterface {
 
     /**
      * Analog pin inputs. This must be set for [analogRead] to work.
@@ -60,7 +55,7 @@ class AdafruitSeeSaw(
     lateinit var pwmOutputPins: IntArray
 
     private val logger = LoggerFactory.getLogger("SeeSaw")
-    private val lock = ReentrantLock()
+    internal val lock = ReentrantLock()
 
     val chipId: Int
 
@@ -78,7 +73,6 @@ class AdafruitSeeSaw(
     }
 
     override fun close() {
-        readyOutput?.close()
         i2CDevice.close()
     }
 
@@ -283,9 +277,10 @@ class AdafruitSeeSaw(
         TODO("Not yet")
     }
 
-    fun getTemp(): Float {
-        TODO("Not yet")
-    }
+    fun getTemp(): Float =
+        readInt(STATUS_BASE, STATUS_TEMP).let {
+            it * 0.00001525878f
+        }
 
     fun getEncoderPosition(encoder: Byte = 0): Int {
         TODO("Not yet")
@@ -338,40 +333,37 @@ class AdafruitSeeSaw(
 
     /**
      * Read an arbitrary I2C register range from the device. The default delay is intended to accommodate mostly
-     * analog reads.
+     * analog reads. Note that this delay is _also_ passed on to the write operation.
      */
     internal fun read(
         register: Byte,
         offset: Byte,
         bytesToRead: Int,
-        delay: Duration = Duration.ofNanos(400_000)
+        delay: Duration = Duration.ofMillis(10)
     ): ByteArray = lock.withLock {
-        // set the register and wait for ready or just wait
-        write(register, offset)
-        readyOutput?.apply {
-            while (!value) Thread.onSpinWait()
-        } ?: SleepUtil.busySleep(delay.toNanos())
+        // set the register
+        write(register, offset, delay = delay)
         // read what we got
         return i2CDevice.readBytes(bytesToRead).also { ba ->
             ba.debug("Read")
+            SleepUtil.busySleep(delay.toNanos())
         }
     }
 
     /**
-     * Write arbitrary I2C data to the device.
+     * Write arbitrary I2C data to the device. The controller takes a small amount of time to actually process the
+     * data, so a delay after write is applied.
      */
-    internal fun write(register: Byte, offset: Byte, buffer: ByteArray = ByteArray(0)): Boolean = lock.withLock {
+    internal fun write(
+        register: Byte, offset: Byte, buffer: ByteArray = ByteArray(0),
+        delay: Duration = Duration.ofMillis(10)
+    ): Boolean = lock.withLock {
         val output = twoBytesAndBuffer(register, offset, buffer)
 
         if (buffer.isEmpty()) output.debug("Register") else output.debug("Wrote")
 
-        readyOutput?.apply {
-            while (!value) Thread.onSpinWait()
-        }
-
         i2CDevice.writeBytes(*output)
-        // give the seesaw a bit of time to recover
-        SleepUtil.busySleep(50_000)
+        SleepUtil.busySleep(delay.toNanos())
         return true
     }
 
@@ -408,7 +400,7 @@ class AdafruitSeeSaw(
         const val STATUS_HW_ID = 0x01.toByte()
         const val STATUS_VERSION = 0x02.toByte()
         const val STATUS_OPTIONS = 0x03
-        const val STATUS_TEMP = 0x04
+        const val STATUS_TEMP = 0x04.toByte()
         const val STATUS_SWRST = 0x7F.toByte()
 
         // PWM Timers

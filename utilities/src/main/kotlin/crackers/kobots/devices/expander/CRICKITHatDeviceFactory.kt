@@ -45,7 +45,7 @@ import javax.naming.OperationNotSupportedException
  */
 private const val NAME = "CRICKIT"
 
-class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
+class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
     AbstractDeviceFactory(NAME),
     GpioDeviceFactoryInterface,
     AnalogInputDeviceFactoryInterface,
@@ -55,12 +55,7 @@ class CRICKITHatDeviceFactory(theHat: CRICKITHat = CRICKITHat()) :
     constructor(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = true) :
         this(CRICKITHat(i2CDevice, initReset))
 
-    internal val seeSaw: AdafruitSeeSaw
     private lateinit var neoPixelPort: NeoPixel
-
-    init {
-        seeSaw = theHat.seeSaw
-    }
 
     private val statusPixel by lazy { NeoPixel(seeSaw, 1, NeoPixel.CRICKIT_STATUS, 3) }
 

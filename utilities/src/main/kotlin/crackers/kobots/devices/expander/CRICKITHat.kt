@@ -19,19 +19,13 @@ package crackers.kobots.devices.expander
 import com.diozero.api.I2CDevice
 
 /**
- * A CRICKIT Hat pin definitions. Includes the default setup for the SeeSaw controller.
+ * CRICKIT Hat pin definitions for the SeeSaw device.
  */
-class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = true) : AutoCloseable {
-    val seeSaw = AdafruitSeeSaw(i2CDevice, initReset = initReset).apply {
+class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = true) :
+    AdafruitSeeSaw(i2CDevice, initReset) {
+    init {
         analogInputPins = DIGITAL_PINS
         pwmOutputPins = PWM_PINS
-    }
-
-    override fun close() {
-        try {
-            seeSaw.close()
-        } catch (_: Throwable) {
-        }
     }
 
     companion object {

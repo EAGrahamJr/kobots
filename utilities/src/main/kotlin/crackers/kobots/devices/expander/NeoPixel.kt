@@ -24,6 +24,7 @@ import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.NEOPIXEL_SHOW
 import crackers.kobots.devices.lighting.PixelBuf
 import crackers.kobots.devices.to2Bytes
 import crackers.kobots.devices.twoBytesAndBuffer
+import kotlin.concurrent.withLock
 
 /**
  * NeoPixel handling via the SeeSaw
@@ -39,7 +40,7 @@ class NeoPixel internal constructor(
         seeSaw.writeShort(NEOPIXEL_BASE, NEOPIXEL_BUF_LENGTH, (bitsPerPixel * numPixels).toShort())
     }
 
-    override fun sendBuffer(buffer: ByteArray) {
+    override fun sendBuffer(buffer: ByteArray) = seeSaw.lock.withLock {
         val step = OUTPUT_BUFFER_SIZE - 2
 
         buffer.toList().chunked(step).forEachIndexed { index, chunk: List<Byte> ->
@@ -48,6 +49,7 @@ class NeoPixel internal constructor(
             seeSaw.write(NEOPIXEL_BASE, NEOPIXEL_BUF, outputBuffer)
         }
         seeSaw.write(NEOPIXEL_BASE, NEOPIXEL_SHOW)
+        Unit
     }
 
     companion object {

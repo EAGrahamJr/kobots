@@ -35,7 +35,7 @@ import crackers.kobots.devices.MockI2CDevice.requests as mockRequests
 class CrickitHatNeoPixelTest : FunSpec(
     {
         clearBeforeTest()
-        val seeSaw = testHat.seeSaw
+        val seeSaw = testHat
 
         context("Setup") {
             test("Strand of 30") {

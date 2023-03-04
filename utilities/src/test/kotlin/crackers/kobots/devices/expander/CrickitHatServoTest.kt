@@ -35,7 +35,7 @@ class CrickitHatServoTest : FunSpec(
     {
         clearBeforeTest()
         beforeTest {
-            testHat.seeSaw.pwmOutputPins = PWM_PINS
+            testHat.pwmOutputPins = PWM_PINS
         }
         (1..4).forEach { servoNumber ->
             context("Servo $servoNumber:") {
