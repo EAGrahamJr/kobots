@@ -277,10 +277,9 @@ open class AdafruitSeeSaw(private val i2CDevice: I2CDevice, val initReset: Boole
         TODO("Not yet")
     }
 
-    fun getTemp(): Float =
-        readInt(STATUS_BASE, STATUS_TEMP).let {
-            it * 0.00001525878f
-        }
+    fun getTemp(): Float {
+        TODO("Not yet")
+    }
 
     fun getEncoderPosition(encoder: Byte = 0): Int {
         TODO("Not yet")
