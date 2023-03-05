@@ -6,7 +6,7 @@
         </encoder>
     </appender>
 
-    <logger name="org.apache" level="WARN" />
+    <logger name="org.apache" level="INFO" />
 <!--    <logger name="SeeSaw" level="DEBUG" />-->
     <root level="info">
         <appender-ref ref="STDOUT" />

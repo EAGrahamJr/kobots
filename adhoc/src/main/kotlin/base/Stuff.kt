@@ -16,7 +16,7 @@
 package base
 
 import crackers.kobots.utilities.elapsed
-import device.examples.adafruit.CRICKITHatNeoPixels
+import device.examples.MultiDeviceMadness
 import java.time.Instant
 import kotlin.system.exitProcess
 
@@ -42,6 +42,6 @@ fun main() {
 //        it.waitForIt(.5.seconds)
 //    }
 //    DiozeroRelay().run()
-    CRICKITHatNeoPixels().use { it.execute() }
+    MultiDeviceMadness().use { it.execute() }
     exitProcess(0)
 }

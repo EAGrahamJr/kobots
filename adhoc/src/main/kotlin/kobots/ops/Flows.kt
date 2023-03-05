@@ -53,7 +53,7 @@ fun stopTheBus() {
 }
 
 class KobotsEventBus<V>(capacity: Int, val name: String? = null) : AutoCloseable {
-    private val logger = LoggerFactory.getLogger(name ?: this::class.java.simpleName)
+    val logger = LoggerFactory.getLogger(name ?: this::class.java.simpleName)
     private val flow = MutableSharedFlow<V>(
         extraBufferCapacity = capacity,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
@@ -86,6 +86,7 @@ class KobotsEventBus<V>(capacity: Int, val name: String? = null) : AutoCloseable
     override fun close() {
         logger.warn("bus closed")
         busRunning.set(false)
+        busRegistry -= this
     }
 
     /**
@@ -96,7 +97,7 @@ class KobotsEventBus<V>(capacity: Int, val name: String? = null) : AutoCloseable
      * Each pubsliher is running in a separate thread.
      */
     fun registerPublisher(
-        pollInterval: Duration = Duration.ofMillis(100),
+        pollInterval: Duration = DEFAULT_POLL_INTERVAL,
         errorHandler: (t: Throwable) -> Unit = defaultErrorHandler,
         eventProducer: () -> V
     ) {
@@ -115,11 +116,7 @@ class KobotsEventBus<V>(capacity: Int, val name: String? = null) : AutoCloseable
      * The [errorHandler] is invoked with any errors that occur.
      */
     fun registerConsumer(errorHandler: (t: Throwable) -> Unit = defaultErrorHandler, eventConsumer: (V) -> Unit) {
-        sharedFlow.onEach { message ->
-            if (busRunning.get()) withContext(Dispatchers.IO) {
-                withErrorHandler(errorHandler) { eventConsumer(message) }
-            }
-        }.launchIn(CoroutineScope(Dispatchers.Default))
+        registerConditionalConsumer(errorHandler, { true }, eventConsumer)
     }
 
     /**
@@ -157,6 +154,11 @@ class KobotsEventBus<V>(capacity: Int, val name: String? = null) : AutoCloseable
          * No-op handler: ignores errors.
          */
         val NOOP_HANDLER: (t: Throwable) -> Unit = {}
+
+        /**
+         * Default polling interval for producers.
+         */
+        val DEFAULT_POLL_INTERVAL = Duration.ofMillis(100)
     }
 }
 
@@ -171,7 +173,7 @@ inline fun <reified R> createEventBus(capacity: Int = 5, name: String? = null) =
  * A flow and producer specifically for the platform's CPU.
  */
 private val cpuBus by lazy {
-    createEventBus<Double>().apply {
+    createEventBus<Double>(name = "CPUTemp").apply {
         registerPublisher(Duration.ofMillis(500)) {
             LocalSystemInfo.getInstance().cpuTemperature.toDouble()
         }

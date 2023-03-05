@@ -40,13 +40,15 @@ class LEDShim() : RunManager() {
         with(shim) {
             // CPU temperature in the upper 10
             val OFFSET = 18
-            val cpuColors = colorInterval(Color.RED, Color.GREEN, 10).map { it.scale(5) }.reversed().apply {
+            val SIZE = 10
+            val cpuColors = colorInterval(Color.RED, Color.GREEN, SIZE).map { it.scale(5) }.reversed().apply {
                 forEachIndexed { index, color -> pixelColor(index + OFFSET, color) }
             }
             var lastTemp = -1
             registerCPUTempConsumer { temp ->
                 println("Temp $temp")
-                val x = ((temp - 40) * 10 / 30).roundToInt()
+                // 30 degree range, offset by 40
+                val x = ((temp - 40) * SIZE / 30).roundToInt()
                 if (x in (0..9) && x != lastTemp) {
                     if (lastTemp != -1) pixelColor(lastTemp + OFFSET, cpuColors[lastTemp])
                     pixelColor(x + OFFSET, Color.WHITE)

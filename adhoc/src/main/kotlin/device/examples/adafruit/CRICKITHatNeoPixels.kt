@@ -17,18 +17,18 @@
 package device.examples.adafruit
 
 import base.REMOTE_PI
-import com.diozero.util.SleepUtil
 import com.diozero.util.SleepUtil.sleepSeconds
 import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.PURPLE
 import crackers.kobots.utilities.colorIntervalFromHSB
 import crackers.kobots.utilities.kelvinToRGB
 import device.examples.RunManager
+import device.examples.larson
 import kobots.ops.createEventBus
 import kobots.ops.stopTheBus
 import java.awt.Color
 import java.lang.Thread.sleep
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * TODO fill this in
@@ -70,7 +70,7 @@ class CRICKITHatNeoPixels : RunManager() {
         waitForIt()
     }
 
-    private val larsonDelay = AtomicInteger(30)
+    private val larsonDelay = AtomicLong(30)
 
     fun adjustLarson() {
         createEventBus<Boolean>(name = "Up Larson").apply {
@@ -95,57 +95,10 @@ class CRICKITHatNeoPixels : RunManager() {
         }
     }
 
-    fun larson() {
-        strand.brightness = .1f
-        strand.autoWrite = false
-        val otherColor = Color(90, 0, 0)
-
-        var center = -1
-        var direction = 1
-        var previous = -1
-        while (running.get()) {
-            SleepUtil.sleepMillis(larsonDelay.get().toLong())
-            // wipe out previous
-            val paintItBlack = if (previous != -1) {
-                // heading right, make left-most black
-                if (direction > 0) {
-                    center - 1
-                } else {
-                    center + 1
-                }
-            } else {
-                -1
-            }
-
-            if (direction > 0) {
-                center++
-                if (center > 29) {
-                    direction = -1
-                    center = 28
-                }
-            } else {
-                center--
-                if (center < 0) {
-                    center = 1
-                    direction = 1
-                }
-            }
-
-            if (paintItBlack in (0..29)) strand[paintItBlack] = Color.BLACK
-            strand[center] = Color.RED
-            if (center - 1 >= 0) strand[center - 1] = otherColor
-            if (center + 1 < 30) strand[center + 1] = otherColor
-            strand.show()
-            previous = center
-        }
-        strand.autoWrite = true
-        println("larson done")
-    }
-
     fun execute() {
 //            simpleLoop()
 //        adjustLarson()
-        larson()
+        strand.larson(running, larsonDelay)
 //        rainbow()
 
         println("Execute done")

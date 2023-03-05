@@ -16,9 +16,12 @@
 
 package device.examples
 
+import com.diozero.api.RuntimeIOException
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import kobots.ops.createEventBus
+import kobots.ops.stopTheBus
+import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -27,16 +30,26 @@ import kotlin.time.Duration.Companion.milliseconds
  * Uses touchpad 4 to flip the "running" flag.
  */
 abstract class RunManager : AutoCloseable {
+    val logger = LoggerFactory.getLogger(this::class.java.simpleName)
+
     // manage application run state
     val crickit by lazy { CRICKITHatDeviceFactory() }
 
+    val shutdownBus = createEventBus<Boolean>(name = "Shutdown")
     val running = AtomicBoolean(true).also { run ->
         val touchMe = crickit.touchDigitalIn(4)
 
         // putting "true" on this will flip the `running` flag to false
-        createEventBus<Boolean>(name = "Shutdown").apply {
+        shutdownBus.apply {
             // if the button is pressed, stop running
-            registerPublisher(errorHandler = errorMessageHandler) { touchMe.value }
+            registerPublisher(errorHandler = errorMessageHandler) {
+                try {
+                    touchMe.value
+                } catch (e: RuntimeIOException) {
+                    logger.error("Error detected (${e.localizedMessage})- shutdown initiated")
+                    true
+                }
+            }
             registerConsumer {
                 if (it) {
                     run.set(false)
@@ -47,10 +60,11 @@ abstract class RunManager : AutoCloseable {
     }
 
     override fun close() {
+        stopTheBus()
         crickit.close()
     }
 
-    fun waitForIt(duration: Duration = 1.milliseconds, doSomething: () -> Unit = {}) {
+    fun waitForIt(duration: Duration = 10.milliseconds, doSomething: () -> Unit = {}) {
         while (running.get()) {
             doSomething()
             SleepUtil.sleepMillis(duration.inWholeMilliseconds)
