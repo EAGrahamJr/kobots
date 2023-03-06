@@ -154,27 +154,29 @@ internal class SignalAnalogInputDevice(
 internal class CRICKIInternalPwm(
     private val key: String,
     private val pwmNumber: Int,
-    private val seeSaw: AdafruitSeeSaw,
+    private val factory: CRICKITHatDeviceFactory,
     private val seeSawPin: Int,
     frequency: Int
 ) : InternalPwmOutputDeviceInterface {
 
     private var frequencyHz: Int = 50
     private var currentValue = 0f
+    private var open = true
 
     init {
         pwmFrequency = frequency
     }
 
     override fun close() {
-        // does nothing here
+        factory.deviceClosed(this)
+        open = false
     }
 
     override fun getKey() = key
 
-    override fun isOpen() = true
+    override fun isOpen() = open
 
-    override fun isChild() = true
+    override fun isChild() = false
 
     override fun setChild(child: Boolean) {
         // ignored
@@ -186,13 +188,13 @@ internal class CRICKIInternalPwm(
 
     override fun getPwmFrequency() = frequencyHz
     override fun setPwmFrequency(frequencyHz: Int) {
-        seeSaw.setPWMFreq(seeSawPin.toByte(), frequencyHz.toShort())
+        factory.seeSaw.setPWMFreq(seeSawPin.toByte(), frequencyHz.toShort())
         this.frequencyHz = frequencyHz
     }
 
     override fun setValue(fraction: Float) {
         val dutyCycle = fraction * 0xFFFF
-        seeSaw.analogWrite(seeSawPin.toByte(), truncate(dutyCycle).toInt().toShort(), true)
+        factory.seeSaw.analogWrite(seeSawPin.toByte(), truncate(dutyCycle).toInt().toShort(), true)
     }
 
     override fun getValue() = currentValue

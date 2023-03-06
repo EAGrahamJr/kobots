@@ -84,7 +84,7 @@ class CRICKITHat(i2CDevice: I2CDevice = defaultI2CDevice, initReset: Boolean = t
         internal const val DRIVE1 = 13
 
         /**
-         * Logical order - **NOT** pin order (see [PWM_PINS]
+         * Logical order - **NOT** pin order (see [PWM_PINS])
          */
         internal val DRIVES = intArrayOf(DRIVE1, DRIVE2, DRIVE3, DRIVE4)
 

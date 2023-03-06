@@ -332,7 +332,7 @@ open class AdafruitSeeSaw(private val i2CDevice: I2CDevice, val initReset: Boole
 
     /**
      * Read an arbitrary I2C register range from the device. The default delay is intended to accommodate mostly
-     * analog reads. Note that this delay is _also_ passed on to the write operation.
+     * analog reads. Note that this delay is passed on to the write operation.
      */
     internal fun read(
         register: Byte,
@@ -345,7 +345,6 @@ open class AdafruitSeeSaw(private val i2CDevice: I2CDevice, val initReset: Boole
         // read what we got
         return i2CDevice.readBytes(bytesToRead).also { ba ->
             ba.debug("Read")
-            SleepUtil.busySleep(delay.toNanos())
         }
     }
 
