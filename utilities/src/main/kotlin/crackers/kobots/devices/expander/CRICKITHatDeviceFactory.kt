@@ -283,10 +283,10 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
         maxPulseWidthUs: Int,
         initialPulseWidthUs: Int
     ): InternalServoDeviceInterface {
-        val pwm = pinInfo.let {
-            CRICKIInternalPwm(key, it.deviceNumber, this, it.physicalPin, frequencyHz)
+        val pwm = getInternalPwm(pinInfo, key, frequencyHz)
+        return PwmServoDevice(key, this, pwm, minPulseWidthUs, maxPulseWidthUs, initialPulseWidthUs).also {
+            deviceOpened(it)
         }
-        return PwmServoDevice(key, this, pwm, minPulseWidthUs, maxPulseWidthUs, initialPulseWidthUs)
     }
 
     override fun getBoardPwmFrequency() = 50
@@ -300,9 +300,11 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
         pinInfo: PinInfo,
         pwmFrequency: Int,
         initialValue: Float
-    ): InternalPwmOutputDeviceInterface = pinInfo.let {
-        CRICKIInternalPwm(key, it.deviceNumber, this, it.physicalPin, 50).apply {
-            value = initialValue
-        }
+    ): InternalPwmOutputDeviceInterface = getInternalPwm(pinInfo, key, pwmFrequency).apply {
+        value = initialValue
+    }
+
+    private fun getInternalPwm(pinInfo: PinInfo, key: String, frequencyHz: Int) = pinInfo.let {
+        CRICKIInternalPwm(key, it.deviceNumber, this, it.physicalPin, frequencyHz)
     }
 }
