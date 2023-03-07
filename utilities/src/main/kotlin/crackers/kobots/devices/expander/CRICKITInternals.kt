@@ -198,3 +198,28 @@ internal class CRICKIInternalPwm(
 
     override fun getValue() = currentValue
 }
+
+internal class PWMForStepper(private val delegate: CRICKIInternalPwm) : GpioDigitalOutputDeviceInterface {
+    var notClosed = true
+    override fun close() {
+        delegate.close()
+    }
+
+    override fun getKey(): String = delegate.key
+
+    override fun isOpen() = delegate.isOpen
+
+    override fun isChild() = delegate.isChild
+
+    override fun setChild(child: Boolean) {
+        // no op
+    }
+
+    override fun getGpio(): Int = delegate.gpio
+
+    override fun getValue(): Boolean = delegate.value < 1f
+
+    override fun setValue(value: Boolean) {
+        delegate.value = if (value) 1f else 0f
+    }
+}
