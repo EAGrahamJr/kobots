@@ -19,8 +19,8 @@ package device.examples
 import com.diozero.api.RuntimeIOException
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
-import kobots.ops.createEventBus
-import kobots.ops.stopTheBus
+import crackers.kobots.ops.createEventBus
+import crackers.kobots.ops.stopTheBus
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
@@ -29,7 +29,7 @@ import kotlin.time.Duration.Companion.milliseconds
 /**
  * Uses touchpad 4 to flip the "running" flag.
  */
-abstract class RunManager : AutoCloseable {
+abstract class RunManagerForFlows : AutoCloseable {
     val logger = LoggerFactory.getLogger(this::class.java.simpleName)
 
     // manage application run state

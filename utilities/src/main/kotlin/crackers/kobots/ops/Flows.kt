@@ -14,10 +14,10 @@
  * permissions and limitations under the License.
  */
 
-package kobots.ops
+package crackers.kobots.ops
 
 import com.diozero.sbc.LocalSystemInfo
-import kobots.ops.KobotsEventBus.Companion.NOOP_HANDLER
+import crackers.kobots.ops.KobotsEventBus.Companion.NOOP_HANDLER
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Runnable
@@ -34,6 +34,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Predicate
 import kotlin.concurrent.thread
 
+/**
+ * Completely prototype code for using coroutine multiflows as an asynchronous event bus.
+ *
+ * **NOTE** Expander boards/micro-controllers may not play nice, so the whole controller may need to be wrapped in
+ * its own "thread pool" to change the state of a lot of things.
+ */
 const val MAX_SCHEDULER = "kobots.max.scheduler.threads"
 
 private val scheduler: ScheduledExecutorService by lazy {
@@ -52,7 +58,7 @@ fun stopTheBus() {
     scheduler.shutdownNow()
 }
 
-class KobotsEventBus<V>(capacity: Int, val name: String? = null) : AutoCloseable {
+class KobotsEventBus<V>(capacity: Int, name: String? = null) : AutoCloseable {
     val logger = LoggerFactory.getLogger(name ?: this::class.java.simpleName)
     private val flow = MutableSharedFlow<V>(
         extraBufferCapacity = capacity,

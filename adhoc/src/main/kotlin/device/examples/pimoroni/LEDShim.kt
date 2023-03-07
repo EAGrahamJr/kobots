@@ -14,20 +14,21 @@
  * permissions and limitations under the License.
  */
 
-package device.examples
+package device.examples.pimoroni
 
 import base.REMOTE_PI
 import crackers.kobots.devices.at
 import crackers.kobots.devices.lighting.PimoroniLEDShim
+import crackers.kobots.ops.createEventBus
+import crackers.kobots.ops.registerCPUTempConsumer
 import crackers.kobots.utilities.colorInterval
 import crackers.kobots.utilities.scale
-import kobots.ops.createEventBus
-import kobots.ops.registerCPUTempConsumer
+import device.examples.RunManagerForFlows
 import java.awt.Color
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds
 
-class LEDShim() : RunManager() {
+class LEDShim() : RunManagerForFlows() {
     private val shim = PimoroniLEDShim()
 
     override fun close() {

@@ -20,7 +20,7 @@ import com.diozero.util.SleepUtil
 import crackers.kobots.devices.display.SSD1327
 import crackers.kobots.devices.qwiicKill
 import crackers.kobots.devices.sensors.VCNL4040
-import kobots.ops.theBus
+import crackers.kobots.ops.theBus
 import kotlinx.coroutines.runBlocking
 import java.awt.Color
 import java.awt.Font

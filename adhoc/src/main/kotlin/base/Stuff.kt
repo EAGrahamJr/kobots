@@ -16,7 +16,7 @@
 package base
 
 import crackers.kobots.utilities.elapsed
-import device.examples.MultiDeviceMadness
+import kobots.ops.PyKobot
 import java.time.Instant
 import kotlin.system.exitProcess
 
@@ -29,6 +29,8 @@ infix fun Int.minutes(block: () -> Unit) {
 }
 
 const val REMOTE_PI = "diozero.remote.hostname"
+const val MARVIN = "marvin.local"
+const val USELESS = "useless.local"
 
 // generic launcher to keep from continually changing the build
 fun main() {
@@ -42,6 +44,7 @@ fun main() {
 //        it.waitForIt(.5.seconds)
 //    }
 //    DiozeroRelay().run()
-    MultiDeviceMadness().use { it.execute() }
+//    MultiDeviceMadness().use { it.execute() }
+    PyKobot().execute()
     exitProcess(0)
 }

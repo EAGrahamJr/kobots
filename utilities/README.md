@@ -1,13 +1,14 @@
 # Extensions and Shared Junk
 
-## Lazy Stuff
+STILL UNDER CONSTRUCTION!!!! Check out the source directories for devices and utilities.
 
-- [PiBoard](src/main/kotlin/crackers/kobots/utilities/PiBoard.kt) contains some lazy defaults
+This will probably get broken up sometime in the future.
 
-## Device Extensions
+## A Note on Concurrency
 
-- [Common](src/main/kotlin/crackers/kobots/devices/Common.kt) contains some small wrappers:
-  - `DebouncedButton` just wraps a debounced input with `Button` semantics (`whenPressed` and `whenReleased`)
-  - `GenericMotor` wraps a bi-directional motor controlled by a single PWM pin and separate forward / backward GPIO pins
-- [AnodeRgbPwmLed](src/main/kotlin/crackers/kobots/devices/AnodeRgbPwmLed.kt) is for an RGB LED with common anode that is **inverted** from the _diozero_ `RgbPwmLed`. Provides the same interface.
-- [ADS7830](src/main/kotlin/crackers/kobots/devices/ADS7830.kt) implemented with a sensible default
+Multithreaded operations are possible, and a framework is laid out in the [Flows](src/main/kotlin/crackers/kobots/ops/Flows.kt), there are certain inherent difficulties in doing so:
+
+* Possible contention on the various hardware buses (e.g. I<sup>2</sup>C)
+* Slave microcontrollers are typically underpowered in terms of raw processing power
+
+If not carefully orchestrated, this can lead to unexpected device shutdowns durning application runtimes.

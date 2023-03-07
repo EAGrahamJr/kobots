@@ -14,19 +14,20 @@
  * permissions and limitations under the License.
  */
 
-package device.examples
+package device.examples.pimoroni
 
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.lighting.PimoroniLEDShim
 import crackers.kobots.utilities.colorInterval
 import crackers.kobots.utilities.colorIntervalFromHSB
 import crackers.kobots.utilities.scale
+import device.examples.RunManagerForFlows
 import java.awt.Color
 import java.time.Instant
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-class LEDShimExamples : RunManager() {
+class LEDShimExamples : RunManagerForFlows() {
     fun PimoroniLEDShim.rainbow() {
         val spacing = 360.0 / 16.0
         waitForIt {

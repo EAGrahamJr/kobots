@@ -18,22 +18,22 @@ package device.examples.adafruit
 
 import base.REMOTE_PI
 import com.diozero.util.SleepUtil.sleepSeconds
+import crackers.kobots.ops.createEventBus
+import crackers.kobots.ops.stopTheBus
 import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.PURPLE
 import crackers.kobots.utilities.colorIntervalFromHSB
 import crackers.kobots.utilities.kelvinToRGB
-import device.examples.RunManager
+import device.examples.RunManagerForFlows
 import device.examples.larson
-import kobots.ops.createEventBus
-import kobots.ops.stopTheBus
 import java.awt.Color
 import java.lang.Thread.sleep
 import java.util.concurrent.atomic.AtomicLong
 
 /**
- * TODO fill this in
+ *
  */
-class CRICKITHatNeoPixels : RunManager() {
+class CRICKITHatNeoPixels : RunManagerForFlows() {
     val strand = crickit.neoPixel(30)
 
     fun simpleLoop() {

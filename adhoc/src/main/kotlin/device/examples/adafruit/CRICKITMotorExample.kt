@@ -17,13 +17,13 @@
 package device.examples.adafruit
 
 import crackers.kobots.devices.at
-import device.examples.RunManager
-import kobots.ops.createEventBus
+import crackers.kobots.ops.createEventBus
+import device.examples.RunManagerForFlows
 
 /**
  * Run a motor using the analog inputs.
  */
-class CRICKITMotorExample : RunManager() {
+class CRICKITMotorExample : RunManagerForFlows() {
     init {
         createEventBus<Float>().also { bus ->
             val motor = crickit.motor(1)

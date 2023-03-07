@@ -14,14 +14,16 @@
  * permissions and limitations under the License.
  */
 
-package device.examples
+package device.examples.general
 
 import base.REMOTE_PI
 import com.diozero.api.ServoTrim
 import crackers.kobots.devices.at
 import crackers.kobots.devices.lighting.PimoroniLEDShim
+import crackers.kobots.ops.createEventBus
 import crackers.kobots.utilities.colorInterval
-import kobots.ops.createEventBus
+import device.examples.RunManagerForFlows
+import device.examples.flowCPUTemp
 import java.awt.Color
 import java.lang.Integer.min
 import java.util.concurrent.atomic.AtomicInteger
@@ -34,7 +36,7 @@ import kotlin.time.Duration.Companion.milliseconds
 /**
  * Shooting for lots of things going on I2C bus.
  */
-class MultiDeviceMadness : RunManager() {
+class MultiDeviceMadness : RunManagerForFlows() {
     private val shim = PimoroniLEDShim()
     private val anAdjustableValue = AtomicLong(0)
     val servo by lazy { crickit.servo(1, ServoTrim.TOWERPRO_SG90) }
@@ -47,7 +49,7 @@ class MultiDeviceMadness : RunManager() {
 
     init {
         logger.info("Starting setup")
-        shim.showCPUTemp()
+        shim.flowCPUTemp()
 
         createEventBus<Boolean>(name = "ButtonUp").apply {
             val button = crickit.touchDigitalIn(1)

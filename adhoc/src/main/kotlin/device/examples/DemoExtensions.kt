@@ -16,12 +16,13 @@
 
 package device.examples
 
+import com.diozero.sbc.LocalSystemInfo
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.NeoPixel
 import crackers.kobots.devices.lighting.PimoroniLEDShim
+import crackers.kobots.ops.registerCPUTempConsumer
 import crackers.kobots.utilities.colorInterval
 import crackers.kobots.utilities.scale
-import kobots.ops.registerCPUTempConsumer
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.util.concurrent.atomic.AtomicBoolean
@@ -83,14 +84,16 @@ fun NeoPixel.larson(runFlag: AtomicBoolean, loopDelay: AtomicLong = AtomicLong(3
     larsonLogger.info("Ending")
 }
 
+fun PimoroniLEDShim.setupCpuColors(numPixels: Int = this.width): List<Color> = // CPU temperature on the shim
+    colorInterval(Color.RED, Color.GREEN, numPixels).map { it.scale(5) }.reversed().apply {
+        forEachIndexed { index, color -> pixelColor(index, color) }
+    }
+
 /**
  * Pretty specific for the Raspberry Pi temperature range
  */
-fun PimoroniLEDShim.showCPUTemp(numPixels: Int = this.width, pixelOffset: Int = 0) {
-    // CPU temperature on the shim
-    val cpuColors = colorInterval(Color.RED, Color.GREEN, numPixels).map { it.scale(5) }.reversed().apply {
-        forEachIndexed { index, color -> pixelColor(index, color) }
-    }
+fun PimoroniLEDShim.flowCPUTemp(numPixels: Int = this.width, pixelOffset: Int = 0) {
+    val cpuColors = setupCpuColors(numPixels)
     var lastTemp = -1
     registerCPUTempConsumer { temp ->
         // 30-degree range, offset by 40
@@ -101,4 +104,26 @@ fun PimoroniLEDShim.showCPUTemp(numPixels: Int = this.width, pixelOffset: Int = 
             lastTemp = x
         }
     }
+}
+
+
+fun PimoroniLEDShim.showCPUTemp(numPixels: Int = this.width, pixelOffset: Int = 0): () -> Unit {
+    val cpuColors = setupCpuColors(numPixels)
+    val systemInfoInstance = LocalSystemInfo.getInstance()
+
+    var lastTemp = -1
+    return {
+        systemInfoInstance.cpuTemperature.toDouble().let { temp ->
+            println("Temp $temp")
+            // 30-degree range, offset by 40
+            val x = ((temp - 40) * numPixels / 30).roundToInt()
+            if (x in (0 until numPixels) && x != lastTemp) {
+                if (lastTemp != -1) this[lastTemp + pixelOffset] = cpuColors[lastTemp]
+                this[x + pixelOffset] = Color.WHITE
+                lastTemp = x
+            }
+
+        }
+    }
+
 }
