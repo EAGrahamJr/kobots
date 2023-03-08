@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":operations"))
+
 }
 
 application {

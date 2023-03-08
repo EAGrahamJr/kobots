@@ -284,9 +284,7 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
         initialPulseWidthUs: Int
     ): InternalServoDeviceInterface {
         val pwm = getInternalPwm(pinInfo, key, frequencyHz)
-        return PwmServoDevice(key, this, pwm, minPulseWidthUs, maxPulseWidthUs, initialPulseWidthUs).also {
-            deviceOpened(it)
-        }
+        return PwmServoDevice(key, this, pwm, minPulseWidthUs, maxPulseWidthUs, initialPulseWidthUs)
     }
 
     override fun getBoardPwmFrequency() = 50

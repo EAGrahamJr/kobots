@@ -149,7 +149,7 @@ internal class SignalAnalogInputDevice(
 }
 
 /**
- * Internal PWM class for the Servo pins on the CRICKIT.
+ * Internal PWM class: this is a "true" child class as it only provides the interface to the hat.
  */
 internal class CRICKIInternalPwm(
     private val key: String,
@@ -168,7 +168,6 @@ internal class CRICKIInternalPwm(
     }
 
     override fun close() {
-        factory.deviceClosed(this)
         open = false
     }
 
@@ -176,7 +175,7 @@ internal class CRICKIInternalPwm(
 
     override fun isOpen() = open
 
-    override fun isChild() = false
+    override fun isChild() = true
 
     override fun setChild(child: Boolean) {
         // ignored
