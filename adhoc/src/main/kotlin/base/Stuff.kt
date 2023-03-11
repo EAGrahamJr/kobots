@@ -16,7 +16,7 @@
 package base
 
 import crackers.kobots.utilities.elapsed
-import kobots.ops.PyKobot
+import device.examples.adafruit.CRICKITSteppers
 import java.time.Instant
 import kotlin.system.exitProcess
 
@@ -45,6 +45,6 @@ fun main() {
 //    }
 //    DiozeroRelay().run()
 //    MultiDeviceMadness().use { it.execute() }
-    PyKobot().execute()
+    CRICKITSteppers().execute()
     exitProcess(0)
 }

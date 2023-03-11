@@ -16,14 +16,12 @@
 
 package crackers.kobots.devices.expander
 
-import com.diozero.devices.sandpit.motor.BYJ48Stepper
+import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.TIMER_BASE
 import crackers.kobots.devices.expander.AdafruitSeeSaw.Companion.TIMER_FREQ
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContainExactly
-import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.Assertions.assertEquals
 import crackers.kobots.devices.MockI2CDevice.requests as mockRequests
 
 /**
@@ -37,80 +35,138 @@ class CrickitHatStepperTest : FunSpec(
         }
         val factory = CRICKITHatDeviceFactory(testHat)
 
-        val pinOrder = listOf(0x09, 0x0a, 0x0b, 0x08).map { it.toByte() }
-
         context("Driver Setups:") {
+            test("Unipolar driver") {
+                val pinOrder = listOf(0x0b, 0x0a, 0x09, 0x08).map { it.toByte() }
 
-            test("Unipolar stepper") {
-                factory.unipolarStepper(false).use {
-                    mockRequests shouldContainExactly listOf(
-                        // TODO this is the "2000" setting from the Adafruit python library - this is the "base" PWM
-                        // TODO frequency in the Servo class (very confused)
-                        TIMER_BASE, TIMER_FREQ, pinOrder[0], 0x07, 0xd0.toByte(),
-                        TIMER_BASE, TIMER_FREQ, pinOrder[1], 0x07, 0xd0.toByte(),
-                        TIMER_BASE, TIMER_FREQ, pinOrder[2], 0x07, 0xd0.toByte(),
-                        TIMER_BASE, TIMER_FREQ, pinOrder[3], 0x07, 0xd0.toByte()
-                    )
+                factory.unipolarStepperPort().use {
+                    checkStepperSetup(pinOrder)
+                }
+            }
+            test("Bipolar driver") {
+                val pinOrder = listOf(0x07, 0x06, 0x05, 0x04).map { it.toByte() }
+
+                factory.motorStepperPort().use {
+                    checkStepperSetup(pinOrder)
                 }
             }
         }
-        context("Unipolar driver:") {
-            factory.unipolarStepper(false).use { driver ->
-                test("Step forward and backward one") {
-                    val stepper = BYJ48Stepper(driver)
+        context("Step forward and backward one cycle:") {
+            test("Unipolar driver") {
+                factory.unipolarStepperPort().use { driver ->
+                    val stepper = BasicStepperMotor(512, driver)
                     mockRequests.clear()
 
-                    stepper.step(StepperMotorInterface.Direction.FORWARD)
-                    stepper.step(StepperMotorInterface.Direction.BACKWARD)
+                    (1..4).forEach { stepper.step(StepperMotorInterface.Direction.FORWARD) }
+                    (1..4).forEach { stepper.step(StepperMotorInterface.Direction.BACKWARD) }
 
                     val expected = listOf(
-                        0x08, 0x01, 0x09, 0x00, 0x00,
-                        0x08, 0x01, 0x0a, 0x00, 0x00,
                         0x08, 0x01, 0x0b, 0x00, 0x00,
+                        0x08, 0x01, 0x0a, 0x00, 0x00,
+                        0x08, 0x01, 0x09, 0x00, 0x00,
                         0x08, 0x01, 0x08, 0xff, 0xff,
 
-                        0x08, 0x01, 0x09, 0x00, 0x00,
-                        0x08, 0x01, 0x0a, 0x00, 0x00,
-                        0x08, 0x01, 0x0b, 0xff, 0xff,
-                        0x08, 0x01, 0x08, 0x00, 0x00,
-
-                        0x08, 0x01, 0x09, 0x00, 0x00,
-                        0x08, 0x01, 0x0a, 0xff, 0xff,
                         0x08, 0x01, 0x0b, 0x00, 0x00,
-                        0x08, 0x01, 0x08, 0x00, 0x00,
-
+                        0x08, 0x01, 0x0a, 0x00, 0x00,
                         0x08, 0x01, 0x09, 0xff, 0xff,
-                        0x08, 0x01, 0x0a, 0x00, 0x00,
-                        0x08, 0x01, 0x0b, 0x00, 0x00,
                         0x08, 0x01, 0x08, 0x00, 0x00,
 
-                        0x08, 0x01, 0x09, 0x00, 0x00,
+                        0x08, 0x01, 0x0b, 0x00, 0x00,
                         0x08, 0x01, 0x0a, 0xff, 0xff,
-                        0x08, 0x01, 0x0b, 0x00, 0x00,
+                        0x08, 0x01, 0x09, 0x00, 0x00,
                         0x08, 0x01, 0x08, 0x00, 0x00,
 
-                        0x08, 0x01, 0x09, 0x00, 0x00,
-                        0x08, 0x01, 0x0a, 0x00, 0x00,
                         0x08, 0x01, 0x0b, 0xff, 0xff,
+                        0x08, 0x01, 0x0a, 0x00, 0x00,
+                        0x08, 0x01, 0x09, 0x00, 0x00,
                         0x08, 0x01, 0x08, 0x00, 0x00,
 
-                        0x08, 0x01, 0x09, 0x00, 0x00,
-                        0x08, 0x01, 0x0a, 0x00, 0x00,
                         0x08, 0x01, 0x0b, 0x00, 0x00,
+                        0x08, 0x01, 0x0a, 0xff, 0xff,
+                        0x08, 0x01, 0x09, 0x00, 0x00,
+                        0x08, 0x01, 0x08, 0x00, 0x00,
+
+                        0x08, 0x01, 0x0b, 0x00, 0x00,
+                        0x08, 0x01, 0x0a, 0x00, 0x00,
+                        0x08, 0x01, 0x09, 0xff, 0xff,
+                        0x08, 0x01, 0x08, 0x00, 0x00,
+
+                        0x08, 0x01, 0x0b, 0x00, 0x00,
+                        0x08, 0x01, 0x0a, 0x00, 0x00,
+                        0x08, 0x01, 0x09, 0x00, 0x00,
                         0x08, 0x01, 0x08, 0xff, 0xff,
 
-                        0x08, 0x01, 0x09, 0xff, 0xff,
+                        0x08, 0x01, 0x0b, 0xff, 0xff,
                         0x08, 0x01, 0x0a, 0x00, 0x00,
-                        0x08, 0x01, 0x0b, 0x00, 0x00,
-                        0x08, 0x01, 0x08, 0x00, 0x00,
+                        0x08, 0x01, 0x09, 0x00, 0x00,
+                        0x08, 0x01, 0x08, 0x00, 0x00
                     ).map { it.toByte() }
 
-                    mockRequests.size shouldBe expected.size
-                    mockRequests.forEachIndexed { index, byte ->
-                        assertEquals(expected[index], byte, "Index $index does not match")
-                    }
-//                    mockRequests shouldContainExactly expected
+                    mockRequests shouldContainExactly expected
+                }
+            }
+            test("Bipolar driver") {
+                factory.motorStepperPort().use { driver ->
+                    val stepper = BasicStepperMotor(driver)
+                    mockRequests.clear()
+
+                    (1..4).forEach { stepper.step(StepperMotorInterface.Direction.FORWARD) }
+                    (1..4).forEach { stepper.step(StepperMotorInterface.Direction.BACKWARD) }
+
+                    val expected = listOf(
+                        0x08, 0x01, 0x07, 0x00, 0x00,
+                        0x08, 0x01, 0x05, 0x00, 0x00,
+                        0x08, 0x01, 0x06, 0x00, 0x00,
+                        0x08, 0x01, 0x04, 0xff, 0xff,
+
+                        0x08, 0x01, 0x07, 0x00, 0x00,
+                        0x08, 0x01, 0x05, 0x00, 0x00,
+                        0x08, 0x01, 0x06, 0xff, 0xff,
+                        0x08, 0x01, 0x04, 0x00, 0x00,
+
+                        0x08, 0x01, 0x07, 0x00, 0x00,
+                        0x08, 0x01, 0x05, 0xff, 0xff,
+                        0x08, 0x01, 0x06, 0x00, 0x00,
+                        0x08, 0x01, 0x04, 0x00, 0x00,
+
+                        0x08, 0x01, 0x07, 0xff, 0xff,
+                        0x08, 0x01, 0x05, 0x00, 0x00,
+                        0x08, 0x01, 0x06, 0x00, 0x00,
+                        0x08, 0x01, 0x04, 0x00, 0x00,
+
+                        0x08, 0x01, 0x07, 0x00, 0x00,
+                        0x08, 0x01, 0x05, 0xff, 0xff,
+                        0x08, 0x01, 0x06, 0x00, 0x00,
+                        0x08, 0x01, 0x04, 0x00, 0x00,
+
+                        0x08, 0x01, 0x07, 0x00, 0x00,
+                        0x08, 0x01, 0x05, 0x00, 0x00,
+                        0x08, 0x01, 0x06, 0xff, 0xff,
+                        0x08, 0x01, 0x04, 0x00, 0x00,
+
+                        0x08, 0x01, 0x07, 0x00, 0x00,
+                        0x08, 0x01, 0x05, 0x00, 0x00,
+                        0x08, 0x01, 0x06, 0x00, 0x00,
+                        0x08, 0x01, 0x04, 0xff, 0xff,
+
+                        0x08, 0x01, 0x07, 0xff, 0xff,
+                        0x08, 0x01, 0x05, 0x00, 0x00,
+                        0x08, 0x01, 0x06, 0x00, 0x00,
+                        0x08, 0x01, 0x04, 0x00, 0x00
+                    ).map { it.toByte() }
+
+                    mockRequests shouldContainExactly expected
                 }
             }
         }
-    })
+    }
+)
+
+private fun checkStepperSetup(pinOrder: List<Byte>) {
+    mockRequests shouldContainExactly listOf(
+        TIMER_BASE, TIMER_FREQ, pinOrder[0], 0x07, 0xd0.toByte(),
+        TIMER_BASE, TIMER_FREQ, pinOrder[1], 0x07, 0xd0.toByte(),
+        TIMER_BASE, TIMER_FREQ, pinOrder[2], 0x07, 0xd0.toByte(),
+        TIMER_BASE, TIMER_FREQ, pinOrder[3], 0x07, 0xd0.toByte()
+    )
+}

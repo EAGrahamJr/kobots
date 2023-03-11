@@ -17,32 +17,51 @@
 package device.examples.adafruit
 
 import base.REMOTE_PI
-import com.diozero.devices.sandpit.motor.BYJ48Stepper
-import crackers.kobots.ops.createEventBus
-import device.examples.RunManagerForFlows
+import com.diozero.devices.sandpit.motor.BasicStepperController.StepStyle
+import com.diozero.devices.sandpit.motor.BasicStepperMotor
+import com.diozero.devices.sandpit.motor.StepperMotorInterface
+import com.diozero.util.SleepUtil
+import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import java.time.Duration
 
 /**
- * TODO fill this in
+ * Both blocks. Note that direction may not be as expected due to wiring change.
  */
-class CRICKITSteppers : RunManagerForFlows() {
-    val stepper = BYJ48Stepper(crickit.unipolarStepper(true))
+class CRICKITSteppers {
+    val crickit by lazy { CRICKITHatDeviceFactory() }
 
-    init {
-        createEventBus<Boolean>(name = "Plus").apply {
-            val button = crickit.touchDigitalIn(1)
-            registerPublisher { button.value }
-            registerConditionalConsumer(errorMessageHandler, { it }) {
-                logger.info("Plus")
-                stepper.rotate(15f)
+    val uniStep by lazy { BasicStepperMotor(512, crickit.unipolarStepperPort()) }
+    val biStep by lazy { BasicStepperMotor(200, crickit.motorStepperPort()) }
+    val stopTouch by lazy {
+        crickit.touchDigitalIn(4).apply {
+            value
+        }
+    }
+
+    fun execute() {
+        crickit.use {
+            uniStep.use {
+                it.doStuff()
+                it.release()
+            }
+            SleepUtil.sleepSeconds(3)
+            biStep.use {
+                it.doStuff()
+                it.release()
             }
         }
-        createEventBus<Boolean>(name = "Minus").apply {
-            val button = crickit.touchDigitalIn(2)
-            registerPublisher { button.value }
-            registerConditionalConsumer(errorMessageHandler, { it }) {
-                logger.info("Minus")
-                stepper.rotate(-15f)
-            }
+    }
+
+    fun BasicStepperMotor.doStuff(style: StepStyle = StepStyle.SINGLE) {
+        (1..getStepsForStyle(style)).forEach {
+            step(StepperMotorInterface.Direction.FORWARD, style)
+            SleepUtil.busySleep(Duration.ofMillis(3).toNanos())
+            if (stopTouch.value) return
+        }
+        (1..getStepsForStyle(style)).forEach {
+            step(StepperMotorInterface.Direction.BACKWARD, style)
+            SleepUtil.busySleep(Duration.ofMillis(3).toNanos())
+            if (stopTouch.value) return
         }
     }
 
@@ -51,9 +70,7 @@ class CRICKITSteppers : RunManagerForFlows() {
         fun main(args: Array<String>) {
             System.setProperty(REMOTE_PI, "marvin.local")
 
-            CRICKITSteppers().use {
-                it.waitForIt()
-            }
+            CRICKITSteppers().execute()
         }
     }
 }

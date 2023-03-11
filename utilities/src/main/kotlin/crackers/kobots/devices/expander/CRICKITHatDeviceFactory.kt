@@ -18,8 +18,8 @@ package crackers.kobots.devices.expander
 
 import com.diozero.api.*
 import com.diozero.devices.motor.PwmMotor
-import com.diozero.devices.sandpit.motor.UnipolarStepperController
-import com.diozero.devices.sandpit.motor.UnipolarStepperController.GpioPinOut
+import com.diozero.devices.sandpit.motor.BasicStepperController
+import com.diozero.devices.sandpit.motor.BasicStepperController.*
 import com.diozero.internal.PwmServoDevice
 import com.diozero.internal.spi.*
 import com.diozero.sbc.BoardPinInfo
@@ -120,23 +120,37 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
     /**
      * Get the unipolar stepper controller.
      */
-    fun unipolarStepper(halfSteps: Boolean): UnipolarStepperController {
+    fun unipolarStepperPort(): BasicStepperController {
         // create the pins - these are in the order to pass to the controller
-        val pins = listOf(3, 2, 1, 4)
-            .map { DigitalOutputDevice(this, DRIVE.deviceNumber(it), false, false) }
-            .map { GpioPinOut(it) }
-
-        // note the order is now different again - says ain2, bin1, ain1, bin2
-        // which is DRIVE3, DRIVE2, DRIVE1, DRIVE4
-//        val pwmOrder = arrayOf<UnipolarStepperController.PinOut>(pins[2], pins[1], pins[0], pins[3])
-        val pwmOrder: Array<UnipolarStepperController.PinOut> = pins.toTypedArray()
-        return object : UnipolarStepperController.AbstractUnipolarController(pwmOrder) {}
+        val pins = stepperPins(DRIVE).toTypedArray()
+        return UnipolarBasicController(pins)
     }
 
+    /**
+     * Get a controller from the motor ports. Does **not** correct for "wiring" of a unipolar stepper.
+     */
+    fun motorStepperPort(): BasicStepperController {
+        val pins = stepperPins(MOTOR)
+
+        val terminalA = BiPolarTerminal(pins[0], pins[1])
+        val terminalB = BiPolarTerminal(pins[2], pins[3])
+
+        return BipolarBasicController(terminalA, terminalB)
+    }
+
+    /**
+     * Four pins, get the ports.
+     */
+    private fun stepperPins(type: Types) = (1..4)
+        .map { boardInfo.getByPwmOrGpioNumber(type.deviceNumber(it)).get() }
+        .map { getInternalPwm(it, createPwmPinKey(it)) }
+        .map { PwmStepperPin(it) }
 
     /**
      * Convenience function to use the NeoPixel port. Note that this does **not** have a `diozero` equivalent,
      * so acquisition through "normal" factory operations is not possible.
+     *
+     * TODO reconcile with `LedDriverInterface`?
      */
     fun neoPixel(numPixels: Int, bitsPerPixel: Int = 3): NeoPixel =
         if (::neoPixelPort.isInitialized) {
@@ -209,19 +223,16 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
         // all the motor pins
         val pwmMode = setOf(DeviceMode.PWM_OUTPUT)
         MOTORS.forEachIndexed { index, pin ->
-            val pi = crickitPinInfo(MOTOR, index + 1, pin, pwmMode).apply {
+            crickitPinInfo(MOTOR, index + 1, pin, pwmMode).apply {
                 addPwmPinInfo(header, deviceNumber, name, physicalPin, MOTOR.ordinal, physicalPin, pwmMode)
             }
-            addGpioPinInfo(pi)
         }
 
         // stepper pins
-        val stepperMode = setOf(DeviceMode.PWM_OUTPUT, DeviceMode.DIGITAL_OUTPUT)
         DRIVES.forEachIndexed { index, pin ->
-            val pi = crickitPinInfo(DRIVE, index + 1, pin, stepperMode).apply {
-                addPwmPinInfo(header, deviceNumber, name, physicalPin, DRIVE.ordinal, physicalPin, stepperMode)
+            crickitPinInfo(DRIVE, index + 1, pin, pwmMode).apply {
+                addPwmPinInfo(header, deviceNumber, name, physicalPin, DRIVE.ordinal, physicalPin, pwmMode)
             }
-            addGpioPinInfo(pi)
         }
     }
 
@@ -244,18 +255,24 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
         pud: GpioPullUpDown,
         trigger: GpioEventTrigger
     ): GpioDigitalInputDeviceInterface = pinInfo.deviceNumber.let { deviceNum ->
-        if (pinInfo.keyPrefix == SIGNAL.name) {
-            val signal = signal(SIGNAL.indexOf(deviceNum)).apply {
-                mode = when (pud) {
-                    GpioPullUpDown.NONE -> SignalMode.INPUT
-                    GpioPullUpDown.PULL_UP -> SignalMode.INPUT_PULLUP
-                    GpioPullUpDown.PULL_DOWN -> SignalMode.INPUT_PULLDOWN
+        when (pinInfo.keyPrefix) {
+            SIGNAL.name -> {
+                val signal = signal(SIGNAL.indexOf(deviceNum)).apply {
+                    mode = when (pud) {
+                        GpioPullUpDown.NONE -> SignalMode.INPUT
+                        GpioPullUpDown.PULL_UP -> SignalMode.INPUT_PULLUP
+                        GpioPullUpDown.PULL_DOWN -> SignalMode.INPUT_PULLDOWN
+                    }
                 }
+                SignalDigitalDevice(key, this, deviceNum, signal)
             }
-            SignalDigitalDevice(key, this, deviceNum, signal)
-        } else {
-            val sensor = touch(TOUCH.indexOf(deviceNum))
-            DigitalTouch(key, this, deviceNum, sensor)
+
+            TOUCH.name -> {
+                val sensor = touch(TOUCH.indexOf(deviceNum))
+                DigitalTouch(key, this, deviceNum, sensor)
+            }
+
+            else -> throw UnsupportedOperationException("Unknown device")
         }
     }
 
@@ -269,12 +286,9 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
                 mode = SignalMode.OUTPUT
             }
             SignalDigitalDevice(key, this, deviceNum, signal)
-        } else if (pinInfo.keyPrefix == DRIVE.name) {
-            // verify magic number here instead of the board frewquency
-            val delegate = getInternalPwm(pinInfo, key, 2000)
-            PWMForStepper(delegate)
-
-        } else throw UnsupportedOperationException("Unknown device")
+        } else {
+            throw UnsupportedOperationException("Unknown device")
+        }
     }
 
     override fun createDigitalInputOutputDevice(
@@ -287,14 +301,20 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
 
     override fun createAnalogInputDevice(key: String, pinInfo: PinInfo): AnalogInputDeviceInterface =
         pinInfo.deviceNumber.let { deviceNum ->
-            if (pinInfo.keyPrefix == SIGNAL.name) {
-                val signal = signal(SIGNAL.indexOf(deviceNum)).apply {
-                    mode = SignalMode.INPUT
+            when (pinInfo.keyPrefix) {
+                SIGNAL.name -> {
+                    val signal = signal(SIGNAL.indexOf(deviceNum)).apply {
+                        mode = SignalMode.INPUT
+                    }
+                    SignalAnalogInputDevice(key, this, deviceNum, signal)
                 }
-                SignalAnalogInputDevice(key, this, deviceNum, signal)
-            } else {
-                val sensor = touch(TOUCH.indexOf(deviceNum))
-                AnalogTouch(key, this, deviceNum, sensor)
+
+                TOUCH.name -> {
+                    val sensor = touch(TOUCH.indexOf(deviceNum))
+                    AnalogTouch(key, this, deviceNum, sensor)
+                }
+
+                else -> throw UnsupportedOperationException("Unknown device")
             }
         }
 
@@ -331,7 +351,7 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
         value = initialValue
     }
 
-    private fun getInternalPwm(pinInfo: PinInfo, key: String, frequencyHz: Int) = pinInfo.let {
+    private fun getInternalPwm(pinInfo: PinInfo, key: String, frequencyHz: Int? = null) = pinInfo.let {
         CRICKIInternalPwm(key, it.deviceNumber, this, it.physicalPin, frequencyHz)
     }
 }
