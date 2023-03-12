@@ -341,7 +341,8 @@ open class AdafruitSeeSaw(private val i2CDevice: I2CDevice, val initReset: Boole
         delay: Duration = Duration.ofMillis(10)
     ): ByteArray = lock.withLock {
         // set the register
-        write(register, offset, delay = delay)
+        write(register, offset)
+        SleepUtil.busySleep(delay.toNanos())
         // read what we got
         return i2CDevice.readBytes(bytesToRead).also { ba ->
             ba.debug("Read")
@@ -353,15 +354,17 @@ open class AdafruitSeeSaw(private val i2CDevice: I2CDevice, val initReset: Boole
      * data, so a delay after write is applied.
      */
     internal fun write(
-        register: Byte, offset: Byte, buffer: ByteArray = ByteArray(0),
-        delay: Duration = Duration.ofMillis(10)
+        register: Byte,
+        offset: Byte,
+        buffer: ByteArray = ByteArray(0)
     ): Boolean = lock.withLock {
         val output = twoBytesAndBuffer(register, offset, buffer)
 
         if (buffer.isEmpty()) output.debug("Register") else output.debug("Wrote")
 
         i2CDevice.writeBytes(*output)
-        SleepUtil.busySleep(delay.toNanos())
+        // give the seesaw a bit of time to recover
+        SleepUtil.busySleep(50_000)
         return true
     }
 

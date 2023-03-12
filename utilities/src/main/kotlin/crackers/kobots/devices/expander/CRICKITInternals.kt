@@ -149,25 +149,27 @@ internal class SignalAnalogInputDevice(
 }
 
 /**
- * Internal PWM class: this is a "true" child class as it only provides the interface to the hat.
+ * Internal PWM class for the Servo/Motor/Stepper ports on the CRICKIT.
  */
 internal class CRICKIInternalPwm(
     private val key: String,
     private val pwmNumber: Int,
     private val factory: CRICKITHatDeviceFactory,
     private val seeSawPin: Int,
-    frequency: Int
+    frequency: Int? = null
 ) : InternalPwmOutputDeviceInterface {
 
     private var frequencyHz: Int = 50
     private var currentValue = 0f
     private var open = true
+    private var child = false
 
     init {
-        pwmFrequency = frequency
+        if (frequency != null) pwmFrequency = frequency
     }
 
     override fun close() {
+        if (!child) factory.deviceClosed(this)
         open = false
     }
 
@@ -175,10 +177,10 @@ internal class CRICKIInternalPwm(
 
     override fun isOpen() = open
 
-    override fun isChild() = true
+    override fun isChild() = child
 
     override fun setChild(child: Boolean) {
-        // ignored
+        this.child = child
     }
 
     override fun getGpio() = -1
