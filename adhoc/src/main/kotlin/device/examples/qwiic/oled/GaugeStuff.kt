@@ -20,12 +20,14 @@ import crackers.kobots.devices.display.SSD1327
 import crackers.kobots.devices.qwiicKill
 import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.ops.createEventBus
+import crackers.kobots.ops.stopTheBus
 import crackers.kobots.utilities.PointerGauge
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.lang.Thread.sleep
+import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -67,7 +69,7 @@ object GaugeStuff {
                 oled.display(image)
                 oled.show()
             }
-            bus.registerPublisher { sensor.luminosity }
+            bus.registerPublisher(pollInterval = Duration.ofMillis(50)) { sensor.luminosity }
         }
     }
 
@@ -76,6 +78,7 @@ object GaugeStuff {
             sleep(1000)
         }
         println("Done")
+        stopTheBus()
         sensor.close()
         oled.close()
         qwiicKill.close()

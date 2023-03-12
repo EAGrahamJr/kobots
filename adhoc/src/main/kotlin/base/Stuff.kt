@@ -16,7 +16,7 @@
 package base
 
 import crackers.kobots.utilities.elapsed
-import device.examples.adafruit.CRICKITSteppers
+import device.examples.qwiic.oled.GaugeStuff
 import java.time.Instant
 import kotlin.system.exitProcess
 
@@ -39,12 +39,12 @@ fun main() {
 //    System.setProperty(REMOTE_PI, "marvin.local")
 
     // select the thing to run
-//    GaugeStuff.run()
+    GaugeStuff.run()
 //    LEDShim().use {
 //        it.waitForIt(.5.seconds)
 //    }
 //    DiozeroRelay().run()
 //    MultiDeviceMadness().use { it.execute() }
-    CRICKITSteppers().execute()
+//    CRICKITSteppers().execute()
     exitProcess(0)
 }

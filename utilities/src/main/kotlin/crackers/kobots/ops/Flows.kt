@@ -42,10 +42,9 @@ import kotlin.concurrent.thread
  */
 const val MAX_SCHEDULER = "kobots.max.scheduler.threads"
 
+val DEFAULT_SCHEDULER_THREADS = 5
 private val scheduler: ScheduledExecutorService by lazy {
-    Executors.newScheduledThreadPool(System.getProperty(MAX_SCHEDULER, "5").toInt()).also { svc ->
-        Runtime.getRuntime().addShutdownHook(thread(start = false) { svc.shutdownNow() })
-    }
+    Executors.newScheduledThreadPool(System.getProperty(MAX_SCHEDULER, "$DEFAULT_SCHEDULER_THREADS").toInt())
 }
 
 private val busRegistry by lazy {
@@ -67,7 +66,7 @@ class KobotsEventBus<V>(capacity: Int, name: String? = null) : AutoCloseable {
     private val busRunning = AtomicBoolean(true)
 
     /**
-     * Expose a shared flow for anyone that wants it.
+     * A **consumable** flow for anyone that wants it.
      */
     val sharedFlow: SharedFlow<V> = flow.asSharedFlow()
 
@@ -96,11 +95,11 @@ class KobotsEventBus<V>(capacity: Int, name: String? = null) : AutoCloseable {
     }
 
     /**
-     * A flow-event publisher for **blocking** operations: calls the [eventProducer] every [pollInterval] and uses the
-     * `tryEmit` to publish to the flow. If an error occurs, the [errorHandler] is invoked with it. Errors will **not**
-     * stop the polling cycle, just in case the device becomes available again.
+     * A flow-event publisher: calls the [eventProducer] every [pollInterval] and uses the `tryEmit` to publish to the
+     * flow. The [errorHandler] is invoked with any errors that occur. Errors will **not** stop the polling cycle, just in
+     * case the device becomes available again.
      *
-     * Each pubsliher is running in a separate thread.
+     * Each publisher is running in a separate thread.
      */
     fun registerPublisher(
         pollInterval: Duration = DEFAULT_POLL_INTERVAL,
@@ -109,12 +108,19 @@ class KobotsEventBus<V>(capacity: Int, name: String? = null) : AutoCloseable {
     ) {
         scheduler.scheduleAtFixedRate(
             Runnable {
-                if (busRunning.get()) withErrorHandler(errorHandler) { eventProducer().let { flow.tryEmit(it) } }
+                publishEvent(eventProducer(), errorHandler)
             },
             pollInterval.toNanos(),
             pollInterval.toNanos(),
             TimeUnit.NANOSECONDS
         )
+    }
+
+    /**
+     * Independently publish an [event] to this bus. The [errorHandler] is invoked with any errors that occur.
+     */
+    fun publishEvent(event: V, errorHandler: (t: Throwable) -> Unit) {
+        if (busRunning.get()) withErrorHandler(errorHandler) { flow.tryEmit(event) }
     }
 
     /**
@@ -178,7 +184,7 @@ inline fun <reified R> createEventBus(capacity: Int = 5, name: String? = null) =
 /**
  * A flow and producer specifically for the platform's CPU.
  */
-private val cpuBus by lazy {
+private val cpuTemperatureBus by lazy {
     createEventBus<Double>(name = "CPUTemp").apply {
         registerPublisher(Duration.ofMillis(500)) {
             LocalSystemInfo.getInstance().cpuTemperature.toDouble()
@@ -187,8 +193,8 @@ private val cpuBus by lazy {
 }
 
 /**
- * Add a consumer to get the CPU temperature.
+ * Add a consumer to get the CPU temperature. The temperature is published every .5 seconds or so.
  */
 fun registerCPUTempConsumer(errorHandler: (t: Throwable) -> Unit = NOOP_HANDLER, eventConsumer: (Double) -> Unit) {
-    cpuBus.registerConsumer(errorHandler, eventConsumer)
+    cpuTemperatureBus.registerConsumer(errorHandler, eventConsumer)
 }

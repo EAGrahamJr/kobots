@@ -26,6 +26,7 @@ tasks {
     create("deployMe") {
         mustRunAfter("shadowJar")
         doLast {
+            println("Sending to $sshTarget")
             exec {
                 commandLine(
                     "sh", "-c", """
