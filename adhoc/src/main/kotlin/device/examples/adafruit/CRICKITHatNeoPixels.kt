@@ -16,102 +16,111 @@
 
 package device.examples.adafruit
 
+import base.MARVIN
 import base.REMOTE_PI
 import com.diozero.util.SleepUtil.sleepSeconds
-import crackers.kobots.ops.createEventBus
-import crackers.kobots.ops.stopTheBus
+import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.PURPLE
 import crackers.kobots.utilities.colorIntervalFromHSB
 import crackers.kobots.utilities.kelvinToRGB
-import device.examples.RunManagerForFlows
 import device.examples.larson
 import java.awt.Color
 import java.lang.Thread.sleep
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 
 /**
  *
  */
-class CRICKITHatNeoPixels : RunManagerForFlows() {
-    val strand = crickit.neoPixel(30)
+class CRICKITHatNeoPixels : AutoCloseable {
+    val running: AtomicBoolean = AtomicBoolean(true)
+
+    val crickit by lazy { CRICKITHatDeviceFactory() }
+    val strand by lazy { crickit.neoPixel(30) }
+    val stopIt by lazy {
+        crickit.touchDigitalIn(4).apply {
+            value
+        }
+    }
+    val touchUp by lazy { crickit.touchDigitalIn(1) }
+    val touchDown by lazy { crickit.touchDigitalIn(2) }
+
+    override fun close() {
+        crickit.close()
+    }
 
     fun simpleLoop() {
         val warmWhite = 2700.kelvinToRGB()
         while (running.get()) {
-            strand.brightness = .01f
-            strand.fill(Color.RED)
+            strand.brightness = .1f
+            strand + Color.RED
             sleepSeconds(1)
-            strand.fill(Color.GREEN)
+            strand + Color.GREEN
             sleepSeconds(1)
-            strand.fill(Color.BLUE)
+            strand + Color.BLUE
             sleepSeconds(1)
-            strand.fill(Color.CYAN)
+            strand + Color.CYAN
             sleepSeconds(1)
-            strand.fill(PURPLE)
+            strand + PURPLE
             sleepSeconds(1)
-            strand.brightness = .005f
             sleepSeconds(1)
             strand[14] = GOLDENROD
             sleepSeconds(1)
             strand.brightness = .1f
-            strand.fill(warmWhite)
+            strand + warmWhite
             sleepSeconds(1)
-            strand.fill(Color.BLACK)
+            strand.off()
             sleepSeconds(1)
+            println("up ${touchUp.value} down ${touchDown.value} ${stopIt.value}")
+            if (stopIt.value) break
         }
     }
 
     fun rainbow() {
-        strand.brightness = .01f
+        strand.brightness = .1f
         colorIntervalFromHSB(0f, 300f, 30).forEachIndexed { index, color ->
             strand[index] = color
         }
-        waitForIt()
     }
 
     private val larsonDelay = AtomicLong(30)
 
     fun adjustLarson() {
-        createEventBus<Boolean>(name = "Up Larson").apply {
-            val touch = crickit.touchDigitalIn(1)
-            registerPublisher(errorHandler = errorMessageHandler) {
-                touch.value
-            }
-            registerConditionalConsumer(messageCondition = { it }) {
-                larsonDelay.addAndGet(50)
-                println("up")
-            }
-        }
-        createEventBus<Boolean>(name = "Down Larson").apply {
-            val touch = crickit.touchDigitalIn(2)
-            registerPublisher(errorHandler = errorMessageHandler) {
-                touch.value
-            }
-            registerConditionalConsumer(messageCondition = { it }) {
-                if (larsonDelay.get() > 50) larsonDelay.addAndGet(-50)
-                println("down")
-            }
+        if (touchUp.value) {
+            larsonDelay.addAndGet(50)
+            println("up")
+        } else if (touchDown.value) {
+            if (larsonDelay.get() > 50) larsonDelay.addAndGet(-50)
+            println("down")
         }
     }
 
     fun execute() {
-//            simpleLoop()
-//        adjustLarson()
-        strand.larson(running, larsonDelay)
-//        rainbow()
+        println("Simple loop")
+        simpleLoop()
+        sleep(2000)
+        running.set(true)
+        println("LARSON!")
+        strand.larson(running, larsonDelay) {
+            adjustLarson()
+            if (stopIt.value) running.set(false)
+        }
+        sleep(2000)
+        println("Rainbow")
+        rainbow()
+        sleep(10000)
 
         println("Execute done")
-        strand.fill(Color.BLACK)
-        sleep(100)
+        strand.off()
+//        sleep(100)
         println("Bye now")
-        stopTheBus()
     }
 
     companion object {
         @JvmStatic
         fun main(args: Array<String>) {
-            System.setProperty(REMOTE_PI, "marvin.local")
+            System.setProperty(REMOTE_PI, MARVIN)
             CRICKITHatNeoPixels().use { it.execute() }
         }
     }

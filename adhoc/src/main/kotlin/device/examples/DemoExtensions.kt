@@ -33,7 +33,7 @@ import kotlin.math.roundToInt
  * Runs a semi-familiar "chase" pattern based on several TV shows.
  */
 private val larsonLogger by lazy { LoggerFactory.getLogger("LarsonDemo") }
-fun NeoPixel.larson(runFlag: AtomicBoolean, loopDelay: AtomicLong = AtomicLong(30)) {
+fun NeoPixel.larson(runFlag: AtomicBoolean, loopDelay: AtomicLong = AtomicLong(30), andThen: () -> Unit = {}) {
     brightness = .1f
     autoWrite = false
 
@@ -78,6 +78,7 @@ fun NeoPixel.larson(runFlag: AtomicBoolean, loopDelay: AtomicLong = AtomicLong(3
         if (center + 1 <= neopixelMax) this[center + 1] = otherColor
         show()
         previous = center
+        andThen()
     }
     autoWrite = true
     fill(Color.BLACK)
@@ -106,7 +107,6 @@ fun PimoroniLEDShim.flowCPUTemp(numPixels: Int = this.width, pixelOffset: Int = 
     }
 }
 
-
 fun PimoroniLEDShim.showCPUTemp(numPixels: Int = this.width, pixelOffset: Int = 0): () -> Unit {
     val cpuColors = setupCpuColors(numPixels)
     val systemInfoInstance = LocalSystemInfo.getInstance()
@@ -122,8 +122,6 @@ fun PimoroniLEDShim.showCPUTemp(numPixels: Int = this.width, pixelOffset: Int = 
                 this[x + pixelOffset] = Color.WHITE
                 lastTemp = x
             }
-
         }
     }
-
 }

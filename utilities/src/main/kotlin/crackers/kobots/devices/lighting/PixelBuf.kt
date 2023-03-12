@@ -147,6 +147,13 @@ abstract class PixelBuf(
     }
 
     /**
+     * Shorthand for `fill(Color.BLACK)`
+     */
+    fun off() {
+        fill(Color.BLACK)
+    }
+
+    /**
      * Fill the entire device with this color. If [autoWrite] is enabled, the results are immediately uploaded.
      */
     fun fill(color: PixelColor) {
@@ -155,8 +162,19 @@ abstract class PixelBuf(
         if (_autoWrite) show()
     }
 
+    /**
+     * Fill the entire device with this color. If [autoWrite] is enabled, the results are immediately uploaded.
+     */
     fun fill(color: Color) {
         fill(PixelColor(color))
+    }
+
+    operator fun plus(color: Color) {
+        fill(PixelColor(color))
+    }
+
+    operator fun plus(color: PixelColor) {
+        fill(color)
     }
 
     /**
