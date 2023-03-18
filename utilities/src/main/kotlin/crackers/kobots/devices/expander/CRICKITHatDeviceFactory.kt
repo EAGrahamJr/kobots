@@ -148,7 +148,7 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
      */
     private fun stepperPins(type: Types) = (1..4)
         .map { boardInfo.getByPwmOrGpioNumber(type.deviceNumber(it)).get() }
-        .map { provisionPwmOutputDevice(it, 2000, 0f) }
+        .map { getInternalPwm(it, createPwmPinKey(it)) }
         .map { PwmStepperPin(it) }
 
     /**

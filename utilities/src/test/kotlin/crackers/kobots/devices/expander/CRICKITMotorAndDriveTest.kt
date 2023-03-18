@@ -73,14 +73,11 @@ class CRICKITMotorAndDriveTest : FunSpec(
                     drive.value = 0f
 
                     mockRequests shouldContainExactly actionPrefix + fullOn + actionPrefix + fullOff
-
                 }
-
             }
         }
     }
 ) {
-
     init {
         initProperties()
     }
