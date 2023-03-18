@@ -110,7 +110,7 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
 
     /**
      * Convenience function to use the Motor ports for bidirectional motors, where [index] is the motor _number_ (1 or
-     * 2).
+     * 2). Note this is 5v.
      */
     fun motor(index: Int): PwmMotor {
         val pins = if (index == 1) MOTOR1A to MOTOR1B else MOTOR2A to MOTOR2B
@@ -118,7 +118,12 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
     }
 
     /**
-     * Get the unipolar stepper controller.
+     * Convenience function to get PWM-able outputs.  Note this is 5v.
+     */
+    fun drive(index: Int): PwmOutputDevice = PwmOutputDevice(this, DRIVE.deviceNumber(index), 1000, 0f)
+
+    /**
+     * Get **the** unipolar stepper controller from the `DRIVE` ports. Note this is 5v.
      */
     fun unipolarStepperPort(): BasicStepperController {
         // create the pins - these are in the order to pass to the controller
@@ -127,7 +132,7 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
     }
 
     /**
-     * Get a controller from the motor ports. Does **not** correct for "wiring" of a unipolar stepper.
+     * Get a controller from the motor ports. Note this is 5v.
      */
     fun motorStepperPort(): BasicStepperController {
         val pins = stepperPins(MOTOR)
@@ -143,7 +148,7 @@ class CRICKITHatDeviceFactory(val seeSaw: AdafruitSeeSaw = CRICKITHat()) :
      */
     private fun stepperPins(type: Types) = (1..4)
         .map { boardInfo.getByPwmOrGpioNumber(type.deviceNumber(it)).get() }
-        .map { getInternalPwm(it, createPwmPinKey(it)) }
+        .map { provisionPwmOutputDevice(it, 2000, 0f) }
         .map { PwmStepperPin(it) }
 
     /**

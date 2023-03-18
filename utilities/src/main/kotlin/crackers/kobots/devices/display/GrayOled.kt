@@ -48,6 +48,7 @@ abstract class GrayOled(
     protected abstract val dataCommand: Int
     protected abstract val setRowCommand: Int
     protected abstract val setColumnCommand: Int
+    protected val sendBuffer = mutableListOf<Int>()
 
     init {
         if (reset && initializationSequence.isNotEmpty()) command(initializationSequence)
@@ -58,6 +59,7 @@ abstract class GrayOled(
     }
 
     abstract fun setDisplayOn(on: Boolean)
+    abstract fun isDisplayOn(): Boolean
     abstract fun invertDisplay(invert: Boolean)
     open fun getNativeImageType() = BufferedImage.TYPE_BYTE_GRAY
 
@@ -103,7 +105,6 @@ abstract class GrayOled(
     /**
      * The main methodology for pushing the image to the on-board display memory
      */
-    protected val sendBuffer = mutableListOf<Int>()
     protected open fun displayImage(image: BufferedImage) {
         // set RAM for writing
         home()

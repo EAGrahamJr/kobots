@@ -144,4 +144,9 @@ class CrickitHatNeoPixelTest : FunSpec(
             }
         }
     }
-)
+) {
+
+    init {
+        initProperties()
+    }
+}

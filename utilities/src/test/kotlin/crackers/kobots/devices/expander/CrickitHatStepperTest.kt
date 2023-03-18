@@ -160,7 +160,13 @@ class CrickitHatStepperTest : FunSpec(
             }
         }
     }
-)
+) {
+
+    init {
+        initProperties()
+    }
+}
+
 
 private fun checkStepperSetup(pinOrder: List<Byte>) {
     mockRequests shouldContainExactly listOf(
