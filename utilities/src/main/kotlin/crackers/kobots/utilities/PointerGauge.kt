@@ -27,8 +27,15 @@ import kotlin.math.min
 /**
  * A very simple circular- or arc-style "gauge" (e.g. "dial", "dial pointer"), without resorting to large libraries.
  *
+ * ## Specifying the drawing space
  * - [graphics] = the canvas to draw on
  * - [width], [height] = the drawing area size
+ *
+ * or
+ * - [image] = a _rendered_ image
+ *
+ * ## Graph values
+ *
  * - [minimumValue], [maximumValue] = range of expected values: the pointer won't go beyond these (default **0-100**)
  * - [label] = optional label in the center of the dial
  * - [shape] = either [Shape.SEMICIRCLE] (default) or [Shape.CIRCLE]
@@ -53,6 +60,35 @@ class PointerGauge @JvmOverloads constructor(
     enum class Shape {
         CIRCLE, SEMICIRCLE
     }
+
+    /**
+     * Alternate constructor: uses the full given image as the canvas.
+     */
+    @JvmOverloads
+    constructor(
+        image: Image,
+        minimumValue: Double = 0.0,
+        maximumValue: Double = 0.0,
+        label: String? = null,
+        shape: Shape = Shape.SEMICIRCLE,
+        foreground: Color = Color.WHITE,
+        background: Color = Color.BLACK,
+        font: String = Font.SANS_SERIF,
+        fontColor: Color = foreground
+    )
+        : this(
+        image.graphics as Graphics2D,
+        image.getWidth(null),
+        image.getHeight(null),
+        minimumValue,
+        maximumValue,
+        label,
+        shape,
+        foreground,
+        background,
+        font,
+        fontColor
+    )
 
     private var value = 0.0
 
