@@ -38,26 +38,27 @@ class SSD1327(delegate: SsdOledCommunicationChannel) :
     override val setRowCommand: Int = SET_ROW_ADDR
 
     private var _displayOn: Boolean = false
-    override fun setDisplayOn(on: Boolean) {
-        // enable/disable the VDD regulator, too
-        command(
-            if (on) {
-                intArrayOf(SET_FN_SELECT_A, 0x01, SET_DISP or 0x01)
-            } else {
-                intArrayOf(SET_FN_SELECT_A, 0x00, SET_DISP)
-            }
-        )
-        _displayOn = on
-    }
 
-    override fun isDisplayOn(): Boolean = _displayOn
+    override var displayOn: Boolean
+        get() = _displayOn
+        set(on) {
+            // enable/disable the VDD regulator, too
+            command(
+                if (on) {
+                    intArrayOf(SET_FN_SELECT_A, 0x01, SET_DISP or 0x01)
+                } else {
+                    intArrayOf(SET_FN_SELECT_A, 0x00, SET_DISP)
+                }
+            )
+            _displayOn = on
+        }
 
     override fun invertDisplay(invert: Boolean) {
         command(if (invert) SET_DISP_INVERT else SET_DISP_NORMAL)
     }
 
     override fun close() {
-        setDisplayOn(false)
+        displayOn = false
         command(intArrayOf(SET_FN_SELECT_A, 0x00))
         super.close()
     }

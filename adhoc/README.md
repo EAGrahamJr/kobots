@@ -1,9 +1,5 @@
 Learnin' stuff and experiments not intended to be taken seriously.
 
-# In Memorium: Illy 5/2006 - 2/24/2023
-
-Goodbye, my friend.
-
 Aside from the image, the code is archived in the "learning" branch.
 
 ### Cat Bonker, Mark I
@@ -26,3 +22,24 @@ Aside from the image, the code is archived in the "learning" branch.
 - Servo
   - has an "arrow" stuck on the spindle
   - reacts based on range-finder
+
+### Radar Love
+
+![](Radar%20love.jpg)
+
+A servo motor sweeps back and forth, "pinging" with a range-finder, painting the distance to objects on an OLED.
+
+- [SonarScreen.kt](src/main/kotlin/kobots/demo/SonarScreen.kt)
+- Raspberry Pi B+
+- Adafruit [CRICKIT Hat](https://www.adafruit.com/product/3957)
+- HC SR04 UltraSonic Ranging Module
+  - note: will **NOT** run from the CRICKIT due to tight timing constraints
+  - via [GPIO expander](https://www.amazon.com/dp/B08RDYDG6X?psc=1&ref=ppx_yo2ov_dt_b_product_details) (the pretty lights)
+  - there's another version without the lights, but they're pretty useful for diagnostics
+- SG90 servo (in the box underneath)
+- SparkFun [Qwiic Hat](https://www.adafruit.com/product/4688)
+  - used this version because it doesn't cover the CRICKIT
+- Grayscale 1.5" [OLED](https://www.adafruit.com/product/4741)
+- more LEGO
+  - the [servo mount](../diagrams/SG90%20Mount.ldr) is actually a **VERY** good fit
+  - plans to sacrifice a 4x4 plate (drill a hole in it) to get a better attachment to the servo

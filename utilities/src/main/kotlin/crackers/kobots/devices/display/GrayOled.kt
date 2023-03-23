@@ -58,8 +58,7 @@ abstract class GrayOled(
         delegate.close()
     }
 
-    abstract fun setDisplayOn(on: Boolean)
-    abstract fun isDisplayOn(): Boolean
+    abstract var displayOn: Boolean
     abstract fun invertDisplay(invert: Boolean)
     open fun getNativeImageType() = BufferedImage.TYPE_BYTE_GRAY
 

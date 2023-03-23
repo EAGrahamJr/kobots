@@ -16,7 +16,7 @@
 package base
 
 import crackers.kobots.utilities.elapsed
-import device.examples.qwiic.oled.GaugeStuff
+import kobots.demo.SonarScreen
 import java.time.Instant
 import kotlin.system.exitProcess
 
@@ -39,12 +39,15 @@ fun main() {
 //    System.setProperty(REMOTE_PI, "marvin.local")
 
     // select the thing to run
-    GaugeStuff.run()
+//    GaugeStuff.run()
 //    LEDShim().use {
 //        it.waitForIt(.5.seconds)
 //    }
 //    DiozeroRelay().run()
 //    MultiDeviceMadness().use { it.execute() }
-//    CRICKITSteppers().execute()
+//    CRICKITSteppers()
+//    MovingAndDisplaying()
+    SonarScreen()
+        .execute()
     exitProcess(0)
 }

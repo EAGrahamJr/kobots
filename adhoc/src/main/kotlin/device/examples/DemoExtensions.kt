@@ -18,6 +18,7 @@ package device.examples
 
 import com.diozero.sbc.LocalSystemInfo
 import com.diozero.util.SleepUtil
+import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import crackers.kobots.devices.expander.NeoPixel
 import crackers.kobots.devices.lighting.PimoroniLEDShim
 import crackers.kobots.ops.registerCPUTempConsumer
@@ -124,4 +125,20 @@ fun PimoroniLEDShim.showCPUTemp(numPixels: Int = this.width, pixelOffset: Int = 
             }
         }
     }
+}
+
+// Semi-permanent hookup on the GPIO expander
+const val WHITE_WIRE = 16
+const val PURPLE_WIRE = 6
+const val BLUE_WIRE = 5
+const val GREEN_WIRE = 25
+
+// use these a lot
+val hat by lazy { CRICKITHatDeviceFactory() }
+private val stopButton by lazy { hat.touchDigitalIn(4) }
+
+private val running = AtomicBoolean(true)
+fun checkStop() = running.let { r ->
+    if (stopButton.value) r.compareAndSet(true, false)
+    r.get()
 }

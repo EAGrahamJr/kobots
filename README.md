@@ -1,3 +1,7 @@
+# In Memorium: Illy 5/2006 - 2/24/2023
+
+Goodbye, my friend.
+
 # KOBOTS
 
 Kotlin, Raspberry Pi, and Robots: what could possibly go worng.

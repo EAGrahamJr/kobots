@@ -56,7 +56,7 @@ class MovingAndDisplaying {
     private lateinit var image: BufferedImage
     private val oled by lazy {
         SSD1327(SSD1327.ADAFRUIT_STEMMA).apply {
-            setDisplayOn(false)
+            displayOn = false
             image = BufferedImage(128, 128, BufferedImage.TYPE_BYTE_GRAY).apply {
                 gauge = PointerGauge(
                     this,
@@ -88,7 +88,7 @@ class MovingAndDisplaying {
     // simple case - run until the signal is given again (simulates another input)
     fun stepperRun() {
         oled.apply {
-            setDisplayOn(true)
+            displayOn = true
             image.graphics.apply {
                 val previous = color
                 color = Color.WHITE
@@ -102,7 +102,7 @@ class MovingAndDisplaying {
             display(image)
             show()
             SleepUtil.sleepSeconds(2)
-            setDisplayOn(false)
+            displayOn = false
         }
 
         while (!moveIt.value) {
@@ -144,12 +144,12 @@ class MovingAndDisplaying {
                 if (cpuEndsAt.isBefore(now)) {
                     // turn it on
                     if (displayIt.value) {
-                        oled.setDisplayOn(true)
+                        oled.displayOn = true
                         cpuEndsAt = now.plusSeconds(60)
                     }
                     // if it's on, turn it off
-                    else if (oled.isDisplayOn()) {
-                        oled.setDisplayOn(false)
+                    else if (oled.displayOn) {
+                        oled.displayOn = false
                     }
                 }
                 if (cpuEndsAt.isAfter(now)) {
