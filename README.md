@@ -40,6 +40,14 @@ This [pinout reference](https://pinout.xyz/) is also invaluable...
 
 This project uses [Gradle](https://gradle.org), so the only thing you need is a compatible JDK<sup>**3**</sup>. Additionally, because the project is [Kotlin](https://kotlinlang.org) and uses the _Kotlin Gradle plugin_, a Kotlin installation is also not necessary.
 
+# Physical Pieces
+
+Because I have no idea what direction any of this will take, the physical construction pieces have started with standard LEGO<sup>TM</sup> pieces, transitioning to Technic<sup>TM</sup>. Various partial contraptions and explorations are detailed in the [adhoc](adhoc) subproject.
+
+Potentially useful constructs can be found in the [diagrams](diagrams) directory. CAD drawings were produced using [LeoCAD](https://www.leocad.org).
+
+There's also a [Google Album](https://photos.app.goo.gl/kWWJ8uUjWdHnsVDY6) with more photos and videos.
+
 ---
 
 <sup>**1**</sup> All of the tutorials, lessons, kits, and existing libraries are predicated on C (at some level), due to the hardware interaction. I just don't want to go there anymore.<br/>

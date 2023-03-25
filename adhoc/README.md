@@ -25,10 +25,11 @@ Aside from the image, the code is archived in the "learning" branch.
 
 ### Radar Love
 
-![](Radar%20love.jpg)
+![](Radar%20Love.png)
 
 A servo motor sweeps back and forth, "pinging" with a range-finder, painting the distance to objects on an OLED.
 
+- [video](https://photos.app.goo.gl/HNHEWfRqXeyzpr3Q8)
 - [SonarScreen.kt](src/main/kotlin/kobots/demo/SonarScreen.kt)
 - Raspberry Pi B+
 - Adafruit [CRICKIT Hat](https://www.adafruit.com/product/3957)

@@ -20,8 +20,8 @@ import com.diozero.devices.HCSR04
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.at
 import crackers.kobots.devices.display.SSD1327
-import device.examples.PURPLE_WIRE
-import device.examples.WHITE_WIRE
+import device.examples.R1_BLACK
+import device.examples.R1_WHITE
 import device.examples.checkStop
 import device.examples.hat
 import java.awt.Color
@@ -71,7 +71,7 @@ class SonarScreen {
         clear()
     }
 
-    private val sonar by lazy { HCSR04(WHITE_WIRE, PURPLE_WIRE) }
+    private val sonar by lazy { HCSR04(R1_WHITE, R1_BLACK) }
 
     fun execute() {
         hat.use {
@@ -121,7 +121,7 @@ class SonarScreen {
                     direction = if (direction == 0) 1 else 0
                 }
 
-                SleepUtil.busySleep(Duration.ofMillis(10).toNanos())
+                SleepUtil.busySleep(Duration.ofMillis(5).toNanos())
             }
             servo at 0f
         }

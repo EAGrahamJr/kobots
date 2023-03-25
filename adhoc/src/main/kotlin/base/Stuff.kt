@@ -48,6 +48,7 @@ fun main() {
 //    CRICKITSteppers()
 //    MovingAndDisplaying()
     SonarScreen()
+//    Foo()
         .execute()
     exitProcess(0)
 }

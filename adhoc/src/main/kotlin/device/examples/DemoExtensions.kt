@@ -127,11 +127,24 @@ fun PimoroniLEDShim.showCPUTemp(numPixels: Int = this.width, pixelOffset: Int = 
     }
 }
 
-// Semi-permanent hookup on the GPIO expander
-const val WHITE_WIRE = 16
-const val PURPLE_WIRE = 6
-const val BLUE_WIRE = 5
-const val GREEN_WIRE = 25
+// Semi-permanent hookup on the GPIO expander - starting at the non-USB end
+// row 1
+const val R1_WHITE = 17
+const val R1_BLACK = 18
+
+// row 2
+const val R2_WHITE = 16
+const val R2_PURPLE = 6
+const val R2_BLUE = 5
+const val R2_GREEN = 25
+
+// row 3 not used
+// row 4
+const val R4_BROWN = 26
+const val R4_RED = 13
+const val R4_ORANGE = 21
+const val R4_YELLOW = 27
+const val R4_BLACK = 4
 
 // use these a lot
 val hat by lazy { CRICKITHatDeviceFactory() }
