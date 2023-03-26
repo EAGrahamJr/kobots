@@ -1,7 +1,3 @@
-# In Memorium: Illy 5/2006 - 2/24/2023
-
-Goodbye, my friend.
-
 # KOBOTS
 
 Kotlin, Raspberry Pi, and Robots: what could possibly go worng.
@@ -11,6 +7,10 @@ Experiments in electronics, robotics, and interacting with the "real world" with
 This is a _learning_ experience for me, but it **might** produce something useful (I'll re-write this README if that actually happens :smiley:).
 
 ![Just Build](https://github.com/EAGrahamJr/kobots/actions/workflows/full-build.yaml/badge.svg)
+
+### In Memorium: Illy 5/2006 - 2/24/2023
+
+Goodbye, my friend.
 
 ## WHY????
 
