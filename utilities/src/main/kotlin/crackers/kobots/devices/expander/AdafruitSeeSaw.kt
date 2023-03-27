@@ -338,7 +338,7 @@ open class AdafruitSeeSaw(private val i2CDevice: I2CDevice, val initReset: Boole
         register: Byte,
         offset: Byte,
         bytesToRead: Int,
-        delay: Duration = Duration.ofMillis(10)
+        delay: Duration = Duration.ofMillis(5)
     ): ByteArray = lock.withLock {
         // set the register
         write(register, offset)
