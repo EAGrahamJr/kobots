@@ -165,7 +165,7 @@ open class AdafruitSeeSaw(private val i2CDevice: I2CDevice, val initReset: Boole
             throw UnsupportedOperationException("No analog input pins defined for device.")
         }
         val offset = analogInputPins.pwmOffsets(pin)
-        return read(ADC_BASE, (ADC_CHANNEL_OFFSET + offset).toByte(), 2).toShort()
+        return readShort(ADC_BASE, (ADC_CHANNEL_OFFSET + offset).toByte())
     }
 
     // PWM outputs ----------------------------------------------------------------------------------------------------
