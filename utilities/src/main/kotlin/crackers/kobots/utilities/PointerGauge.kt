@@ -62,7 +62,7 @@ class PointerGauge @JvmOverloads constructor(
     }
 
     /**
-     * Alternate constructor: uses the full given image as the canvas.
+     * Alternate constructor: uses the image to derive the graphics and dimensions.
      */
     @JvmOverloads
     constructor(
@@ -75,20 +75,20 @@ class PointerGauge @JvmOverloads constructor(
         background: Color = Color.BLACK,
         font: String = Font.SANS_SERIF,
         fontColor: Color = foreground
-    )
-        : this(
-        image.graphics as Graphics2D,
-        image.getWidth(null),
-        image.getHeight(null),
-        minimumValue,
-        maximumValue,
-        label,
-        shape,
-        foreground,
-        background,
-        font,
-        fontColor
-    )
+    ) :
+        this(
+            image.graphics as Graphics2D,
+            image.getWidth(null),
+            image.getHeight(null),
+            minimumValue,
+            maximumValue,
+            label,
+            shape,
+            foreground,
+            background,
+            font,
+            fontColor
+        )
 
     private var value = 0.0
 

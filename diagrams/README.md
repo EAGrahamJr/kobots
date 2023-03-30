@@ -26,3 +26,12 @@ See the [Google Album](https://photos.app.goo.gl/kWWJ8uUjWdHnsVDY6) for more.
 - just copper tape on tiles for capacitive touchpads (like on a [CRICKIT](https://www.adafruit.com/product/3957))
 - used in lots of initial projects for simple controls
 - [plans](Touchpads.ldr)
+
+### Basic Stepper Mount
+
+![](Hobby%20Stepper%20Mount.png)
+
+![](Hobby%20Stepper%20Lid%20Off.png) (lids off)
+
+- board is a typical ULN2003 approximately 30mm by 30mm
+- 

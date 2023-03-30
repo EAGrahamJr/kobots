@@ -17,7 +17,7 @@
 
 [ "$1" = "-s" ] && SUSPEND="y" || SUSPEND="n"
 JAVA="/home/crackers/java"
-JAR="/home/crackers/marvin-pi.jar"
+JAR="/home/crackers/kobots-app.jar"
 
 if [ ! -z "$1" ]; then
   CLASS=$(unzip -l $JAR | grep $1 | awk '{print $4}' | sed s,/,.,g | sed s/\.class//g | cut -d '$' -f 1)

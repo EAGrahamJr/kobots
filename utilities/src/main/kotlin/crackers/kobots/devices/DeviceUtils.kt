@@ -16,7 +16,11 @@
 
 package crackers.kobots.devices
 
+import com.diozero.devices.sandpit.motor.StepperMotorInterface
+import com.diozero.devices.sandpit.motor.StepperMotorInterface.Direction
+import com.diozero.util.SleepUtil
 import java.io.Serializable
+import java.time.Duration
 import kotlin.experimental.and
 
 /**
@@ -66,5 +70,22 @@ fun twoBytesAndBuffer(first: Byte, second: Byte, buffer: ByteArray) = ByteArray(
         0 -> first
         1 -> second
         else -> buffer[it - 2]
+    }
+}
+
+/**
+ * Rotate with a simple interruption - note this **can** be bad if the interruption method is left as the default.
+ */
+fun StepperMotorInterface.rotate(
+    degrees: Float,
+    direction: Direction = Direction.FORWARD,
+    pause: Duration = Duration.ofMillis(5),
+    interruptus: () -> Boolean = { false }
+) {
+    val steps = (stepsPerRotation * degrees / 360f).toInt()
+    for (i in 1..steps) {
+        if (interruptus()) break
+        step(direction)
+        SleepUtil.busySleep(pause.toNanos())
     }
 }

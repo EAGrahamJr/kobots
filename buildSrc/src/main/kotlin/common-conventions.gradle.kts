@@ -1,3 +1,5 @@
+import jdk.internal.vm.vector.VectorSupport.test
+
 plugins {
     kotlin("jvm")
     id("org.jmailen.kotlinter")
@@ -9,7 +11,6 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     implementation("ch.qos.logback:logback-classic:1.2.7")
 
     testImplementation("io.kotest:kotest-runner-junit5:5.5.4")

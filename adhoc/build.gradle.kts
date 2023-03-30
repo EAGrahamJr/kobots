@@ -3,14 +3,8 @@ plugins {
 }
 
 dependencies {
-    if (gradle.startParameter.taskNames.contains("deployMe")) {
-        // requires root to run, but makes everything much faster
-        implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
-        // TODO needs to be implementation for the "relay" app to work
-        compileOnly("com.diozero:diozero-provider-remote:$DIOZERO_VER")
-    } else
-        implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4-native-mt")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    //    implementation("com.diozero:diozero-imu-devices:$DIOZERO_VER")
 }
 
 val sshTarget = System.getProperty("remote", "marvin.local")
@@ -23,8 +17,9 @@ tasks {
         // this is important for sing the remote client at the same time as other providers
         mergeServiceFiles()
     }
+    // shoot it to target
     create("deployMe") {
-        mustRunAfter("shadowJar")
+        dependsOn(":adhoc:shadowJar")
         doLast {
             println("Sending to $sshTarget")
             exec {
