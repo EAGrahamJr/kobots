@@ -18,18 +18,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout build plugins
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: EAGrahamJr/gradle-scripts
           path: gradle-scripts
       - name: Checkout diozero
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: EAGrahamJr/diozero
           ref: stepper-fixes
           path: diozero
       - name: Checkout kobots
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: EAGrahamJr/kobots
           path: kobots

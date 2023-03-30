@@ -1,5 +1,3 @@
-import jdk.internal.vm.vector.VectorSupport.test
-
 plugins {
     kotlin("jvm")
     id("org.jmailen.kotlinter")
