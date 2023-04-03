@@ -66,7 +66,6 @@ object Sonar : AutoCloseable {
 
         if (direction) current += offset else current -= offset
         servo at current
-        println("servo $current")
     }
 
     /**
