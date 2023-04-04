@@ -20,8 +20,8 @@ import com.diozero.api.DigitalInputDevice
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import com.diozero.util.SleepUtil
-import crackers.kobots.devices.at
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import java.lang.Thread.sleep
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
@@ -87,34 +87,38 @@ fun main() {
 
             // TODO do something with the stepper and make more shite here
             if (StatusFlags.collisionDetected.get()) {
-                // just do a quick 200-step rotation for now
-                (1..20).forEach {
+                // T36->T20 -- T8-->24 (turntable inside)
+                // ratio  == .6
+                // forward drives CCW from the top
+                (1..200).forEach {
                     shoulderStepper.step(StepperMotorInterface.Direction.FORWARD)
-                    SleepUtil.busySleep(Duration.ofMillis(5).toNanos())
+                    sleep(1)
                 }
                 collisionCounter++
+
                 // if we've "avoided the collision", reset the detection
+                // N.B. current rig has a CCW motion on the top gear
+                // TODO this should be another "check" if doing rolling stuff
                 if (collisionCounter >= 2) {
                     collisionCounter = 0
                     StatusFlags.collisionDetected.set(false)
                 }
             }
 
-            if (!StatusFlags.scanningFlag.get() && !StatusFlags.collisionDetected.get() && calibrateTouch.value) {
-                calibrate = when {
-                    calibrate == 0f -> 90f
-                    calibrate == 90f -> 180f
-                    else -> 0f
-                }
-                Sonar.servo at calibrate
-                SleepUtil.busySleep(Duration.ofMillis(50).toNanos()) // finger off the button
-            }
+//            if (!StatusFlags.scanningFlag.get() && !StatusFlags.collisionDetected.get() && calibrateTouch.value) {
+//                (1..200).forEach {
+//                    shoulderStepper.step(StepperMotorInterface.Direction.FORWARD)
+//                    sleep(3)
+//                }
+//                SleepUtil.busySleep(Duration.ofMillis(50).toNanos()) // finger off the button
+//            }
 
             // adjust this
             SleepUtil.busySleep(WAIT_LOOP)
         }
         Screen.close()
         Sonar.close()
+        shoulderStepper.release()
     }
 }
 
