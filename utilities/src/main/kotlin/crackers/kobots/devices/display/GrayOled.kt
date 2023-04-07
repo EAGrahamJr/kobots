@@ -18,8 +18,11 @@ package crackers.kobots.devices.display
 
 import com.diozero.api.DeviceInterface
 import com.diozero.devices.oled.SsdOledCommunicationChannel
+import java.awt.Color
+import java.awt.Graphics2D
 import java.awt.Image
 import java.awt.color.ColorSpace
+import java.awt.geom.Rectangle2D
 import java.awt.image.BufferedImage
 import java.awt.image.ColorConvertOp
 import java.awt.image.DataBufferByte
@@ -50,17 +53,35 @@ abstract class GrayOled(
     protected abstract val setColumnCommand: Int
     protected val sendBuffer = mutableListOf<Int>()
 
+    protected val screenBounds = Rectangle2D.Double(0.0, 0.0, width.toDouble(), height.toDouble())
+
     init {
         if (reset && initializationSequence.isNotEmpty()) command(initializationSequence)
     }
 
     override fun close() {
+        clear() // effectively clears the screen buffer kinda
         delegate.close()
     }
 
     abstract var displayOn: Boolean
     abstract fun invertDisplay(invert: Boolean)
     open fun getNativeImageType() = BufferedImage.TYPE_BYTE_GRAY
+
+    /**
+     * Basically displays a black rectangle, with optional dimensions.
+     */
+    fun clear() {
+        display(
+            BufferedImage(128, 128, BufferedImage.TYPE_BYTE_GRAY).also {
+                with(it.graphics as Graphics2D) {
+                    color = Color.BLACK
+                    fill(screenBounds)
+                }
+            }
+        )
+        show()
+    }
 
     /**
      * Display an image. This is the preferred method?

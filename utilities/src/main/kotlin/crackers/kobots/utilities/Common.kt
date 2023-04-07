@@ -19,11 +19,13 @@ package crackers.kobots.utilities
 import com.diozero.internal.spi.NativeDeviceFactoryInterface
 import com.diozero.sbc.DeviceFactoryHelper
 import java.awt.Color
+import java.awt.FontMetrics
 import java.lang.Integer.max
 import java.lang.Integer.min
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.CopyOnWriteArrayList
+import javax.imageio.ImageIO
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.roundToInt
@@ -134,3 +136,13 @@ fun Int.kelvinToRGB(): Color {
 
 val PURPLE = Color(0xB4, 0, 0xFF)
 val GOLDENROD = Color(255, 150, 0)
+
+/**
+ * Use font metrics to center some text in an area
+ */
+fun FontMetrics.center(text: String, width: Int) = kotlin.math.max((width - stringWidth(text)) / 2, 0)
+
+/**
+ * Load an image.
+ */
+fun loadImage(name: String) = ImageIO.read(object {}::class.java.getResourceAsStream(name))
