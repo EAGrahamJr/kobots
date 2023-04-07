@@ -33,30 +33,24 @@ object StatusFlags {
     val collisionDetected = AtomicBoolean(false)
 
     val sonarScan = AtomicReference<Sonar.Reading>()
-
-    /**
-     * One time setter: flips based on initial condition when [did] is activated
-     */
-    fun flagSetter(did: DigitalInputDevice, flag: AtomicBoolean): () -> Boolean {
-        val initial = flag.get()
-        return {
-            with(flag) {
-                if (get() == initial && did.value) set(!initial)
-                get()
-            }
-        }
-    }
 }
 
 val WAIT_LOOP = Duration.ofMillis(15).toNanos()
-val RELAX_TIME = 15
+val RELAX_TIME = 30
 
 val crickitHat by lazy { CRICKITHatDeviceFactory() }
 val shoulderStepper by lazy { BasicStepperMotor(200, crickitHat.motorStepperPort()) }
 
 fun main() {
     crickitHat.use { hat ->
-        val runCheck = StatusFlags.flagSetter(hat.touchDigitalIn(4), StatusFlags.runFlag)
+        val runCheck = hat.touchDigitalIn(4).let { did ->
+            {
+                with(StatusFlags.runFlag) {
+                    if (get() && did.value) set(false)
+                    get()
+                }
+            }
+        }
         val timeCheck = hat.touchDigitalIn(1).let { did ->
             {
                 val now = Instant.now()
@@ -65,18 +59,16 @@ fun main() {
                 } else {
                     Screen.displayCurrentStatus(now)
                 }
-                now
             }
         }
 
         val scanCheck = scanCheck(hat.touchDigitalIn(2))
-        var collisionCounter = 0
 
         val calibrateTouch = hat.touchDigitalIn(3)
         var calibrate = -1f
 
         while (runCheck()) {
-            val nowTime = timeCheck()
+            timeCheck()
             if (scanCheck()) {
                 Sonar.reading().also { r ->
                     StatusFlags.sonarScan.set(r)
@@ -86,31 +78,8 @@ fun main() {
             }
 
             // TODO do something with the stepper and make more shite here
-            if (StatusFlags.collisionDetected.get()) {
-                // T36->T20 -- T8-->24 (turntable inside)
-                // ratio  == .6
-                // forward drives CCW from the top
-                (1..200).forEach {
-                    shoulderStepper.step(StepperMotorInterface.Direction.FORWARD)
-                    sleep(1)
-                }
-                collisionCounter++
-
-                // if we've "avoided the collision", reset the detection
-                // N.B. current rig has a CCW motion on the top gear
-                // TODO this should be another "check" if doing rolling stuff
-                if (collisionCounter >= 2) {
-                    collisionCounter = 0
-                    StatusFlags.collisionDetected.set(false)
-                }
-            }
-
-//            if (!StatusFlags.scanningFlag.get() && !StatusFlags.collisionDetected.get() && calibrateTouch.value) {
-//                (1..200).forEach {
-//                    shoulderStepper.step(StepperMotorInterface.Direction.FORWARD)
-//                    sleep(3)
-//                }
-//                SleepUtil.busySleep(Duration.ofMillis(50).toNanos()) // finger off the button
+//            if (StatusFlags.collisionDetected.get()) {
+//                avoidCollision()
 //            }
 
             // adjust this
@@ -122,24 +91,52 @@ fun main() {
     }
 }
 
+// TODO temporary
+var collisionCounter = 0
+private fun avoidCollision() {
+    // T36->T20 -- T8-->24 (turntable inside)
+    // ratio  == .6
+    // forward drives CCW from the top
+    (1..200).forEach {
+        shoulderStepper.step(StepperMotorInterface.Direction.FORWARD)
+        sleep(1)
+    }
+    collisionCounter++
+
+    // if we've "avoided the collision", reset the detection
+    // N.B. current rig has a CCW motion on the top gear
+    // TODO this should be another "check" if doing rolling stuff
+    if (collisionCounter >= 2) {
+        collisionCounter = 0
+        StatusFlags.collisionDetected.set(false)
+    }
+}
+
+/**
+ * Basically runs the scan for a set period of time before terminating.
+ */
 private fun scanCheck(did: DigitalInputDevice): () -> Boolean {
     var lastRotate = Instant.EPOCH
 
     return {
-        val rotateCheck = Instant.now()
         // if currently scanning, check to see if we stop (button state is immaterial)
-        if (StatusFlags.scanningFlag.get()) {
-            // time to stop
-            if (Duration.between(lastRotate, rotateCheck).toSeconds() > RELAX_TIME) {
-                StatusFlags.scanningFlag.set(false)
-                StatusFlags.collisionDetected.set(false)
-                Sonar.zero()
+        with(StatusFlags.scanningFlag) {
+            val rotateCheck = Instant.now()
+
+            if (get()) {
+                // time to stop
+                if (Duration.between(lastRotate, rotateCheck).toSeconds() > RELAX_TIME) {
+                    set(false)
+                    // auto clear collisions and re-set the servo
+                    StatusFlags.collisionDetected.set(false)
+                    Sonar.zero()
+                }
+                // otherwise keep going
+            } else if (did.value) {
+                lastRotate = rotateCheck
+                set(true)
             }
-            // otherwise keep going
-        } else if (did.value) {
-            lastRotate = rotateCheck
-            StatusFlags.scanningFlag.set(true)
+            get()
         }
-        StatusFlags.scanningFlag.get()
     }
 }

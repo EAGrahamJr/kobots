@@ -18,10 +18,10 @@ package crackers.kobots.app
 
 import com.diozero.devices.HCSR04
 import crackers.kobots.devices.at
+import kotlin.math.roundToInt
 
 /**
- * Sweeps a servo through 2o degrees (90 +/- 10) by 3 degrees (yes, it's odd). Grabs 3 readings at each "stop" for an
- * average.
+ * Sweeps a servo through a defined angle and increments. Grabs 3 readings at each "stop" for an average.
  */
 object Sonar : AutoCloseable {
     private const val TRIGGER_PIN = 23 // currently orange
@@ -32,9 +32,9 @@ object Sonar : AutoCloseable {
     internal val servo by lazy { crickitHat.servo(SERVO_PORT) }
 
     private var current = 90f
-    private val MIN_ANGLE = 80f
-    private val MAX_ANGLE = 100f
-    private val offset = 3
+    private val MIN_ANGLE = 45f
+    private val MAX_ANGLE = 135f
+    private val offset = 2
     private var direction = false
 
     init {
@@ -73,7 +73,7 @@ object Sonar : AutoCloseable {
      */
     fun reading(): Reading {
         next()
-        return Reading(current, ping())
+        return Reading(current.roundToInt(), ping())
     }
 
     /**
@@ -88,5 +88,5 @@ object Sonar : AutoCloseable {
         ultrasound.close()
     }
 
-    class Reading(val bearing: Float, val range: Float)
+    class Reading(val bearing: Int, val range: Float)
 }

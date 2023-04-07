@@ -19,13 +19,14 @@
 JAVA="/home/crackers/java"
 JAR="/home/crackers/kobots-app.jar"
 
-if [ ! -z "$1" ]; then
-  CLASS=$(unzip -l $JAR | grep $1 | awk '{print $4}' | sed s,/,.,g | sed s/\.class//g | cut -d '$' -f 1)
-  echo "Running $CLASS"
-  RUNTHIS="-cp $JAR $CLASS"
-else
-  RUNTHIS="-jar $JAR"
-fi
+#if [ ! -z "$1" ]; then
+#  CLASS=$(unzip -l $JAR | grep $1 | awk '{print $4}' | sed s,/,.,g | sed s/\.class//g | cut -d '$' -f 1)
+#  echo "Running $CLASS"
+#  RUNTHIS="-cp $JAR $CLASS"
+#else
+#  RUNTHIS="-jar $JAR"
+#fi
+RUNTHIS="-jar $JAR"
 
 #echo $RUNTHIS
 sudo $JAVA -ea -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=*:5005 $RUNTHIS

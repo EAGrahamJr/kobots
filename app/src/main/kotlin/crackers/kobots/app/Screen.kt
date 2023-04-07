@@ -16,23 +16,24 @@
 
 package crackers.kobots.app
 
+import com.diozero.sbc.LocalSystemInfo
 import crackers.kobots.devices.display.GrayOled
 import crackers.kobots.devices.display.SSD1327
-import java.awt.Color
-import java.awt.Font
-import java.awt.FontMetrics
-import java.awt.Graphics2D
+import crackers.kobots.utilities.loadImage
+import java.awt.*
+import java.awt.geom.Arc2D
+import java.awt.geom.Point2D
 import java.awt.image.BufferedImage
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
-import javax.imageio.ImageIO
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 object Screen {
     private val screenGraphics: Graphics2D
     private val image: BufferedImage
-    private val timeFont = Font(Font.SERIF, Font.PLAIN, 12)
+    private val timeFont = Font("Helvetica", Font.BOLD, 18)
     private val timeFontMetrics: FontMetrics
     private var distanceFont = Font(Font.MONOSPACED, Font.BOLD, 24)
     private var distanceFontMetrics: FontMetrics
@@ -42,7 +43,14 @@ object Screen {
     private val okStatusImage = loadImage("/smiley.png")
     private val alertStatusImage = loadImage("/not-smiley.jpg")
     private val sleepingImage = loadImage("/snooze.jpg")
-    private var sleeping = true
+    private var sleeping = false
+    const val MAX_TIME = 60
+    const val MAX_SLEEP = 30
+
+    private val radarUpperLeft = Point2D.Double(24.0, 78.0)
+    private val radarDrawRadius = 40.0
+    private val radarArcCenter: Point2D
+    private val radarArcShape: Arc2D
 
     init {
         image = BufferedImage(128, 128, BufferedImage.TYPE_BYTE_GRAY).also {
@@ -51,65 +59,127 @@ object Screen {
         timeFontMetrics = screenGraphics.getFontMetrics(timeFont)
         distanceFontMetrics = screenGraphics.getFontMetrics(distanceFont)
 
-        // TODO maybe not?
-        screen.display(sleepingImage)
-        screen.show()
+        screen.clear()
+        screen.displayOn = true
+        with(screenGraphics) {
+            // draw a thermometer, kind of
+            color = Color.GRAY
+            drawRect(0, 0, 4, 127)
+
+            color = Color.WHITE
+            font = Font(Font.SANS_SERIF, Font.PLAIN, 10)
+            val fh = getFontMetrics(font).ascent
+            drawString("80", 6, fh + 1)
+            drawString("40", 6, 126)
+            drawString("\u2103", 6, 63 + fh / 2)
+
+            // set up the "radar" screen
+            // create the pie shape for the radar - starts at 45 degrees and sweeps for 90
+            val diameter = 2 * radarDrawRadius // because we actually draw it in a box
+            radarArcShape = Arc2D.Double(radarUpperLeft.x, radarUpperLeft.y, diameter, diameter, 45.0, 90.0, Arc2D.PIE)
+            radarArcCenter = Point2D.Double(radarUpperLeft.x + radarDrawRadius, radarUpperLeft.y + radarDrawRadius)
+        }
     }
 
     fun isOn() = screen.displayOn
     fun close() = screen.close()
 
-    private lateinit var lastDisplayed: Instant
+    private var lastDisplayed = Instant.now().minusSeconds(MAX_SLEEP.toLong())
 
     fun startTimeAndTempThing(now: Instant) {
         lastDisplayed = now
         screen.displayOn = true
         sleeping = false
+        with(screenGraphics) {
+            // clear radar area
+            color = Color.BLACK
+            fillRect(22, 22, 120, 120)
+        }
         displayCurrentStatus(now)
     }
 
-    private const val ALERT = "ALERT!!!"
+    private val bogeys = HashMap<Int, Float>()
 
     /**
-     * Display the time and temp on the OLED display. Checks a timer to see if the display has been on for a defined
-     * period of time.
+     * Display the application statuses. Checks to see how long the display has been on and will shut it off after a
+     * period of time
      */
     fun displayCurrentStatus(now: Instant) = with(screenGraphics) {
+        showTemperature()
+        showTime()
+
         if (shouldBlank(now)) return
 
-        // if "not alerting"
-        if (!StatusFlags.collisionDetected.get()) {
-            color = Color.BLACK
-            fillRect(0, 0, 128, 128)
-            drawImage(okStatusImage, 34, 0, 50, 50, null)
-            color = Color.WHITE
-            font = timeFont
-            // the time, please?
-            val time = LocalTime.now().let { String.format("%2d:%02d:%02d", it.hour, it.minute, it.second) }
-            drawString(time, timeFontMetrics.center(time), 100)
-        } else {
-            drawImage(alertStatusImage, 0, 0, 127, 127, null)
-//            color = Color.RED
-//            // TODO this should be "static"
-//            drawString(
-//                ALERT,
-//                distanceFontMetrics.center(ALERT),
-//                distanceFontMetrics.height + 1
-//            )
-            color = Color.BLACK
-            val text = String.format("D: %5.1f cm", StatusFlags.sonarScan.get().range)
-            drawString(text, distanceFontMetrics.center(text), 120 - distanceFontMetrics.descent)
+        // clear radar area and draw the "screen"
+        color = Color.BLACK
+        fill(radarArcShape)
+
+        color = Color.WHITE
+        draw(radarArcShape)
+
+        StatusFlags.sonarScan.get()?.also { scan ->
+            // if the range is under the radius, store the bogey (otherwise clear)
+            if (scan.range < radarDrawRadius) {
+                bogeys.put(scan.bearing, scan.range)
+            } else {
+                bogeys.remove(scan.bearing)
+            }
+
+            // negative angle because coordinates are upside down from eyeballs
+            radarArcCenter.also { c ->
+                // draw the sweep line
+                val radians = Math.toRadians(-scan.bearing.toDouble())
+                val sweepX = (c.x + radarDrawRadius * Math.cos(radians)).toInt()
+                val sweepY = (c.y + radarDrawRadius * Math.sin(radians)).toInt()
+                color = Color.GREEN
+                drawLine(c.x.toInt(), c.y.toInt(), sweepX, sweepY)
+
+                // draw all the current bogies
+                color = Color.RED
+                bogeys.forEach { angle, range ->
+                    val rads = Math.toRadians(-angle.toDouble())
+                    val bx = (c.x + range * Math.cos(rads)).toInt()
+                    val by = (c.y + range * Math.sin(rads)).toInt()
+                    fillArc(bx, by, 3, 3, 0, 360)
+                }
+            }
         }
 
-        screen.display(image)
-        screen.show()
+        showIt()
     }
 
-    private fun loadImage(name: String) = ImageIO.read(this::class.java.getResourceAsStream(name))
+    private fun Graphics2D.showTemperature() {
+        color = Color.BLACK
+        fillRect(1, 1, 3, 126)
+        val temperature = getTemperature()
+        color = when {
+            temperature < 55 -> Color.GREEN
+            temperature < 70 -> Color.YELLOW
+            else -> Color.RED
+        }
+
+        // offset by 40 as that's our lower bound
+        val diff = (max(temperature - 40, 0f) * 125 / 40).roundToInt()
+        fillRect(1, 126 - diff, 3, 126)
+    }
+
+    private fun Graphics2D.showTime() {
+        color = Color.BLACK
+        fillRect(20, 0, 120, 21)
+        font = timeFont
+        val time = LocalTime.now().let { String.format("%2d:%02d:%02d", it.hour, it.minute, it.second) }
+        val tx = 20 + (107 - timeFontMetrics.stringWidth(time)) / 2
+        color = Color.CYAN
+        drawString(time, tx, timeFontMetrics.ascent + 1)
+    }
 
     private fun shouldBlank(now: Instant): Boolean {
         // check the timer - turn the screen off if on too long
         if (screen.displayOn) {
+            if (StatusFlags.scanningFlag.get()) {
+                lastDisplayed = now
+                return false
+            }
             val howLong = Duration.between(lastDisplayed, now).toSeconds()
             // turn it off
             if (howLong >= MAX_TIME) {
@@ -119,15 +189,24 @@ object Screen {
                 // screen remains on for now, but we return false to prevent over-writing
                 // TODO this is awkward
                 sleeping = true
-                screen.display(sleepingImage)
-                screen.show()
+                displayImage(sleepingImage)
+                showIt()
             }
         }
         return sleeping || !screen.displayOn
     }
 
-    private fun FontMetrics.center(text: String) = max((128 - stringWidth(text)) / 2, 0)
+    /**
+     * Display the current image buffer.
+     */
+    private fun showIt() {
+        screen.display(image)
+        screen.show()
+    }
 
-    const val MAX_TIME = 60
-    const val MAX_SLEEP = 30
+    private fun getTemperature(): Float = LocalSystemInfo.getInstance().cpuTemperature
+
+    private fun displayImage(image: Image) {
+        screenGraphics.drawImage(image, 22, 22, 106, 106, null)
+    }
 }

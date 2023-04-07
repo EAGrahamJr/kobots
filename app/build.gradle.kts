@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-
+    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
 }
 
 val sshTarget = System.getProperty("remote", "marvin.local")
