@@ -7,32 +7,7 @@ dependencies {
     implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
 }
 
-val sshTarget = System.getProperty("remote", "marvin.local")
-
-tasks {
-    shadowJar {
-        archiveBaseName.set("marvin-pi")
-        archiveVersion.set("")
-        archiveClassifier.set("")
-        // this is important for sing the remote client at the same time as other providers
-        mergeServiceFiles()
-    }
-    // shoot it to target
-    create("deployMe") {
-        dependsOn(":adhoc:shadowJar")
-        doLast {
-            println("Sending to $sshTarget")
-            exec {
-                commandLine(
-                    "sh", "-c", """
-                    scp build/libs/marvin-pi.jar $sshTarget:/home/crackers
-                    scp *.sh $sshTarget:/home/crackers
-                    """.trimIndent()
-                )
-            }
-        }
-    }
-}
+project.ext.set("jar.name", "marvin-pi")
 
 application {
     // change this class to run other things on deployment
