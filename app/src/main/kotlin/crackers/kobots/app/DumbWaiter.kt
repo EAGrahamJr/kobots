@@ -20,27 +20,49 @@ import com.diozero.api.DigitalInputDevice
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import com.diozero.util.SleepUtil
+import crackers.kobots.app.StatusFlags.flagFlag
+import crackers.kobots.app.StatusFlags.flagPosition
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
-import java.lang.Thread.sleep
+import crackers.kobots.utilities.PURPLE
+import java.awt.Color
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalTime
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
+/**
+ * Global state machine.
+ */
 object StatusFlags {
     val runFlag = AtomicBoolean(true)
     val scanningFlag = AtomicBoolean(false)
+    val flagFlag = AtomicBoolean(false)
     val collisionDetected = AtomicBoolean(false)
 
     val sonarScan = AtomicReference<Sonar.Reading>()
+    val flagPosition = AtomicInteger(0)
 }
 
-val WAIT_LOOP = Duration.ofMillis(15).toNanos()
-val RELAX_TIME = 30
+const val WAIT_LOOP = 50L
+const val RELAX_TIME = 30
+
+// steps divided by actual ratio - 100 steps/ 1.666 ratio
+const val GEAR_RATIO = 60
 
 val crickitHat by lazy { CRICKITHatDeviceFactory() }
-val shoulderStepper by lazy { BasicStepperMotor(200, crickitHat.motorStepperPort()) }
+val flagStepper by lazy { BasicStepperMotor(200, crickitHat.motorStepperPort()) }
+val neoPixel by lazy {
+    crickitHat.neoPixel(30).apply {
+        brightness = 0.1f
+        autoWrite = true
+    }
+}
 
+/**
+ * Run this.
+ */
 fun main() {
     crickitHat.use { hat ->
         val runCheck = hat.touchDigitalIn(4).let { did ->
@@ -64,10 +86,18 @@ fun main() {
 
         val scanCheck = scanCheck(hat.touchDigitalIn(2))
 
-        val calibrateTouch = hat.touchDigitalIn(3)
-        var calibrate = -1f
+        val flagChecker = hat.touchDigitalIn(3).let { did ->
+            {
+                if (did.value) flagFlag.compareAndSet(false, true)
+                flagFlag.get()
+            }
+        }
 
         while (runCheck()) {
+            val loopStartedAt = System.currentTimeMillis()
+            neoCheck()
+            if (flagChecker()) flagRunner()
+
             timeCheck()
             if (scanCheck()) {
                 Sonar.reading().also { r ->
@@ -77,66 +107,77 @@ fun main() {
                 }
             }
 
-            // TODO do something with the stepper and make more shite here
-//            if (StatusFlags.collisionDetected.get()) {
-//                avoidCollision()
-//            }
+            // adjust this dynamically?
+            val runTime = System.currentTimeMillis() - loopStartedAt
+            val waitFor = if (runTime > WAIT_LOOP) {
+                0L
+            } else {
+                WAIT_LOOP - runTime
+            }
 
-            // adjust this
-            SleepUtil.busySleep(WAIT_LOOP)
+            SleepUtil.busySleep(Duration.ofMillis(waitFor).toNanos())
         }
+
         Screen.close()
         Sonar.close()
-        shoulderStepper.release()
-    }
-}
-
-// TODO temporary
-var collisionCounter = 0
-private fun avoidCollision() {
-    // T36->T20 -- T8-->24 (turntable inside)
-    // ratio  == .6
-    // forward drives CCW from the top
-    (1..200).forEach {
-        shoulderStepper.step(StepperMotorInterface.Direction.FORWARD)
-        sleep(1)
-    }
-    collisionCounter++
-
-    // if we've "avoided the collision", reset the detection
-    // N.B. current rig has a CCW motion on the top gear
-    // TODO this should be another "check" if doing rolling stuff
-    if (collisionCounter >= 2) {
-        collisionCounter = 0
-        StatusFlags.collisionDetected.set(false)
+        flagStepper.release()
     }
 }
 
 /**
  * Basically runs the scan for a set period of time before terminating.
  */
-private fun scanCheck(did: DigitalInputDevice): () -> Boolean {
-    var lastRotate = Instant.EPOCH
+private var lastRotate = Instant.EPOCH
+private fun scanCheck(did: DigitalInputDevice): () -> Boolean = {
+    // if currently scanning, check to see if we stop (button state is immaterial)
+    with(StatusFlags.scanningFlag) {
+        val rotateCheck = Instant.now()
 
-    return {
-        // if currently scanning, check to see if we stop (button state is immaterial)
-        with(StatusFlags.scanningFlag) {
-            val rotateCheck = Instant.now()
-
-            if (get()) {
-                // time to stop
-                if (Duration.between(lastRotate, rotateCheck).toSeconds() > RELAX_TIME) {
-                    set(false)
-                    // auto clear collisions and re-set the servo
-                    StatusFlags.collisionDetected.set(false)
-                    Sonar.zero()
-                }
-                // otherwise keep going
-            } else if (did.value) {
-                lastRotate = rotateCheck
-                set(true)
+        if (get()) {
+            // time to stop
+            if (Duration.between(lastRotate, rotateCheck).toSeconds() > RELAX_TIME) {
+                set(false)
+                // auto clear collisions and re-set the servo
+                StatusFlags.collisionDetected.set(false)
+                Sonar.zero()
             }
-            get()
+            // otherwise keep going
+        } else if (did.value) {
+            lastRotate = rotateCheck
+            set(true)
         }
+        get()
+    }
+}
+
+/**
+ * Manage the color of the NeoPixel strip
+ */
+private var lastCheck = Color.BLUE
+private val neoCheck = {
+    val time = LocalTime.now()
+    val stripColor = when {
+        time.hour >= 23 && time.minute >= 30 -> Color.BLACK
+        time.hour >= 21 -> Color.RED
+        time.hour >= 8 -> PURPLE
+        else -> Color.BLACK
+    }
+    if (stripColor != lastCheck) {
+        neoPixel.fill(stripColor)
+        lastCheck = stripColor
+    }
+}
+
+private var flagDirection = false
+private val flagRunner: () -> Unit = {
+    // start
+    if (flagPosition.get() == 0 || flagDirection) {
+        flagStepper.step(StepperMotorInterface.Direction.BACKWARD)
+        flagDirection = flagPosition.incrementAndGet() < GEAR_RATIO
+    } else {
+        flagStepper.step(StepperMotorInterface.Direction.FORWARD)
+        flagFlag.set(flagPosition.decrementAndGet() > 0)
+        // if this "transitions" to false, release the stepper
+        if (!flagFlag.get()) flagStepper.release()
     }
 }

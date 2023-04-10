@@ -128,7 +128,7 @@ object Screen {
             // negative angle because coordinates are upside down from eyeballs
             radarArcCenter.also { c ->
                 // draw the sweep line
-                val radians = Math.toRadians(-scan.bearing.toDouble())
+                val radians = scan.bearing.reverseAngleInRadians()
                 val sweepX = (c.x + radarDrawRadius * Math.cos(radians)).toInt()
                 val sweepY = (c.y + radarDrawRadius * Math.sin(radians)).toInt()
                 color = Color.GREEN
@@ -137,7 +137,7 @@ object Screen {
                 // draw all the current bogies
                 color = Color.RED
                 bogeys.forEach { angle, range ->
-                    val rads = Math.toRadians(-angle.toDouble())
+                    val rads = angle.reverseAngleInRadians()
                     val bx = (c.x + range * Math.cos(rads)).toInt()
                     val by = (c.y + range * Math.sin(rads)).toInt()
                     fillArc(bx, by, 3, 3, 0, 360)
@@ -147,6 +147,9 @@ object Screen {
 
         showIt()
     }
+
+    private fun Int.reverseAngleInRadians(): Double =
+        Math.toRadians(-this.toDouble())
 
     private fun Graphics2D.showTemperature() {
         color = Color.BLACK
