@@ -16,18 +16,16 @@
 
 package crackers.kobots.app
 
-import com.diozero.api.DigitalInputDevice
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import com.diozero.util.SleepUtil
-import crackers.kobots.app.StatusFlags.flagFlag
-import crackers.kobots.app.StatusFlags.flagPosition
+import crackers.kobots.app.StatusFlags.proximityReading
+import crackers.kobots.app.StatusFlags.stepperActivationFlag
+import crackers.kobots.app.StatusFlags.stepperPosition
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
-import crackers.kobots.utilities.PURPLE
-import java.awt.Color
+import crackers.kobots.devices.sensors.VCNL4040
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalTime
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -37,74 +35,86 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object StatusFlags {
     val runFlag = AtomicBoolean(true)
-    val scanningFlag = AtomicBoolean(false)
-    val flagFlag = AtomicBoolean(false)
-    val collisionDetected = AtomicBoolean(false)
 
-    val sonarScan = AtomicReference<Sonar.Reading>()
-    val flagPosition = AtomicInteger(0)
+    val stepperActivationFlag = AtomicBoolean(false)
+    val stepperPosition = AtomicInteger(0)
+    val proximityReading = AtomicInteger(100)
+    val colorMode = AtomicReference(Stripper.NeoPixelControls.DEFAULT)
+}
+
+// devices
+val crickitHat by lazy { CRICKITHatDeviceFactory() }
+val nemaStepper by lazy { BasicStepperMotor(200, crickitHat.motorStepperPort()) }
+val proximitySensor by lazy {
+    VCNL4040().apply {
+        proximityEnabled = true
+        ambientLightEnabled = true
+    }
+}
+
+/**
+ * "Global" flag for loop/app termination
+ */
+val runCheck by lazy {
+    crickitHat.touchDigitalIn(4).let { did ->
+        {
+            with(StatusFlags.runFlag) {
+                if (get() && did.value) set(false)
+                get()
+            }
+        }
+    }
 }
 
 const val WAIT_LOOP = 50L
-const val RELAX_TIME = 30
-
-// steps divided by actual ratio - 100 steps/ 1.666 ratio
-const val GEAR_RATIO = 60
-
-val crickitHat by lazy { CRICKITHatDeviceFactory() }
-val flagStepper by lazy { BasicStepperMotor(200, crickitHat.motorStepperPort()) }
-val neoPixel by lazy {
-    crickitHat.neoPixel(30).apply {
-        brightness = 0.1f
-        autoWrite = true
-    }
-}
 
 /**
  * Run this.
  */
 fun main() {
     crickitHat.use { hat ->
-        val runCheck = hat.touchDigitalIn(4).let { did ->
+        val screenCheck = crickitHat.touchDigitalIn(1).let { did ->
             {
-                with(StatusFlags.runFlag) {
-                    if (get() && did.value) set(false)
+                if (!Screen.isOn() && did.value) Screen.startTimeAndTempThing()
+            }
+        }
+
+
+        val flagChecker = hat.touchDigitalIn(3).let { did ->
+            {
+                with(stepperActivationFlag) {
+                    if (did.value) compareAndSet(false, true)
                     get()
                 }
             }
         }
-        val timeCheck = hat.touchDigitalIn(1).let { did ->
+
+        val proxChecker = proximitySensor.let { sensor ->
+            var lastActive = Instant.EPOCH
             {
                 val now = Instant.now()
-                if (!Screen.isOn() && did.value) {
-                    Screen.startTimeAndTempThing(now)
-                } else {
-                    Screen.displayCurrentStatus(now)
+                // only allow it to re-activate after 5 seconds
+                sensor.proximity.let { prox ->
+                    proximityReading.set(prox.toInt())
+                    // this is the lambda value - fire or not
+                    Duration.between(lastActive, now).toSeconds() > 5 && prox > 15
+                }.also {
+                    if (it) lastActive = now
                 }
             }
         }
 
-        val scanCheck = scanCheck(hat.touchDigitalIn(2))
-
-        val flagChecker = hat.touchDigitalIn(3).let { did ->
-            {
-                if (did.value) flagFlag.compareAndSet(false, true)
-                flagFlag.get()
-            }
-        }
-
+        // main loop!!!!!
         while (runCheck()) {
             val loopStartedAt = System.currentTimeMillis()
-            neoCheck()
-            if (flagChecker()) flagRunner()
 
-            timeCheck()
-            if (scanCheck()) {
-                Sonar.reading().also { r ->
-                    StatusFlags.sonarScan.set(r)
-                    // if it's been re-set, re-check
-                    if (!StatusFlags.collisionDetected.get()) StatusFlags.collisionDetected.set(r.range <= 30f)
-                }
+            if (flagChecker()) flagRunner()
+            screenCheck()
+            Screen.displayCurrentStatus()
+
+            Stripper.apply {
+                if (proxChecker()) modeChange()
+                execute()
             }
 
             // adjust this dynamically?
@@ -119,65 +129,22 @@ fun main() {
         }
 
         Screen.close()
-        Sonar.close()
-        flagStepper.release()
+        nemaStepper.release()
     }
 }
 
-/**
- * Basically runs the scan for a set period of time before terminating.
- */
-private var lastRotate = Instant.EPOCH
-private fun scanCheck(did: DigitalInputDevice): () -> Boolean = {
-    // if currently scanning, check to see if we stop (button state is immaterial)
-    with(StatusFlags.scanningFlag) {
-        val rotateCheck = Instant.now()
-
-        if (get()) {
-            // time to stop
-            if (Duration.between(lastRotate, rotateCheck).toSeconds() > RELAX_TIME) {
-                set(false)
-                // auto clear collisions and re-set the servo
-                StatusFlags.collisionDetected.set(false)
-                Sonar.zero()
-            }
-            // otherwise keep going
-        } else if (did.value) {
-            lastRotate = rotateCheck
-            set(true)
-        }
-        get()
-    }
-}
-
-/**
- * Manage the color of the NeoPixel strip
- */
-private var lastCheck = Color.BLUE
-private val neoCheck = {
-    val time = LocalTime.now()
-    val stripColor = when {
-        time.hour >= 23 && time.minute >= 30 -> Color.BLACK
-        time.hour >= 21 -> Color.RED
-        time.hour >= 8 -> PURPLE
-        else -> Color.BLACK
-    }
-    if (stripColor != lastCheck) {
-        neoPixel.fill(stripColor)
-        lastCheck = stripColor
-    }
-}
-
+// TODO temporary stepper function
 private var flagDirection = false
+private val MAX_STEPS = 50
 private val flagRunner: () -> Unit = {
     // start
-    if (flagPosition.get() == 0 || flagDirection) {
-        flagStepper.step(StepperMotorInterface.Direction.BACKWARD)
-        flagDirection = flagPosition.incrementAndGet() < GEAR_RATIO
+    if (stepperPosition.get() == 0 || flagDirection) {
+        nemaStepper.step(StepperMotorInterface.Direction.BACKWARD)
+        flagDirection = stepperPosition.incrementAndGet() < MAX_STEPS
     } else {
-        flagStepper.step(StepperMotorInterface.Direction.FORWARD)
-        flagFlag.set(flagPosition.decrementAndGet() > 0)
+        nemaStepper.step(StepperMotorInterface.Direction.FORWARD)
+        stepperActivationFlag.set(stepperPosition.decrementAndGet() > 0)
         // if this "transitions" to false, release the stepper
-        if (!flagFlag.get()) flagStepper.release()
+        if (!stepperActivationFlag.get()) nemaStepper.release()
     }
 }
