@@ -19,13 +19,10 @@ package crackers.kobots.app
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import com.diozero.util.SleepUtil
-import crackers.kobots.app.StatusFlags.proximityReading
 import crackers.kobots.app.StatusFlags.stepperActivationFlag
 import crackers.kobots.app.StatusFlags.stepperPosition
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
-import crackers.kobots.devices.sensors.VCNL4040
 import java.time.Duration
-import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
@@ -35,6 +32,8 @@ import java.util.concurrent.atomic.AtomicReference
  */
 object StatusFlags {
     val runFlag = AtomicBoolean(true)
+    val proximityServoActive = AtomicBoolean(false)
+    val proximityModeSelectionActive = AtomicBoolean(false)
 
     val stepperActivationFlag = AtomicBoolean(false)
     val stepperPosition = AtomicInteger(0)
@@ -45,12 +44,6 @@ object StatusFlags {
 // devices
 val crickitHat by lazy { CRICKITHatDeviceFactory() }
 val nemaStepper by lazy { BasicStepperMotor(200, crickitHat.motorStepperPort()) }
-val proximitySensor by lazy {
-    VCNL4040().apply {
-        proximityEnabled = true
-        ambientLightEnabled = true
-    }
-}
 
 /**
  * "Global" flag for loop/app termination
@@ -76,9 +69,9 @@ fun main() {
         val screenCheck = crickitHat.touchDigitalIn(1).let { did ->
             {
                 if (!Screen.isOn() && did.value) Screen.startTimeAndTempThing()
+                Screen.displayCurrentStatus()
             }
         }
-
 
         val flagChecker = hat.touchDigitalIn(3).let { did ->
             {
@@ -89,18 +82,10 @@ fun main() {
             }
         }
 
-        val proxChecker = proximitySensor.let { sensor ->
-            var lastActive = Instant.EPOCH
+        val controllerCheck = hat.touchDigitalIn(2).let { did ->
             {
-                val now = Instant.now()
-                // only allow it to re-activate after 5 seconds
-                sensor.proximity.let { prox ->
-                    proximityReading.set(prox.toInt())
-                    // this is the lambda value - fire or not
-                    Duration.between(lastActive, now).toSeconds() > 5 && prox > 15
-                }.also {
-                    if (it) lastActive = now
-                }
+                if (did.value) ControlThing.activateSensor()
+                ControlThing.execute()
             }
         }
 
@@ -110,12 +95,11 @@ fun main() {
 
             if (flagChecker()) flagRunner()
             screenCheck()
-            Screen.displayCurrentStatus()
 
-            Stripper.apply {
-                if (proxChecker()) modeChange()
-                execute()
-            }
+            controllerCheck()
+
+            // do these last because they take the most time?
+            Stripper.execute()
 
             // adjust this dynamically?
             val runTime = System.currentTimeMillis() - loopStartedAt
@@ -129,13 +113,14 @@ fun main() {
         }
 
         Screen.close()
+        ControlThing.close()
         nemaStepper.release()
     }
 }
 
 // TODO temporary stepper function
 private var flagDirection = false
-private val MAX_STEPS = 50
+private val MAX_STEPS = 129
 private val flagRunner: () -> Unit = {
     // start
     if (stepperPosition.get() == 0 || flagDirection) {
