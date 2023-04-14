@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Global state machine.
+ * Global state machine. **EVERYTHING MUST BE INITIALIZED!!!!! NO NULLS!!!!!**
  */
 object StatusFlags {
     val runFlag = AtomicBoolean(true)
@@ -39,6 +39,7 @@ object StatusFlags {
     val stepperPosition = AtomicInteger(0)
     val proximityReading = AtomicInteger(100)
     val colorMode = AtomicReference(Stripper.NeoPixelControls.DEFAULT)
+    val armStatus = AtomicReference(TheArm.ArmState.AT_REST)
 }
 
 // devices
@@ -98,6 +99,9 @@ fun main() {
 
             controllerCheck()
 
+            // maybe move something
+            TheArm.execute()
+
             // do these last because they take the most time?
             Stripper.execute()
 
@@ -114,20 +118,21 @@ fun main() {
 
         Screen.close()
         ControlThing.close()
+        TheArm.close()
         nemaStepper.release()
     }
 }
 
 // TODO temporary stepper function
 private var flagDirection = false
-private val MAX_STEPS = 129
+private val MAX_STEPS = 77 // new gears -- 1:1.29 but backwards
 private val flagRunner: () -> Unit = {
     // start
     if (stepperPosition.get() == 0 || flagDirection) {
-        nemaStepper.step(StepperMotorInterface.Direction.BACKWARD)
+        nemaStepper.step(StepperMotorInterface.Direction.FORWARD)
         flagDirection = stepperPosition.incrementAndGet() < MAX_STEPS
     } else {
-        nemaStepper.step(StepperMotorInterface.Direction.FORWARD)
+        nemaStepper.step(StepperMotorInterface.Direction.BACKWARD)
         stepperActivationFlag.set(stepperPosition.decrementAndGet() > 0)
         // if this "transitions" to false, release the stepper
         if (!stepperActivationFlag.get()) nemaStepper.release()

@@ -16,8 +16,8 @@
 
 package crackers.kobots.app
 
-import com.diozero.api.ServoTrim.TOWERPRO_SG90
-import crackers.kobots.devices.at
+import crackers.kobots.app.StatusFlags.armStatus
+import crackers.kobots.app.TheArm.ArmState.*
 import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.utilities.elapsed
 import java.time.Instant
@@ -29,13 +29,11 @@ object ControlThing : AutoCloseable {
     const val CLOSE_ENOUGH = 15
     const val ACTIVATION_PADDING = 15
     const val IDLE_RESET = 30
-    const val DELTA = 10f
 
-    enum class Mode {
+    private enum class Mode {
         IDLE, EXTEND, READY, RETRACT
     }
 
-    val otherServo by lazy { crickitHat.servo(4, TOWERPRO_SG90) }
     val proximitySensor by lazy {
         VCNL4040().apply {
             proximityEnabled = true
@@ -47,7 +45,6 @@ object ControlThing : AutoCloseable {
     private var lastDeployed = Instant.EPOCH
 
     override fun close() {
-        otherServo at 0f
         proximitySensor.close()
     }
 
@@ -55,14 +52,34 @@ object ControlThing : AutoCloseable {
         when (currentMode) {
             Mode.IDLE -> currentMode = Mode.EXTEND
             Mode.READY -> if (lastDeployed.elapsed().toSeconds() > ACTIVATION_PADDING) currentMode = Mode.RETRACT
-            else -> {}
+            else -> Unit
         }
     }
 
     fun execute() {
+        val armStatus = armStatus.get()
+
         when (currentMode) {
-            Mode.EXTEND -> swingUp()
-            Mode.RETRACT -> swingDown()
+            Mode.EXTEND -> {
+                when (armStatus) {
+                    AT_FRONT -> {
+                        currentMode = Mode.READY
+                        lastDeployed = Instant.now()
+                    }
+
+                    AT_REST -> StatusFlags.armStatus.set(DEPLOY_FRONT)
+                    else -> Unit
+                }
+            }
+
+            Mode.RETRACT -> {
+                when (armStatus) {
+                    AT_FRONT -> StatusFlags.armStatus.set(REST)
+                    AT_REST -> currentMode = Mode.IDLE
+                    else -> Unit
+                }
+            }
+
             Mode.READY -> {
                 proximitySensor.proximity.toInt().let { prox ->
                     StatusFlags.proximityReading.set(prox)
@@ -71,28 +88,13 @@ object ControlThing : AutoCloseable {
                     if (prox > CLOSE_ENOUGH) {
                         Stripper.modeChange()
                         currentMode = Mode.RETRACT
-                    } else if (lastDeployed.elapsed().toSeconds() > IDLE_RESET) currentMode = Mode.RETRACT
+                    } else if (lastDeployed.elapsed().toSeconds() > IDLE_RESET) {
+                        currentMode = Mode.RETRACT
+                    }
                 }
             }
 
-            else -> {
-            }
+            else -> Unit
         }
-    }
-
-    private var servoAngle = 0f
-    private fun swingUp() {
-        servoAngle += DELTA
-        otherServo at servoAngle
-        if (servoAngle == 180f) {
-            lastDeployed = Instant.now()
-            currentMode = Mode.READY
-        }
-    }
-
-    private fun swingDown() {
-        servoAngle -= DELTA
-        otherServo at servoAngle
-        if (servoAngle == 0f) currentMode = Mode.IDLE
     }
 }
