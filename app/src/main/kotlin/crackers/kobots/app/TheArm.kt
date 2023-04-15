@@ -17,92 +17,79 @@
 package crackers.kobots.app
 
 import com.diozero.api.ServoTrim
-import crackers.kobots.app.TheArm.ShoulderStatus.*
 import crackers.kobots.devices.at
+import kotlin.math.roundToInt
+
+private class DesiredState(
+    val shoulderPosition: Int,
+    val finalState: TheArm.ArmState
+)
 
 /**
- * TODO fill this in
+ * First attempt at a controlled "arm-like" structure.
  */
 object TheArm {
     enum class ArmState {
         AT_REST, REST, DEPLOY_FRONT, AT_FRONT
     }
 
+    private const val SHOULDER_DELTA = 2
+    private const val SHOULDER_START = 90
+    private const val SHOUDLER_STOP = 0
+
+    private val desiredStates = mapOf(
+        ArmState.DEPLOY_FRONT to (DesiredState(SHOUDLER_STOP, ArmState.AT_FRONT)),
+        ArmState.REST to DesiredState(SHOULDER_START, ArmState.AT_REST)
+    )
+
     val shoulderServo by lazy {
         crickitHat.servo(4, ServoTrim.TOWERPRO_SG90).apply {
-            angle = START_ANGLE
+            this at SHOULDER_START
         }
     }
 
     fun close() {
-        shoulderServo at START_ANGLE
+        shoulderServo at SHOULDER_START
     }
 
     fun execute() {
         // are we at the desired state? if not, start moving
-        when (StatusFlags.armStatus.get()) {
-            ArmState.DEPLOY_FRONT -> {
-                val shoulderDone = moveShoulder(UP)
-                if (shoulderDone) StatusFlags.armStatus.set(ArmState.AT_FRONT)
-            }
-
-            ArmState.REST -> {
-                val shoulderDone = moveShoulder(DOWN)
-                if (shoulderDone) StatusFlags.armStatus.set(ArmState.AT_REST)
-            }
-
-            else -> {}
+        val whatToDo = StatusFlags.armStatus.get()
+        desiredStates[whatToDo]?.also {
+            val shoulderDone = moveShoulder(it.shoulderPosition)
+            // TODO other joints
+            if (shoulderDone) StatusFlags.armStatus.set(it.finalState)
         }
     }
 
     // shoulder =======================================================================================================
-    const val DELTA = -10f
-    const val START_ANGLE = 90f
-    const val STOP_ANGLE = 0f
+    // TODO current configuration is 0 for UP and 90 for down, so the math is kind of backwards
 
-    private enum class ShoulderStatus {
-        DOWN, UP, MOVING_UP, MOVING_DOWN
-    }
+    /**
+     * Figure out where the shoulder is and see if it needs to move or not
+     */
+    private fun moveShoulder(desiredAngle: Int): Boolean {
+        var shoulderAngle = shoulderServo.angle.roundToInt()
+        if (shoulderAngle == desiredAngle) return true
 
-    private var shoulderState = DOWN
-
-    private fun moveShoulder(whereIWantToBe: ShoulderStatus): Boolean {
-        val whatIshouldBeDoing = if (whereIWantToBe == UP) MOVING_UP else MOVING_DOWN
-        val notWhereIWantToBe = if (whereIWantToBe == UP) DOWN else UP
-
-        if (shoulderState == whereIWantToBe) return true
-        if (shoulderState == notWhereIWantToBe) shoulderState = whatIshouldBeDoing
-
-        if (shoulderState == MOVING_UP) {
-            swingUp()
-            if (servoAngle == STOP_ANGLE) shoulderState = UP
-        } else if (shoulderState == MOVING_DOWN) {
-            swingDown()
-            if (servoAngle == START_ANGLE) shoulderState = DOWN
+        // figure out if we're going up or down based on desired state and where we're at
+        (desiredAngle - shoulderAngle).also { diff ->
+            // apply the delta and see if it goes out of range
+            shoulderAngle = if (diff < 0) {
+                // TODO this is "up"
+                (shoulderAngle - SHOULDER_DELTA).let {
+                    if (shoulderOutOfRange(it)) SHOUDLER_STOP else it
+                }
+            } else {
+                // TODO this is "down"
+                (shoulderAngle + SHOULDER_DELTA).let {
+                    if (shoulderOutOfRange(it)) SHOULDER_START else it
+                }
+            }
+            shoulderServo at shoulderAngle
         }
         return false
     }
 
-    private var servoAngle = START_ANGLE
-    private fun rangeCheck(angle: Float): Boolean =
-        angle !in if (START_ANGLE < STOP_ANGLE) {
-            (START_ANGLE..STOP_ANGLE)
-        } else {
-            (STOP_ANGLE..START_ANGLE)
-        }
-
-    private fun swingUp() {
-        servoAngle = (servoAngle + DELTA).let {
-            if (rangeCheck(it)) STOP_ANGLE else it
-        }
-
-        shoulderServo at servoAngle
-    }
-
-    private fun swingDown() {
-        servoAngle = (servoAngle - DELTA).let {
-            if (rangeCheck(it)) START_ANGLE else it
-        }
-        shoulderServo at servoAngle
-    }
+    private fun shoulderOutOfRange(angle: Int): Boolean = angle !in (SHOUDLER_STOP..SHOULDER_START)
 }

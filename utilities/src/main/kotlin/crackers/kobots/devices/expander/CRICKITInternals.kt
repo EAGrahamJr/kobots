@@ -196,6 +196,7 @@ internal class CRICKIInternalPwm(
     override fun setValue(fraction: Float) {
         val dutyCycle = fraction * 0xFFFF
         factory.seeSaw.analogWrite(seeSawPin.toByte(), truncate(dutyCycle).toInt().toShort(), true)
+        currentValue = fraction
     }
 
     override fun getValue() = currentValue

@@ -46,6 +46,10 @@ infix fun ServoDevice.set(input: Float) {
     value = input
 }
 
+infix fun ServoDevice.set(input: Int) = set(input.toFloat())
+
+fun ServoDevice.setAngle(input: Int) = set(input.toFloat())
+
 /**
  * Sets the [angle] for the servo. Note that this **must** be in the
  * range the servo supports.
@@ -53,6 +57,8 @@ infix fun ServoDevice.set(input: Float) {
 infix fun ServoDevice.at(angle: Float) {
     this.angle = angle
 }
+
+infix fun ServoDevice.at(angle: Int) = at(angle.toFloat())
 
 /**
  * Uses array notion to set [text] on a [row]
