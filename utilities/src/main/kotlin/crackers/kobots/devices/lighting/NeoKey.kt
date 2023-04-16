@@ -14,19 +14,18 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.devices.misc
+package crackers.kobots.devices.lighting
 
 import com.diozero.api.DeviceInterface
 import com.diozero.api.I2CDevice
 import crackers.kobots.devices.expander.AdafruitSeeSaw
 import crackers.kobots.devices.expander.NeoPixel
-import crackers.kobots.devices.lighting.PixelColor
 import java.awt.Color
 
 /**
  * Adafruit https://www.adafruit.com/product/4980
  */
-class NeoKey1x4(i2CDevice: I2CDevice = DEFAULT_I2C) : DeviceInterface {
+class NeoKey(i2CDevice: I2CDevice = DEFAULT_I2C) : DeviceInterface {
     private val seeSaw = AdafruitSeeSaw(i2CDevice)
 
     val pixels = NeoPixel(seeSaw, 4, NEOPIX_DEVICE).apply {

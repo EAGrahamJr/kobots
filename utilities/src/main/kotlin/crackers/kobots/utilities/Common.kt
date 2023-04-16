@@ -136,6 +136,7 @@ fun Int.kelvinToRGB(): Color {
 
 val PURPLE = Color(0xB4, 0, 0xFF)
 val GOLDENROD = Color(255, 150, 0)
+val ORANGISH = Color(1f, .55f, 0f)
 
 /**
  * Use font metrics to center some text in an area
