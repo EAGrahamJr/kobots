@@ -17,8 +17,8 @@
 package device.examples.adafruit
 
 import crackers.kobots.devices.at
-import crackers.kobots.ops.createEventBus
 import device.examples.RunManagerForFlows
+import kobots.ops.createEventBus
 
 /**
  * Run a motor using the analog inputs.

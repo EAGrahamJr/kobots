@@ -19,8 +19,8 @@ package device.examples
 import com.diozero.api.RuntimeIOException
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
-import crackers.kobots.ops.createEventBus
-import crackers.kobots.ops.stopTheBus
+import kobots.ops.createEventBus
+import kobots.ops.stopTheBus
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration

@@ -26,11 +26,11 @@ import crackers.kobots.devices.display.SSD1327
 import crackers.kobots.devices.lighting.DEFAULT_SHIM_ADDRESS
 import crackers.kobots.devices.lighting.PimoroniLEDShim
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.ops.createEventBus
-import crackers.kobots.ops.registerCPUTempConsumer
 import crackers.kobots.utilities.PointerGauge
 import crackers.kobots.utilities.colorInterval
 import crackers.kobots.utilities.scale
+import kobots.ops.createEventBus
+import kobots.ops.registerCPUTempConsumer
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics2D

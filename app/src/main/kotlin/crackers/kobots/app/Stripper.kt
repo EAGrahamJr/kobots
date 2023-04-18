@@ -42,10 +42,10 @@ object Stripper {
 
     fun modeChange() = colorMode.get().next().let {
         colorMode.set(it)
-        if (it == NeoPixelControls.DEFAULT) lastNeoPixelColor = Color.BLACK
+        if (it == NeoPixelControls.DEFAULT) lastNeoPixelColor = Color.PINK
     }
 
-    private var lastNeoPixelColor = Color.BLACK
+    private var lastNeoPixelColor = Color.PINK
     fun execute() {
         when (colorMode.get()) {
             NeoPixelControls.RED -> colorChange(Color.RED)

@@ -21,9 +21,9 @@ import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import crackers.kobots.devices.expander.NeoPixel
 import crackers.kobots.devices.lighting.PimoroniLEDShim
-import crackers.kobots.ops.registerCPUTempConsumer
 import crackers.kobots.utilities.colorInterval
 import crackers.kobots.utilities.scale
+import kobots.ops.registerCPUTempConsumer
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.util.concurrent.atomic.AtomicBoolean

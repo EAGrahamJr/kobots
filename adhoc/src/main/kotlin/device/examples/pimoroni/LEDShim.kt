@@ -19,11 +19,11 @@ package device.examples.pimoroni
 import base.REMOTE_PI
 import crackers.kobots.devices.at
 import crackers.kobots.devices.lighting.PimoroniLEDShim
-import crackers.kobots.ops.createEventBus
-import crackers.kobots.ops.registerCPUTempConsumer
 import crackers.kobots.utilities.colorInterval
 import crackers.kobots.utilities.scale
 import device.examples.RunManagerForFlows
+import kobots.ops.createEventBus
+import kobots.ops.registerCPUTempConsumer
 import java.awt.Color
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.seconds

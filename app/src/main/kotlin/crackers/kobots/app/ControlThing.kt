@@ -16,10 +16,15 @@
 
 package crackers.kobots.app
 
+import crackers.hassk.HAssKClient
 import crackers.kobots.app.StatusFlags.armStatus
 import crackers.kobots.app.TheArm.ArmState.*
+import crackers.kobots.devices.lighting.NeoKey
+import crackers.kobots.devices.lighting.PixelColor
 import crackers.kobots.devices.sensors.VCNL4040
+import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.elapsed
+import java.awt.Color
 import java.time.Instant
 
 /**
@@ -41,23 +46,33 @@ object ControlThing : AutoCloseable {
         }
     }
 
+    val keyboard by lazy {
+        NeoKey().apply { pixels.brightness = 0.05f }
+    }
+
+    val haClient = HAssKClient(crackers.hassk.token, "ringo.local")
+
     private var currentMode = Mode.IDLE
     private var lastDeployed = Instant.EPOCH
 
     override fun close() {
         proximitySensor.close()
-    }
-
-    fun activateSensor() {
-        when (currentMode) {
-            Mode.IDLE -> currentMode = Mode.EXTEND
-            Mode.READY -> if (lastDeployed.elapsed().toSeconds() > ACTIVATION_PADDING) currentMode = Mode.RETRACT
-            else -> Unit
-        }
+        keyboard.close()
     }
 
     fun execute() {
-        val armStatus = armStatus.get()
+        val armStatus = armStatus.get().also {
+            if (!it.name.startsWith("AT")) keyboard[0] = GOLDENROD
+        }
+
+        if (keyboard[3]) {
+            keyboard[3] = PixelColor(Color.RED, brightness = 0.05f)
+            // TODO async
+            with(haClient) {
+                "not_bedroom_group" light false
+            }
+            keyboard[3] = PixelColor(Color.GREEN, brightness = 0.01f)
+        }
 
         when (currentMode) {
             Mode.EXTEND -> {
@@ -67,7 +82,10 @@ object ControlThing : AutoCloseable {
                         lastDeployed = Instant.now()
                     }
 
-                    AT_REST -> StatusFlags.armStatus.set(DEPLOY_FRONT)
+                    AT_REST -> {
+                        StatusFlags.armStatus.set(DEPLOY_FRONT)
+                        keyboard[0] = Color.RED
+                    }
                     else -> Unit
                 }
             }
@@ -75,26 +93,30 @@ object ControlThing : AutoCloseable {
             Mode.RETRACT -> {
                 when (armStatus) {
                     AT_FRONT -> StatusFlags.armStatus.set(REST)
-                    AT_REST -> currentMode = Mode.IDLE
+                    AT_REST -> {
+                        currentMode = Mode.IDLE
+                        keyboard[0] = Color.BLACK
+                    }
                     else -> Unit
                 }
             }
 
             Mode.READY -> {
-                proximitySensor.proximity.toInt().let { prox ->
+                keyboard[0] = Color.GREEN
+                proximitySensor.luminosity.toInt().let { prox ->
                     StatusFlags.proximityReading.set(prox)
                     // specific trigger
                     // TODO should be state variable?
                     if (prox > CLOSE_ENOUGH) {
                         Stripper.modeChange()
                         currentMode = Mode.RETRACT
-                    } else if (lastDeployed.elapsed().toSeconds() > IDLE_RESET) {
+                    } else if (lastDeployed.elapsed().toSeconds() > IDLE_RESET || keyboard[0]) {
                         currentMode = Mode.RETRACT
                     }
                 }
             }
 
-            else -> Unit
+            else -> if (keyboard[0]) currentMode = Mode.EXTEND
         }
     }
 }

@@ -21,8 +21,8 @@ import com.diozero.api.ServoTrim
 import crackers.kobots.devices.at
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import crackers.kobots.devices.set
-import crackers.kobots.ops.createEventBus
-import crackers.kobots.ops.registerCPUTempConsumer
+import kobots.ops.createEventBus
+import kobots.ops.registerCPUTempConsumer
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import java.util.concurrent.atomic.AtomicBoolean

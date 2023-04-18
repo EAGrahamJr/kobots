@@ -83,13 +83,6 @@ fun main() {
             }
         }
 
-        val controllerCheck = hat.touchDigitalIn(2).let { did ->
-            {
-                if (did.value) ControlThing.activateSensor()
-                ControlThing.execute()
-            }
-        }
-
         // main loop!!!!!
         while (runCheck()) {
             val loopStartedAt = System.currentTimeMillis()
@@ -97,7 +90,7 @@ fun main() {
             if (flagChecker()) flagRunner()
             screenCheck()
 
-            controllerCheck()
+            ControlThing.execute()
 
             // maybe move something
             TheArm.execute()

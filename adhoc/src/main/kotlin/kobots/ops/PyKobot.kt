@@ -21,8 +21,6 @@ import com.diozero.api.DigitalInputDevice
 import com.diozero.api.ServoDevice
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
-import crackers.kobots.ops.createEventBus
-import crackers.kobots.ops.stopTheBus
 import java.lang.Thread.sleep
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean

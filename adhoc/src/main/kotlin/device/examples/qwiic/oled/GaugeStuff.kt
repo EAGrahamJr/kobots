@@ -19,9 +19,9 @@ package device.examples.qwiic.oled
 import crackers.kobots.devices.display.SSD1327
 import crackers.kobots.devices.qwiicKill
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.ops.createEventBus
-import crackers.kobots.ops.stopTheBus
 import crackers.kobots.utilities.PointerGauge
+import kobots.ops.createEventBus
+import kobots.ops.stopTheBus
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics2D
