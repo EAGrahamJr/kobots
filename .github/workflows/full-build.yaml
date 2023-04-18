@@ -28,6 +28,18 @@ jobs:
           repository: EAGrahamJr/diozero
           ref: main
           path: diozero
+      - name: Checkout devices
+        uses: actions/checkout@v3
+        with:
+          repository: EAGrahamJr/kobots-devices
+          ref: main
+          path: kobots-devices
+      - name: Checkout HAssK
+        uses: actions/checkout@v3
+        with:
+          repository: EAGrahamJr/HAssK
+          ref: main
+          path: HAssK
       - name: Checkout kobots
         uses: actions/checkout@v3
         with:
@@ -46,6 +58,14 @@ jobs:
         run: |
           cd gradle-scripts
           ./gradlew --no-daemon --quiet build publishToMavenLocal
+      - name: Build devices
+        run: |
+          cd kobots-devices
+          ./gradlew --no-daemon --quiet build libraryDistribution
+      - name: Build HAssK
+        run: |
+          cd HAssK
+          ./gradlew --no-daemon --quiet build libraryDistribution
       - name: Build Kobots
         run: |
           cd kobots
