@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: EAGrahamJr/diozero
-          ref: stepper-fixes
+          ref: main
           path: diozero
       - name: Checkout kobots
         uses: actions/checkout@v3
