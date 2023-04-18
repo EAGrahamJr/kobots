@@ -5,7 +5,6 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":utilities"))
 }
 
 tasks {

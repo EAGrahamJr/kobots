@@ -1,2 +1,2 @@
 rootProject.name = "kobots"
-include("adhoc", "app", "operations", "utilities")
+include("adhoc", "app")
