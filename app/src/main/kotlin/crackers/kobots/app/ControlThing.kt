@@ -16,7 +16,6 @@
 
 package crackers.kobots.app
 
-import crackers.hassk.HAssKClient
 import crackers.kobots.app.StatusFlags.armStatus
 import crackers.kobots.app.TheArm.ArmState.*
 import crackers.kobots.devices.lighting.NeoKey
@@ -50,8 +49,6 @@ object ControlThing : AutoCloseable {
         NeoKey().apply { pixels.brightness = 0.05f }
     }
 
-    val haClient = HAssKClient(crackers.hassk.token, "ringo.local")
-
     private var currentMode = Mode.IDLE
     private var lastDeployed = Instant.EPOCH
 
@@ -67,10 +64,7 @@ object ControlThing : AutoCloseable {
 
         if (keyboard[3]) {
             keyboard[3] = PixelColor(Color.RED, brightness = 0.05f)
-            // TODO async
-            with(haClient) {
-                "not_bedroom_group" light false
-            }
+            // TODO something
             keyboard[3] = PixelColor(Color.GREEN, brightness = 0.01f)
         }
 
