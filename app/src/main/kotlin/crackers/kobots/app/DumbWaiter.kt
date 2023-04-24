@@ -67,12 +67,6 @@ const val WAIT_LOOP = 50L
  */
 fun main() {
     crickitHat.use { hat ->
-        val screenCheck = crickitHat.touchDigitalIn(1).let { did ->
-            {
-                if (!Screen.isOn() && did.value) Screen.startTimeAndTempThing()
-                Screen.displayCurrentStatus()
-            }
-        }
 
         val flagChecker = hat.touchDigitalIn(3).let { did ->
             {
@@ -88,7 +82,6 @@ fun main() {
             val loopStartedAt = System.currentTimeMillis()
 
             if (flagChecker()) flagRunner()
-            screenCheck()
 
             ControlThing.execute()
 
@@ -109,7 +102,6 @@ fun main() {
             SleepUtil.busySleep(Duration.ofMillis(waitFor).toNanos())
         }
 
-        Screen.close()
         ControlThing.close()
         TheArm.close()
         nemaStepper.release()
