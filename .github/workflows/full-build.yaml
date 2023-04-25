@@ -17,55 +17,60 @@ jobs:
   build_everything:
     runs-on: ubuntu-latest
     steps:
+      - name: Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: "temurin"
+      # plugins
       - name: Checkout build plugins
         uses: actions/checkout@v3
         with:
           repository: EAGrahamJr/gradle-scripts
           path: gradle-scripts
+      - name: Build plugins
+        run: |
+          cd gradle-scripts
+          ./gradlew --no-daemon --quiet build publishToMavenLocal
+      # diozero
       - name: Checkout diozero
         uses: actions/checkout@v3
         with:
           repository: EAGrahamJr/diozero
           ref: main
           path: diozero
+      - name: Build diozero
+        run: |
+          cd diozero
+          mvn --quiet --batch-mode -DskipTests install
+      # devices
       - name: Checkout devices
         uses: actions/checkout@v3
         with:
           repository: EAGrahamJr/kobots-devices
           ref: main
           path: kobots-devices
+      - name: Build devices
+        run: |
+          cd kobots-devices
+          ./gradlew --no-daemon --quiet build libraryDistribution
+      # HA client
       - name: Checkout HAssK
         uses: actions/checkout@v3
         with:
           repository: EAGrahamJr/HAssK
           ref: main
           path: HAssK
+      - name: Build HAssK
+        run: |
+          cd HAssK
+          ./gradlew --no-daemon --quiet build libraryDistribution
+      # main act
       - name: Checkout kobots
         uses: actions/checkout@v3
         with:
           repository: EAGrahamJr/kobots
           path: kobots
-      - name: Java
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: "temurin"
-      - name: Build diozero
-        run: |
-          cd diozero
-          mvn --quiet --batch-mode -DskipTests install
-      - name: Build plugins
-        run: |
-          cd gradle-scripts
-          ./gradlew --no-daemon --quiet build publishToMavenLocal
-      - name: Build devices
-        run: |
-          cd kobots-devices
-          ./gradlew --no-daemon --quiet build libraryDistribution
-      - name: Build HAssK
-        run: |
-          cd HAssK
-          ./gradlew --no-daemon --quiet build libraryDistribution
       - name: Build Kobots
         run: |
           cd kobots
