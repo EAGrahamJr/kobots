@@ -16,8 +16,6 @@
 
 package crackers.kobots.buttonboard
 
-import java.util.concurrent.atomic.AtomicReference
-
 /**
  * describes the various menus available
  */
@@ -26,32 +24,34 @@ object Menu {
     val firstRoomsMenu = listOf("Bedroom", "Office", "...", "Return")
     val secondRoomsMenu = listOf("Kitchen", "Living Room", "", "Return")
 
-    val currentMenu = AtomicReference(startupMenu)
+    private var current = emptyList<String>()
 
     /**
-     * Evaluates the button vs which menu is showing - returns `false` when exiting
+     * Evaluates the button vs which menu is showing - returns an empty list when "exit" is selected.
      */
-    fun execute(keyIndex: Int): Boolean {
-        when (currentMenu.get()) {
-            startupMenu -> {
-                if (keyIndex == 3) return true
-                if (keyIndex == 0) {
-                    currentMenu.set(firstRoomsMenu)
-                } else if (keyIndex == 1) currentMenu.set(secondRoomsMenu)
-            }
+    fun execute(keysPressed: List<Int>): List<String> {
+        if (keysPressed.isNotEmpty()) {
+            val keyIndex = keysPressed[0]
+            when (current) {
+                startupMenu -> {
+                    if (keyIndex == 3) return emptyList()
+                    if (keyIndex == 0) current = firstRoomsMenu else if (keyIndex == 1) current = secondRoomsMenu
+                }
 
-            firstRoomsMenu -> firstRoom(keyIndex)
-            secondRoomsMenu -> secondRoom(keyIndex)
+                firstRoomsMenu -> firstRoom(keyIndex)
+                secondRoomsMenu -> secondRoom(keyIndex)
+                else -> current = startupMenu
+            }
         }
-        return false
+        return current
     }
 
     fun firstRoom(keyIndex: Int) {
         when (keyIndex) {
             0 -> {}
             1 -> {}
-            2 -> currentMenu.set(secondRoomsMenu)
-            3 -> currentMenu.set(startupMenu)
+            2 -> current = secondRoomsMenu
+            3 -> current = startupMenu
         }
     }
 
@@ -63,7 +63,7 @@ object Menu {
                 // do nothing
             }
 
-            3 -> currentMenu.set(firstRoomsMenu)
+            3 -> current = firstRoomsMenu
         }
     }
 }

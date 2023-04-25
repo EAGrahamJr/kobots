@@ -21,8 +21,6 @@ import crackers.kobots.devices.lighting.NeoKey
 import crackers.kobots.utilities.GOLDENROD
 import java.awt.Color
 import java.time.Duration
-import java.time.Instant
-import java.util.*
 
 // TODO temporary while testing
 const val REMOTE_PI = "diozero.remote.hostname"
@@ -32,9 +30,11 @@ val keyboard by lazy {
     NeoKey().apply { pixels.brightness = 0.05f }
 }
 
-private val BUTTON_DELAY = Duration.ofSeconds(2)
-private lateinit var buttonsPressed: List<Int>
-private var lastButtonTime = Instant.now().minus(BUTTON_DELAY)
+// to prevent "double-reads" of a button while pressing
+val BOUNCE_DELAY = Duration.ofMillis(100).toNanos()
+
+// just to keep from spinning in a stupid tight loop
+val LOOP_DELAY = Duration.ofMillis(50).toNanos()
 
 /**
  * Uses NeoKey 1x4 as a HomeAssistant controller (and likely other things).
@@ -43,25 +43,23 @@ fun main() {
     System.setProperty(REMOTE_PI, USELESS)
     Screen.startupSequence()
 
-    keyboard[3] = Color.GREEN
-    var die = false
-    while (!die) {
+    var running = true
+    while (running) {
+        /*
+         * This is purely button driven, so use the buttons
+         */
         val buttonsPressed = whichButtons()
-        if (buttonsPressed.isPresent()) {
-            val button = buttonsPressed.get()
-
-            // if the screen is on, interactive mode
-            // otherwise wake up or die
-            if (Screen.isOn()) {
-                die = Menu.execute(button)
-            } else {
-                keyboard[3] = Color.RED
-                die = button == 3
-                if (!die) Screen.enableDisplay()
+        val currentMenu = Menu.execute(buttonsPressed)
+        if (currentMenu.isEmpty() && buttonsPressed.contains(3)) {
+            running = false
+        } else {
+            Screen.execute(buttonsPressed, currentMenu)
+            if (buttonsPressed.isNotEmpty()) {
+                SleepUtil.busySleep(BOUNCE_DELAY)
             }
         }
-        Screen.execute()
-        SleepUtil.busySleep(Duration.ofMillis(100).toNanos())
+
+        SleepUtil.busySleep(LOOP_DELAY)
     }
     keyboard[3] = GOLDENROD
 
@@ -70,17 +68,17 @@ fun main() {
 }
 
 /**
- * First button pressed
+ * Buttons pressed on the NeoKey
  */
-private fun whichButtons(): Optional<Int> {
-    if (Duration.between(lastButtonTime, Instant.now()).compareTo(BUTTON_DELAY) > 0) {
-        for (i in 0..3) {
-            if (keyboard[i]) {
-                keyboard[i] = Color.YELLOW
-                lastButtonTime = Instant.now()
-                return Optional.of(i)
-            }
+private fun whichButtons(): List<Int> {
+    val list = mutableListOf<Int>()
+    for (i in 0..3) {
+        if (keyboard[i]) {
+            keyboard[i] = Color.YELLOW
+            list += i
+        } else {
+            keyboard[i] = Color.BLACK
         }
     }
-    return Optional.empty()
+    return list
 }

@@ -19,7 +19,7 @@ package crackers.kobots.app
 import crackers.kobots.app.StatusFlags.armStatus
 import crackers.kobots.app.TheArm.ArmState.*
 import crackers.kobots.devices.lighting.NeoKey
-import crackers.kobots.devices.lighting.PixelColor
+import crackers.kobots.devices.lighting.PixelBuffer.PixelColor
 import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.elapsed

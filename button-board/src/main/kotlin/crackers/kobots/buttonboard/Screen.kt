@@ -67,7 +67,12 @@ object Screen {
         fillRect(0, 0, 127, 127)
     }
 
-    fun isOn() = screen.displayOn
+    var on: Boolean
+        get() = screen.displayOn
+        set(b) {
+            screen.displayOn = b
+        }
+
     fun close() = screen.close()
 
     /**
@@ -106,21 +111,17 @@ object Screen {
     }
 
     /**
-     * Indicates that the display should be on and displaying state information
-     */
-    fun enableDisplay() {
-        lastDisplayed = Instant.now()
-        screen.displayOn = true
-        sleeping = false
-        screenGraphics.clearScreen()
-    }
-
-    /**
      * Display the application statuses. Checks to see how long the display has been on and will shut it off after a
      * period of time
      */
-    fun execute() = with(screenGraphics) {
+    fun execute(buttonsPressed: List<Int>, currentMenu: List<String>) = with(screenGraphics) {
         val now = Instant.now()
+
+        if (buttonsPressed.isNotEmpty()) {
+            lastDisplayed = now
+            sleeping = false
+            screen.displayOn = true
+        }
 
         // check the timer - turn the screen off if on too long
         if (screen.displayOn) {
@@ -142,8 +143,8 @@ object Screen {
                 }
 
                 else -> {
-                    showTime()
-                    showMenu()
+                    if (currentMenu.isNotEmpty()) showTime()
+                    showMenu(currentMenu)
                     showIt()
                 }
             }
@@ -167,22 +168,20 @@ object Screen {
     }
 
     private var lastMenu: List<String>? = null
-    private fun Graphics2D.showMenu() {
-        Menu.currentMenu.get().also { menu ->
-            // don't display it again
-            if (menu == lastMenu) return
-            lastMenu = menu
+    private fun Graphics2D.showMenu(menu: List<String>) {
+        // don't display it again
+        if (menu.isEmpty() || menu == lastMenu) return
+        lastMenu = menu
 
-            menu.forEachIndexed { index, item ->
-                font = menuFont
+        menu.forEachIndexed { index, item ->
+            font = menuFont
 
-                val line = index + 1
-                clearLine(line)
-                if (item.isNotBlank()) {
-                    val text = "$line - $item"
-                    color = FOREGROUND
-                    drawString(text, 0, lineOffset(line))
-                }
+            val line = index + 1
+            clearLine(line)
+            if (item.isNotBlank()) {
+                val text = "$line - $item"
+                color = FOREGROUND
+                drawString(text, 0, lineOffset(line))
             }
         }
     }
