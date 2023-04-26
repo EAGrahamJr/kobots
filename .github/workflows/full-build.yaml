@@ -5,6 +5,7 @@ on:
     paths_ignore:
       - "*.md"
       - "docs/**"
+      - "diagrams/**"
   pull_request:
     branches: [ main ]
     paths_ignore:
