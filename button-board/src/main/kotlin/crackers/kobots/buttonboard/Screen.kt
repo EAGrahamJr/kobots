@@ -16,12 +16,14 @@
 
 package crackers.kobots.buttonboard
 
-import com.diozero.util.SleepUtil
 import crackers.kobots.devices.display.GrayOled
 import crackers.kobots.devices.display.SSD1327
 import crackers.kobots.utilities.center
 import crackers.kobots.utilities.loadImage
-import java.awt.*
+import java.awt.Color
+import java.awt.Font
+import java.awt.FontMetrics
+import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.time.Duration
 import java.time.Instant
@@ -42,12 +44,10 @@ object Screen {
     private val screen: GrayOled by lazy { SSD1327(SSD1327.ADAFRUIT_STEMMA) }
 
     private val okStatusImage = loadImage("/smiley.png")
-    private val alertStatusImage = loadImage("/not-smiley.jpg")
     private val sleepingImage = loadImage("/snooze.jpg")
     private var sleeping = false
     private var lastDisplayed = Instant.now()
     const val MAX_TIME = 60
-    const val MAX_SLEEP = 30
 
     init {
         image = BufferedImage(128, 128, BufferedImage.TYPE_BYTE_GRAY).also {
@@ -83,28 +83,8 @@ object Screen {
             clearScreen()
             color = FOREGROUND
             font = menuFont
-
-            var x = menuFontMetrics.center("Please", 128)
-            drawString("Please", x, lineOffset(2))
-            showIt()
-
-            // loop a bit for fun
-            x = menuFontMetrics.center("Stand-by!", 128)
-            val y = lineOffset(3)
-            (1..5).forEach {
-                clearLine(3)
-                showIt()
-                SleepUtil.busySleep(Duration.ofSeconds(1).toNanos())
-                color = Color.RED
-                drawString("Stand-by!", x, y)
-                showIt()
-                SleepUtil.busySleep(Duration.ofSeconds(1).toNanos())
-            }
+            drawImage(okStatusImage, 0, 0, 128, 128, null)
         }
-        displayImage(loadImage("/color-test-image.jpg"))
-        showIt()
-        SleepUtil.busySleep(Duration.ofSeconds(5).toNanos())
-        displayImage(okStatusImage)
 
         lastDisplayed = Instant.now()
         sleeping = false
@@ -121,28 +101,15 @@ object Screen {
             lastDisplayed = now
             sleeping = false
             screen.displayOn = true
+            lastMenu = null
         }
 
         // check the timer - turn the screen off if on too long
         if (screen.displayOn) {
-            val howLong = Duration.between(lastDisplayed, now).toSeconds()
-
-            when {
-                howLong >= MAX_TIME -> {
+            Duration.between(lastDisplayed, now).toSeconds().toInt().also { elapsed ->
+                if (elapsed >= MAX_TIME) {
                     screen.displayOn = false
-                    sleeping = false
-                }
-
-                howLong >= MAX_SLEEP -> {
-                    // screen remains on for now, but we don't actually want to update it again
-                    if (!sleeping) {
-                        sleeping = true
-                        displayImage(sleepingImage)
-                        showIt()
-                    }
-                }
-
-                else -> {
+                } else {
                     if (currentMenu.isNotEmpty()) showTime()
                     showMenu(currentMenu)
                     showIt()
@@ -192,9 +159,5 @@ object Screen {
     private fun showIt() {
         screen.display(image)
         screen.show()
-    }
-
-    private fun displayImage(image: Image) {
-        screenGraphics.drawImage(image, 0, 0, 128, 128, null)
     }
 }

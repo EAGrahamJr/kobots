@@ -31,7 +31,7 @@ val keyboard by lazy {
 }
 
 // to prevent "double-reads" of a button while pressing
-val BOUNCE_DELAY = Duration.ofMillis(100).toNanos()
+val BOUNCE_DELAY = Duration.ofMillis(50).toNanos()
 
 // just to keep from spinning in a stupid tight loop
 val LOOP_DELAY = Duration.ofMillis(50).toNanos()

@@ -16,54 +16,83 @@
 
 package crackers.kobots.buttonboard
 
+import com.typesafe.config.ConfigFactory
+import crackers.hassk.Constants.off
+import crackers.hassk.Constants.on
+import crackers.hassk.HAssKClient
+
 /**
  * describes the various menus available
  */
 object Menu {
-    val startupMenu = listOf("Rooms", "Scenes", "", "Exit")
-    val firstRoomsMenu = listOf("Bedroom", "Office", "...", "Return")
-    val secondRoomsMenu = listOf("Kitchen", "Living Room", "", "Return")
+    val startupMenu = listOf("Scene 1", "Scene 2", "...", "Exit")
+
+    //    val secondMenu = listOf("TV", "After TV", "...", "Return")
+    val secondMenu = listOf("Bedroom On", "Bedroom Off", "...", "Return")
+    val thirdMenu = listOf("Not Bedroom", "Movie Time", "", "Return")
 
     private var current = emptyList<String>()
+    private val hasskClient: HAssKClient
+
+    init {
+        val config = ConfigFactory.load()
+        hasskClient = HAssKClient(
+            config.getString("ha.token"),
+            config.getString("ha.server"),
+            config.getInt("ha.port")
+        )
+    }
 
     /**
-     * Evaluates the button vs which menu is showing - returns an empty list when "exit" is selected.
+     * Evaluates the button vs which menu is showing
      */
     fun execute(keysPressed: List<Int>): List<String> {
         if (keysPressed.isNotEmpty()) {
             val keyIndex = keysPressed[0]
             when (current) {
-                startupMenu -> {
-                    if (keyIndex == 3) return emptyList()
-                    if (keyIndex == 0) current = firstRoomsMenu else if (keyIndex == 1) current = secondRoomsMenu
-                }
-
-                firstRoomsMenu -> firstRoom(keyIndex)
-                secondRoomsMenu -> secondRoom(keyIndex)
+                startupMenu -> executeStartupMenu(keyIndex)
+                secondMenu -> executeSecondMenu(keyIndex)
+                thirdMenu -> executeThirdMenu(keyIndex)
                 else -> current = startupMenu
             }
         }
         return current
     }
 
-    fun firstRoom(keyIndex: Int) {
-        when (keyIndex) {
-            0 -> {}
-            1 -> {}
-            2 -> current = secondRoomsMenu
-            3 -> current = startupMenu
+    private fun executeStartupMenu(keyIndex: Int) {
+        with(hasskClient) {
+            when (keyIndex) {
+                0 -> {}//scene("top_button") turn on
+                1 -> {}//scene("bed_time") turn on
+                2 -> current = secondMenu
+                else -> current = emptyList()
+
+            }
         }
     }
 
-    fun secondRoom(keyIndex: Int) {
-        when (keyIndex) {
-            0 -> {}
-            1 -> {}
-            2 -> {
-                // do nothing
+    private fun executeSecondMenu(keyIndex: Int) {
+        with(hasskClient) {
+            when (keyIndex) {
+                0 -> light("bedroom_group") turn on //scene("daytime_tv") turn on
+                1 -> light("bedroom_group") turn off //scene("post_tv") turn on
+                2 -> current = thirdMenu
+                else -> current = startupMenu
             }
+        }
+    }
 
-            3 -> current = firstRoomsMenu
+    private fun executeThirdMenu(keyIndex: Int) {
+        with(hasskClient) {
+            when (keyIndex) {
+                0 -> {}//light("not_bedroom_group") turn off
+                1 -> {}//scene("movie_time") turn on
+                2 -> {
+                    // do nothing
+                }
+
+                else -> current = secondMenu
+            }
         }
     }
 }
