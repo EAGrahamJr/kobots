@@ -19,6 +19,7 @@ package crackers.kobots.buttonboard
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.lighting.NeoKey
 import crackers.kobots.utilities.GOLDENROD
+import crackers.kobots.utilities.PURPLE
 import java.awt.Color
 import java.time.Duration
 
@@ -30,36 +31,75 @@ val keyboard by lazy {
     NeoKey().apply { pixels.brightness = 0.05f }
 }
 
-// to prevent "double-reads" of a button while pressing
-val BOUNCE_DELAY = Duration.ofMillis(50).toNanos()
-
 // just to keep from spinning in a stupid tight loop
-val LOOP_DELAY = Duration.ofMillis(50).toNanos()
+val ACTIVE_DELAY = Duration.ofMillis(50).toNanos()
+val SLEEP_DELAY = Duration.ofSeconds(1).toNanos()
 
 /**
  * Uses NeoKey 1x4 as a HomeAssistant controller (and likely other things).
  */
 fun main() {
-    System.setProperty(REMOTE_PI, USELESS)
+//    System.setProperty(REMOTE_PI, USELESS)
     Screen.startupSequence()
 
     var running = true
+    keyboard[3] = Color.RED
+    var lastButtonsRead: List<Boolean> = listOf(false, false, false, false)
+    var currentMenu: List<String> = emptyList()
+
+    var lastCurrent: List<String>? = null
+
     while (running) {
         /*
-         * This is purely button driven, so use the buttons
+         * This is purely button driven, so use the buttons - try to "debounce" by only detecting changes between
+         * iterations. This is because humans are slow
          */
-        val buttonsPressed = whichButtons()
-        val currentMenu = Menu.execute(buttonsPressed)
-        if (currentMenu.isEmpty() && buttonsPressed.contains(3)) {
-            running = false
+        val currentButtons = keyboard.read()
+        var whichButtonsPressed: List<Int> = emptyList()
+
+        // no change, don't anything, otherwise figure out what was asked for
+        if (currentButtons == lastButtonsRead) {
+            if (!Screen.on) buttonsWait()
         } else {
-            Screen.execute(buttonsPressed, currentMenu)
-            if (buttonsPressed.isNotEmpty()) {
-                SleepUtil.busySleep(BOUNCE_DELAY)
+            lastButtonsRead = currentButtons
+            whichButtonsPressed = currentButtons.mapIndexedNotNull { index, b ->
+                if (b) {
+                    keyboard[index] = Color.YELLOW
+                    index
+                } else {
+                    null
+                }
+            }
+
+            // only do anything if the screen is on
+            currentMenu = if (Screen.on) {
+                Menu.execute(whichButtonsPressed).mapIndexed { index, item ->
+                    keyboard[index] = when (item.type) {
+                        Menu.ItemType.NOOP -> Color.BLACK
+                        Menu.ItemType.ACTION -> Color.GREEN
+                        Menu.ItemType.NEXT -> Color.CYAN
+                        Menu.ItemType.PREV -> Color.BLUE
+                        Menu.ItemType.EXIT -> Color.RED
+                    }
+                    item.name
+                }
+            } else {
+                buttonsWait()
+                emptyList()
             }
         }
 
-        SleepUtil.busySleep(LOOP_DELAY)
+        if (currentMenu != lastCurrent) {
+            lastCurrent = currentMenu
+        }
+
+        if (currentMenu.isEmpty() && whichButtonsPressed.contains(3)) {
+            running = false
+        } else {
+            val buttonWasPressed = whichButtonsPressed.isNotEmpty()
+            Screen.execute(buttonWasPressed, currentMenu)
+        }
+        SleepUtil.busySleep(if (Screen.on) ACTIVE_DELAY else SLEEP_DELAY)
     }
     keyboard[3] = GOLDENROD
 
@@ -67,18 +107,9 @@ fun main() {
     keyboard.close()
 }
 
-/**
- * Buttons pressed on the NeoKey
- */
-private fun whichButtons(): List<Int> {
-    val list = mutableListOf<Int>()
-    for (i in 0..3) {
-        if (keyboard[i]) {
-            keyboard[i] = Color.YELLOW
-            list += i
-        } else {
-            keyboard[i] = Color.BLACK
-        }
+private fun buttonsWait() {
+    if ((keyboard color 0).color != PURPLE) {
+        (0..2).forEach { keyboard[it] = PURPLE }
+        keyboard[3] = Color.RED
     }
-    return list
 }

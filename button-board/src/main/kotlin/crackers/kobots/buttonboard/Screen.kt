@@ -44,10 +44,8 @@ object Screen {
     private val screen: GrayOled by lazy { SSD1327(SSD1327.ADAFRUIT_STEMMA) }
 
     private val okStatusImage = loadImage("/smiley.png")
-    private val sleepingImage = loadImage("/snooze.jpg")
-    private var sleeping = false
     private var lastDisplayed = Instant.now()
-    const val MAX_TIME = 60
+    const val MAX_TIME = 30
 
     init {
         image = BufferedImage(128, 128, BufferedImage.TYPE_BYTE_GRAY).also {
@@ -87,19 +85,17 @@ object Screen {
         }
 
         lastDisplayed = Instant.now()
-        sleeping = false
     }
 
     /**
      * Display the application statuses. Checks to see how long the display has been on and will shut it off after a
      * period of time
      */
-    fun execute(buttonsPressed: List<Int>, currentMenu: List<String>) = with(screenGraphics) {
+    fun execute(buttonsPressed: Boolean, currentMenu: List<String>) = with(screenGraphics) {
         val now = Instant.now()
 
-        if (buttonsPressed.isNotEmpty()) {
+        if (buttonsPressed) {
             lastDisplayed = now
-            sleeping = false
             screen.displayOn = true
             lastMenu = null
         }
@@ -110,8 +106,8 @@ object Screen {
                 if (elapsed >= MAX_TIME) {
                     screen.displayOn = false
                 } else {
-                    if (currentMenu.isNotEmpty()) showTime()
                     showMenu(currentMenu)
+                    if (currentMenu.isNotEmpty()) showTime()
                     showIt()
                 }
             }
@@ -139,6 +135,7 @@ object Screen {
         // don't display it again
         if (menu.isEmpty() || menu == lastMenu) return
         lastMenu = menu
+        clearScreen()
 
         menu.forEachIndexed { index, item ->
             font = menuFont
