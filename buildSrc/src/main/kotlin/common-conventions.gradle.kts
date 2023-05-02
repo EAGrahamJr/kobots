@@ -1,6 +1,7 @@
 plugins {
     kotlin("jvm")
     id("org.jmailen.kotlinter")
+    idea
 }
 
 repositories {
