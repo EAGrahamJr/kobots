@@ -20,11 +20,11 @@ import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import crackers.kobots.devices.at
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
 
 private class DesiredState(
-    val shoulderPosition: Int,
+    val shoulderPosition: Int, // angle
+    val waistPosition: Int,      // steps
     val finalState: TheArm.State
 )
 
@@ -43,10 +43,12 @@ object TheArm {
     private const val SHOULDER_DELTA = 2
     private const val SHOULDER_MAX = 90
     private const val SHOUDLER_MIN = 0
+    private const val MAX_WAIST_STEPS = 155 // 36->12=24->56 = 1:1.29
+    private val QUARTER = (MAX_WAIST_STEPS / 4f).roundToInt()
 
     private val desiredStates = mapOf(
-        Request.DEPLOY_FRONT to (DesiredState(SHOUDLER_MIN, State.FRONT)),
-        Request.REST to DesiredState(SHOULDER_MAX, State.REST)
+        Request.DEPLOY_FRONT to (DesiredState(SHOUDLER_MIN, QUARTER, State.FRONT)),
+        Request.REST to DesiredState(SHOULDER_MAX, 0, State.REST)
     )
 
     private val waistStepper by lazy { BasicStepperMotor(200, crickitHat.motorStepperPort()) }
@@ -83,11 +85,11 @@ object TheArm {
             val shoulderDone = moveShoulder(it.shoulderPosition)
 
             // TODO other joints - this just kinda spins the turntable without real regard to the arm position
-            if (!waistDone) waister()
+            val waistDone = waister(it.waistPosition)
             if (shoulderDone && waistDone) {
-                waistDone = false
                 currentState = it.finalState
                 busyNow = false
+                if (currentState == State.REST) waistStepper.release()  // if we're "resting" allow for manual fixes
             }
         }
     }
@@ -124,24 +126,19 @@ object TheArm {
     private fun shoulderOutOfRange(angle: Int): Boolean = angle !in (SHOUDLER_MIN..SHOULDER_MAX)
 
     // TODO temporary stepper function
-    private var flagDirection = false
-    private val MAX_STEPS = 155 // 36->12=24->56 = 1:1.29
-    private val QUARTER = (MAX_STEPS / 4f).roundToInt()
-    private var waistDone = false
-    val stepperPosition = AtomicInteger(0)
-    fun waister() {
+    private var stepperPosition = 0
+    fun waister(desiredSteps: Int): Boolean {
+
+        if (desiredSteps == stepperPosition) return true
+
         // start
-        if (stepperPosition.get() == 0 || flagDirection) {
+        if (stepperPosition < desiredSteps) {
             waistStepper.step(StepperMotorInterface.Direction.FORWARD)
-            val newPosition = stepperPosition.incrementAndGet()
-            flagDirection = newPosition < QUARTER
-            waistDone = newPosition == QUARTER
+            stepperPosition++
         } else {
             waistStepper.step(StepperMotorInterface.Direction.BACKWARD)
-            val newPosition = stepperPosition.decrementAndGet()
-            // if this "transitions" to our "zero" base, let the stepper go
-            if (newPosition <= 0) waistStepper.release()
-            waistDone = newPosition == 0
+            stepperPosition--
         }
+        return false
     }
 }
