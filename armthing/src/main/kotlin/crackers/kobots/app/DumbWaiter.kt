@@ -69,6 +69,7 @@ fun main() {
             TheArm.execute(doThisStuff.armRequest)
 
             // do these last because they take the most time?
+            TheScreen.execute()
             Stripper.execute()
 
             // adjust this dynamically?
@@ -84,5 +85,6 @@ fun main() {
 
         ControlThing.close()
         TheArm.close()
+        TheScreen.close()
     }
 }
