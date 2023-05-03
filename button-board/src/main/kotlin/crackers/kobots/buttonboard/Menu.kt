@@ -32,8 +32,9 @@ internal object Menu {
 
     internal class MenuItem(val name: String, val type: ItemType = ACTION)
 
-    private val NEXT_ITEM = MenuItem("...", NEXT)
-    private val PREV_ITEM = MenuItem("Return", PREV)
+    // TODO note that these are special characters for the LCD screen
+    private val NEXT_ITEM = MenuItem(" " + Char(0), NEXT)
+    private val PREV_ITEM = MenuItem(" " + Char(1), PREV)
 
     private val startupMenu = listOf(
         MenuItem("Morning"),

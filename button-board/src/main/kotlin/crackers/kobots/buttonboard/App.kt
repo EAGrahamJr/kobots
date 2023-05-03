@@ -37,7 +37,8 @@ private val SLEEP_DELAY = Duration.ofSeconds(1).toNanos()
  * Uses NeoKey 1x4 as a HomeAssistant controller (and likely other things).
  */
 fun main() {
-    Screen.startupSequence()
+    val screen: BBScreen = LCDScreen
+    screen.startupSequence()
 
     var running = true
     keyboard[3] = Color.RED
@@ -58,7 +59,7 @@ fun main() {
 
             // no change, don't anything, otherwise figure out what was asked for
             if (currentButtons == lastButtonsRead) {
-                if (!Screen.on) buttonsWait()
+                if (!screen.on) buttonsWait()
             } else {
                 lastButtonsRead = currentButtons
                 whichButtonsPressed = currentButtons.mapIndexedNotNull { index, b ->
@@ -71,7 +72,7 @@ fun main() {
                 }
 
                 // only do anything if the screen is on
-                currentMenu = if (Screen.on) {
+                currentMenu = if (screen.on) {
                     Menu.execute(whichButtonsPressed).mapIndexed { index, item ->
                         keyboard[index] = when (item.type) {
                             Menu.ItemType.NOOP -> Color.BLACK
@@ -96,16 +97,16 @@ fun main() {
                 running = false
             } else {
                 val buttonWasPressed = whichButtonsPressed.isNotEmpty()
-                Screen.execute(buttonWasPressed, currentMenu)
+                screen.execute(buttonWasPressed, currentMenu)
             }
-            SleepUtil.busySleep(if (Screen.on) ACTIVE_DELAY else SLEEP_DELAY)
+            SleepUtil.busySleep(if (screen.on) ACTIVE_DELAY else SLEEP_DELAY)
         } catch (e: Throwable) {
             LoggerFactory.getLogger("ButtonBox").error("Error found - continuing", e)
         }
     }
     keyboard[3] = GOLDENROD
 
-    Screen.close()
+    screen.close()
     keyboard.close()
 }
 

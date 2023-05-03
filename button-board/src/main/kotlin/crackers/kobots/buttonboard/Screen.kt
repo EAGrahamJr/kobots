@@ -32,7 +32,7 @@ import java.time.LocalTime
 /**
  * Displays some system info for a while, before sleeping, and then going dark.
  */
-object Screen {
+object Screen : BBScreen {
     private val screenGraphics: Graphics2D
     private val image: BufferedImage
     private val menuFont = Font("Helvetica", Font.BOLD, 16)
@@ -65,18 +65,18 @@ object Screen {
         fillRect(0, 0, 127, 127)
     }
 
-    var on: Boolean
+    override var on: Boolean
         get() = screen.displayOn
         set(b) {
             screen.displayOn = b
         }
 
-    fun close() = screen.close()
+    override fun close() = screen.close()
 
     /**
      * Dumb thing for the fun of it
      */
-    fun startupSequence() {
+    override fun startupSequence() {
         with(screenGraphics) {
             clearScreen()
             color = FOREGROUND
@@ -91,7 +91,7 @@ object Screen {
      * Display the application statuses. Checks to see how long the display has been on and will shut it off after a
      * period of time
      */
-    fun execute(buttonsPressed: Boolean, currentMenu: List<String>) = with(screenGraphics) {
+    override fun execute(buttonsPressed: Boolean, currentMenu: List<String>) = with(screenGraphics) {
         val now = Instant.now()
 
         if (buttonsPressed) {
