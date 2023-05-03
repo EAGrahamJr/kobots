@@ -20,6 +20,7 @@ import crackers.kobots.devices.display.SSD1327
 import crackers.kobots.utilities.loadImage
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
+import java.lang.Thread.sleep
 
 /**
  * Return of the OLED!
@@ -27,7 +28,9 @@ import java.awt.image.BufferedImage
 object TheScreen : AutoCloseable {
 
     val screenGraphics: Graphics2D
-    val screen = SSD1327(SSD1327.ADAFRUIT_STEMMA)
+    val screen = SSD1327(SSD1327.ADAFRUIT_STEMMA).apply {
+        clear()
+    }
     val image = BufferedImage(128, 128, BufferedImage.TYPE_BYTE_GRAY).also {
         screenGraphics = it.graphics as Graphics2D
     }
@@ -44,10 +47,15 @@ object TheScreen : AutoCloseable {
             TheArm.State.GUARDING -> TODO()
         }
         if (nextImage != lastImage) {
+            screen.displayOn = true
             screenGraphics.drawImage(nextImage, 0, 0, 128, 128, null)
             lastImage = nextImage
             screen.display(image)
             screen.show()
+            if (TheArm.state == TheArm.State.REST) {
+                sleep(100)
+                screen.displayOn = false
+            }
         }
     }
 
