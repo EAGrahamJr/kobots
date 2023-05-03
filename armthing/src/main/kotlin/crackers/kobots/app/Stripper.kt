@@ -16,20 +16,23 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.StatusFlags.colorMode
+import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.PURPLE
 import java.awt.Color
 import java.time.LocalTime
+import java.util.concurrent.atomic.AtomicReference
 
 /**
- * Stuff for a neopixel strip.
+ * Stuff for a neopixel strip. Using this to register state changes.
  */
 object Stripper {
-    enum class NeoPixelControls {
-        DEFAULT, RED, GREEN, BLUE, LARSON;
+    enum class StripColors {
+        DEFAULT, RED, GREEN, BLUE, YELLOW, PURPLE, LARSON;
 
-        fun next(): NeoPixelControls = if (this == LARSON) DEFAULT else values()[ordinal + 1]
+        fun next(): StripColors = if (this == LARSON) DEFAULT else values()[ordinal + 1]
     }
+
+    val colorMode = AtomicReference(StripColors.DEFAULT)
 
     private val neoPixel by lazy {
         crickitHat.neoPixel(30).apply {
@@ -42,16 +45,22 @@ object Stripper {
 
     fun modeChange() = colorMode.get().next().let {
         colorMode.set(it)
-        if (it == NeoPixelControls.DEFAULT) lastNeoPixelColor = Color.PINK
+        if (it == StripColors.DEFAULT) lastNeoPixelColor = Color.PINK
+    }
+
+    fun modeSelect(mode: StripColors) {
+        colorMode.set(mode)
     }
 
     private var lastNeoPixelColor = Color.PINK
     fun execute() {
         when (colorMode.get()) {
-            NeoPixelControls.RED -> colorChange(Color.RED)
-            NeoPixelControls.GREEN -> colorChange(Color.GREEN)
-            NeoPixelControls.BLUE -> colorChange(Color.BLUE)
-            NeoPixelControls.LARSON -> larson()
+            StripColors.RED -> colorChange(Color.RED)
+            StripColors.GREEN -> colorChange(Color.GREEN)
+            StripColors.BLUE -> colorChange(Color.BLUE)
+            StripColors.YELLOW -> colorChange(GOLDENROD)
+            StripColors.PURPLE -> colorChange(PURPLE)
+            StripColors.LARSON -> larson()
             else -> timeCheck()
         }
     }
