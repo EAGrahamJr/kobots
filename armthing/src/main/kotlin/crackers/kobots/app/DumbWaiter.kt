@@ -19,6 +19,9 @@ package crackers.kobots.app
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
 import java.time.Duration
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.system.exitProcess
 
 // devices
 internal val crickitHat by lazy { CRICKITHatDeviceFactory() }
@@ -41,50 +44,62 @@ private fun buttonCheck(): List<Boolean> {
 
 const val WAIT_LOOP = 10L
 
-// TODO debugging only!!!!!!
-const val REMOTE_PI = "diozero.remote.hostname"
-const val MARVIN = "marvin.local"
+// threads and execution control
+internal val executor = Executors.newCachedThreadPool()
+private val runFlag = AtomicBoolean(true)
+
+private fun checkRun(block: () -> Unit) {
+    executor.submit {
+        while (runFlag.get()) block()
+    }
+}
 
 /**
  * Run this.
  */
 fun main() {
-    // TODO remove this
-//    System.setProperty(REMOTE_PI, MARVIN)
+    checkRun {
+        executeWithMinTime(20) { Stripper.execute() }
+    }
+    checkRun {
+        executeWithMinTime(10) { TheScreen.execute() }
+    }
 
     crickitHat.use { hat ->
         // main loop!!!!!
         lateinit var currentButtons: List<Boolean>
-
         while (buttonCheck().let {
                 currentButtons = it
                 currentButtons.isEmpty() || !currentButtons[3]
             }
         ) {
-            val loopStartedAt = System.currentTimeMillis()
-
-            val doThisStuff = ControlThing.execute(currentButtons)
-
-            // maybe move something
-            TheArm.execute(doThisStuff.armRequest)
-
-            // do these last because they take the most time?
-            TheScreen.execute()
-            Stripper.execute()
-
-            // adjust this dynamically?
-            val runTime = System.currentTimeMillis() - loopStartedAt
-            val waitFor = if (runTime > WAIT_LOOP) {
-                0L
-            } else {
-                WAIT_LOOP - runTime
+            executeWithMinTime(WAIT_LOOP) {
+                // figure out if we're doing anything
+                val doThisStuff = ControlThing.execute(currentButtons)
+                // TODO need to pub/sub here
+                TheArm.execute(doThisStuff.armRequest)
             }
-
-            SleepUtil.busySleep(Duration.ofMillis(waitFor).toNanos())
         }
+        runFlag.set(false)
 
         ControlThing.close()
         TheArm.close()
         TheScreen.close()
     }
+    executor.shutdownNow()
+    exitProcess(0)
+}
+
+/**
+ * Run a [block] and ensure it takes up **at least** [millis] time. This is basically to keep various parts from
+ * overloading the various buses.
+ */
+fun <R> executeWithMinTime(millis: Long, block: () -> R): R {
+    val startAt = System.currentTimeMillis()
+    val response = block()
+    val runtime = System.currentTimeMillis() - startAt
+    if (runtime < millis) {
+        SleepUtil.busySleep(Duration.ofMillis(millis - runtime).toNanos())
+    }
+    return response
 }

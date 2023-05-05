@@ -20,6 +20,8 @@ import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import crackers.kobots.devices.at
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.roundToInt
 
 private class DesiredState(
@@ -46,6 +48,8 @@ object TheArm {
     private const val MAX_WAIST_STEPS = 155 // 36->12=24->56 = 1:1.29
     private val QUARTER = (MAX_WAIST_STEPS / 4f).roundToInt()
 
+    // shoulder: current configuration is 0 for UP and 90 for down
+    // waist: start depends on manual adjustment, but tries to keep a notion of "where it is"
     private val desiredStates = mapOf(
         Request.DEPLOY_FRONT to (DesiredState(SHOUDLER_MIN, QUARTER, State.FRONT)),
         Request.REST to DesiredState(SHOULDER_MAX, 0, State.REST)
@@ -64,38 +68,40 @@ object TheArm {
         waistStepper.release()
     }
 
-    private var whatToDo: Request? = null
-    private var busyNow = false
-    private var currentState = State.REST
+    private var busyNow = AtomicBoolean(false)
+    private val currentState = AtomicReference(State.REST)
     val state: State
-        get() = currentState
+        get() = currentState.get()
 
     fun execute(request: Request) {
-        if (busyNow) {
+        if (busyNow.get()) {
             // TODO allow for "interrupt" type request to override busy
         } else {
             if (request == Request.NONE) return
-            busyNow = true
-            currentState = State.BUSY
-            whatToDo = request
-        }
+            busyNow.set(true)
+            currentState.set(State.BUSY)
+            executor.execute {
+                val desiredState = desiredStates[request]
+                while (desiredState != null && busyNow.get()) {
+                    executeWithMinTime(25) {
+                        // are we at the desired state?
+                        val shoulderDone = moveShoulder(desiredState.shoulderPosition)
+                        val waistDone = moveWaist(desiredState.waistPosition)
 
-        // are we at the desired state? if not, start moving
-        desiredStates[whatToDo]?.also {
-            val shoulderDone = moveShoulder(it.shoulderPosition)
+                        // TODO other joints
 
-            // TODO other joints - this just kinda spins the turntable without real regard to the arm position
-            val waistDone = waister(it.waistPosition)
-            if (shoulderDone && waistDone) {
-                currentState = it.finalState
-                busyNow = false
-                if (currentState == State.REST) waistStepper.release()  // if we're "resting" allow for manual fixes
+                        if (shoulderDone && waistDone) {
+                            currentState.set(desiredState.finalState)
+                            busyNow.set(false)
+                            if (desiredState.finalState == State.REST) waistStepper.release() // "resting" allows for manual fixes
+                        }
+                    }
+                }
             }
         }
     }
 
-    // shoulder =======================================================================================================
-    // TODO current configuration is 0 for UP and 90 for down, so the math is kind of backwards
+// shoulder =======================================================================================================
 
     /**
      * Figure out where the shoulder is and see if it needs to move or not
@@ -127,7 +133,7 @@ object TheArm {
 
     // TODO temporary stepper function
     private var stepperPosition = 0
-    fun waister(desiredSteps: Int): Boolean {
+    fun moveWaist(desiredSteps: Int): Boolean {
 
         if (desiredSteps == stepperPosition) return true
 
