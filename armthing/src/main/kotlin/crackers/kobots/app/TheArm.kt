@@ -81,21 +81,24 @@ object TheArm {
             busyNow.set(true)
             currentState.set(State.BUSY)
             executor.execute {
-                val desiredState = desiredStates[request]
-                while (desiredState != null && busyNow.get()) {
-                    executeWithMinTime(25) {
-                        // are we at the desired state?
-                        val shoulderDone = moveShoulder(desiredState.shoulderPosition)
-                        val waistDone = moveWaist(desiredState.waistPosition)
+                moveToSetPosition(desiredStates[request])
+            }
+        }
+    }
 
-                        // TODO other joints
+    private fun moveToSetPosition(desiredState: DesiredState?) {
+        while (desiredState != null && busyNow.get()) {
+            executeWithMinTime(25) {
+                // are we at the desired state?
+                val shoulderDone = moveShoulder(desiredState.shoulderPosition)
+                val waistDone = moveWaist(desiredState.waistPosition)
 
-                        if (shoulderDone && waistDone) {
-                            currentState.set(desiredState.finalState)
-                            busyNow.set(false)
-                            if (desiredState.finalState == State.REST) waistStepper.release() // "resting" allows for manual fixes
-                        }
-                    }
+                // TODO other joints
+
+                if (shoulderDone && waistDone) {
+                    currentState.set(desiredState.finalState)
+                    busyNow.set(false)
+                    if (desiredState.finalState == State.REST) waistStepper.release() // "resting" allows for manual fixes
                 }
             }
         }
@@ -131,7 +134,9 @@ object TheArm {
 
     private fun shoulderOutOfRange(angle: Int): Boolean = angle !in (SHOUDLER_MIN..SHOULDER_MAX)
 
-    // TODO temporary stepper function
+    /**
+     * Move stepper in desired direction and maybe hit the target.
+     */
     private var stepperPosition = 0
     fun moveWaist(desiredSteps: Int): Boolean {
 
