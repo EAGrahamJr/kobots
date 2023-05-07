@@ -16,18 +16,23 @@
 
 package crackers.kobots.app
 
+import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import crackers.kobots.devices.at
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 private class DesiredState(
-    val shoulderPosition: Int, // angle
+    val finalState: TheArm.State, // angle
     val waistPosition: Int,      // steps
-    val finalState: TheArm.State
+    val shoulderPosition: Int,
+    val elbowPosition: Int
 )
 
 /**
@@ -45,26 +50,40 @@ object TheArm {
     private const val SHOULDER_DELTA = 2
     private const val SHOULDER_MAX = 90
     private const val SHOUDLER_MIN = 0
+
+    private const val ELBOW_DELTA = 2
+    private const val ELBOW_MAX = 180
+    private const val ELBOW_MIN = 90
+
     private const val MAX_WAIST_STEPS = 155 // 36->12=24->56 = 1:1.29
     private val QUARTER = (MAX_WAIST_STEPS / 4f).roundToInt()
 
     // shoulder: current configuration is 0 for UP and 90 for down
     // waist: start depends on manual adjustment, but tries to keep a notion of "where it is"
     private val desiredStates = mapOf(
-        Request.DEPLOY_FRONT to (DesiredState(SHOUDLER_MIN, QUARTER, State.FRONT)),
-        Request.REST to DesiredState(SHOULDER_MAX, 0, State.REST)
+        Request.DEPLOY_FRONT to (DesiredState(State.FRONT, QUARTER, SHOUDLER_MIN, 135)),
+        Request.REST to DesiredState(State.REST, 0, SHOULDER_MAX, ELBOW_MAX)
     )
 
     private val waistStepper by lazy { BasicStepperMotor(200, crickitHat.motorStepperPort()) }
 
-    private val shoulderServo by lazy {
+    private val servo4 by lazy {
         crickitHat.servo(4, ServoTrim.TOWERPRO_SG90).apply {
             this at SHOULDER_MAX
         }
     }
+    private val shoulderServo by lazy { ArmServo(servo4, SHOUDLER_MIN, SHOULDER_MAX, SHOULDER_DELTA) }
+
+    private val servo3 by lazy {
+        crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
+            this at ELBOW_MAX
+        }
+    }
+    private val elbowServo by lazy { ArmServo(servo3, ELBOW_MIN, ELBOW_MAX, ELBOW_DELTA) }
 
     fun close() {
-        shoulderServo at SHOULDER_MAX
+        servo4 at SHOULDER_MAX
+        servo3 at ELBOW_MAX
         waistStepper.release()
     }
 
@@ -90,12 +109,13 @@ object TheArm {
         while (desiredState != null && busyNow.get()) {
             executeWithMinTime(25) {
                 // are we at the desired state?
-                val shoulderDone = moveShoulder(desiredState.shoulderPosition)
+                val shoulderDone = shoulderServo.moveServoTowards(desiredState.shoulderPosition)
+                val elbowDone = elbowServo.moveServoTowards(desiredState.elbowPosition)
                 val waistDone = moveWaist(desiredState.waistPosition)
 
                 // TODO other joints
 
-                if (shoulderDone && waistDone) {
+                if (shoulderDone && waistDone && elbowDone) {
                     currentState.set(desiredState.finalState)
                     busyNow.set(false)
                     if (desiredState.finalState == State.REST) waistStepper.release() // "resting" allows for manual fixes
@@ -105,34 +125,6 @@ object TheArm {
     }
 
 // shoulder =======================================================================================================
-
-    /**
-     * Figure out where the shoulder is and see if it needs to move or not
-     */
-    private fun moveShoulder(desiredAngle: Int): Boolean {
-        var shoulderAngle = shoulderServo.angle.roundToInt()
-        if (shoulderAngle == desiredAngle) return true
-
-        // figure out if we're going up or down based on desired state and where we're at
-        (desiredAngle - shoulderAngle).also { diff ->
-            // apply the delta and see if it goes out of range
-            shoulderAngle = if (diff < 0) {
-                // TODO this is "up"
-                (shoulderAngle - SHOULDER_DELTA).let {
-                    if (shoulderOutOfRange(it)) SHOUDLER_MIN else it
-                }
-            } else {
-                // TODO this is "down"
-                (shoulderAngle + SHOULDER_DELTA).let {
-                    if (shoulderOutOfRange(it)) SHOULDER_MAX else it
-                }
-            }
-            shoulderServo at shoulderAngle
-        }
-        return false
-    }
-
-    private fun shoulderOutOfRange(angle: Int): Boolean = angle !in (SHOUDLER_MIN..SHOULDER_MAX)
 
     /**
      * Move stepper in desired direction and maybe hit the target.
@@ -151,5 +143,36 @@ object TheArm {
             stepperPosition--
         }
         return false
+    }
+
+    private class ArmServo(
+        val theServo: ServoDevice,
+        val minimumDegrees: Int,
+        val maximumDegrees: Int,
+        val deltaDegrees: Int
+    ) {
+        /**
+         * Figure out where the shoulder is and see if it needs to move or not
+         */
+        internal fun moveServoTowards(desiredAngle: Int): Boolean {
+            var currentAngle = theServo.angle.roundToInt()
+            if (abs(currentAngle - desiredAngle) < deltaDegrees) return true
+
+            // figure out if we're going up or down based on desired state and where we're at
+            (desiredAngle - currentAngle).also { diff ->
+                // apply the delta and see if it goes out of range
+                currentAngle = if (diff < 0) {
+                    (currentAngle - deltaDegrees).let {
+                        max(minimumDegrees, it)
+                    }
+                } else {
+                    (currentAngle + deltaDegrees).let {
+                        min(maximumDegrees, it)
+                    }
+                }
+                theServo at currentAngle
+            }
+            return false
+        }
     }
 }
