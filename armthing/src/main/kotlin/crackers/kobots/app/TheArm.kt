@@ -47,8 +47,8 @@ object TheArm {
         BUSY, REST, FRONT, GUARDING
     }
 
-    private const val SHOULDER_DELTA = 2
-    private const val SHOULDER_MAX = 90
+    private const val SHOULDER_DELTA = 3
+    private const val SHOULDER_MAX = 180
     private const val SHOUDLER_MIN = 0
 
     private const val ELBOW_DELTA = 2
