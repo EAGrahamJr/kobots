@@ -32,10 +32,10 @@ import java.time.LocalTime
 /**
  * Displays some system info for a while, before sleeping, and then going dark.
  */
-object Screen : BBScreen {
+internal object Screen : BBScreen {
     private val screenGraphics: Graphics2D
     private val image: BufferedImage
-    private val menuFont = Font("Helvetica", Font.BOLD, 16)
+    private val menuFont = Font(Font.SANS_SERIF, Font.PLAIN, 12)
     private val menuFontMetrics: FontMetrics
     private val menuLineHeight: Int
     private val BACKGROUND = Color.BLACK
@@ -91,7 +91,7 @@ object Screen : BBScreen {
      * Display the application statuses. Checks to see how long the display has been on and will shut it off after a
      * period of time
      */
-    override fun execute(buttonsPressed: Boolean, currentMenu: List<String>) = with(screenGraphics) {
+    override fun execute(buttonsPressed: Boolean, currentMenu: List<Menu.MenuItem>) = with(screenGraphics) {
         val now = Instant.now()
 
         if (buttonsPressed) {
@@ -130,8 +130,8 @@ object Screen : BBScreen {
         drawString(time, tx, lineOffset(0))
     }
 
-    private var lastMenu: List<String>? = null
-    private fun Graphics2D.showMenu(menu: List<String>) {
+    private var lastMenu: List<Menu.MenuItem>? = null
+    private fun Graphics2D.showMenu(menu: List<Menu.MenuItem>) {
         // don't display it again
         if (menu.isEmpty() || menu == lastMenu) return
         lastMenu = menu
@@ -142,10 +142,23 @@ object Screen : BBScreen {
 
             val line = index + 1
             clearLine(line)
-            if (item.isNotBlank()) {
-                val text = "$line - $item"
+            if (item.name.isNotBlank()) {
+                // draw icon if present
+                val height = menuFontMetrics.height
+                if (item.special is BufferedImage) {
+                    drawImage(
+                        item.special,
+                        0,
+                        line * menuLineHeight,
+                        height,
+                        height,
+                        null
+                    )
+                }
+
+                val text = "$line - ${item.name}"
                 color = FOREGROUND
-                drawString(text, 0, lineOffset(line))
+                drawString(text, height + 2, lineOffset(line))
             }
         }
     }

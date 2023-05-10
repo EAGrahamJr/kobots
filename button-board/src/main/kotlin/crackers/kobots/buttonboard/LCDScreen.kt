@@ -27,7 +27,7 @@ import java.time.Instant
 /**
  * Two-line LCD screen to show the menus.
  */
-object LCDScreen : BBScreen {
+internal object LCDScreen : BBScreen {
     private val screen = HD44780Lcd(PCF8574LcdConnection(1), 16, 2)
     private var lastDisplayed = Instant.now()
     private var lastMenu: List<String>? = null
@@ -60,7 +60,7 @@ object LCDScreen : BBScreen {
         lastDisplayed = Instant.now()
     }
 
-    override fun execute(buttonsPressed: Boolean, currentMenu: List<String>) {
+    override fun execute(buttonsPressed: Boolean, currentMenu: List<Menu.MenuItem>) {
         val now = Instant.now()
 
         if (buttonsPressed) {
@@ -75,7 +75,7 @@ object LCDScreen : BBScreen {
                 if (elapsed >= MAX_TIME) {
                     on = false
                 } else {
-                    showMenu(currentMenu)
+                    showMenu(currentMenu.map { it.name })
                 }
             }
         }

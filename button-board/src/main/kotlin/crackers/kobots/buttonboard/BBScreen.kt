@@ -19,8 +19,8 @@ package crackers.kobots.buttonboard
 /**
  * Generic screen thing
  */
-interface BBScreen : AutoCloseable {
+internal interface BBScreen : AutoCloseable {
     var on: Boolean
     fun startupSequence()
-    fun execute(buttonsPressed: Boolean, currentMenu: List<String>)
+    fun execute(buttonsPressed: Boolean, currentMenu: List<Menu.MenuItem>)
 }

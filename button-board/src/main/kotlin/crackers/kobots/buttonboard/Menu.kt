@@ -21,6 +21,7 @@ import crackers.hassk.Constants.off
 import crackers.hassk.Constants.on
 import crackers.hassk.HAssKClient
 import crackers.kobots.buttonboard.Menu.ItemType.*
+import crackers.kobots.utilities.loadImage
 
 /**
  * describes the various menus available
@@ -30,27 +31,29 @@ internal object Menu {
         NOOP, ACTION, NEXT, PREV, EXIT
     }
 
-    internal class MenuItem(val name: String, val type: ItemType = ACTION)
+    internal class MenuItem(val name: String, val type: ItemType = ACTION, val special: Any? = null)
 
     // TODO note that these are special characters for the LCD screen
-    private val NEXT_ITEM = MenuItem(" " + Char(0), NEXT)
-    private val PREV_ITEM = MenuItem(" " + Char(1), PREV)
+//    private val NEXT_ITEM = MenuItem(" " + Char(0), NEXT)
+//    private val PREV_ITEM = MenuItem(" " + Char(1), PREV)
+    private val NEXT_ITEM = MenuItem("Next", NEXT, loadImage("/next2.png"))
+    private val PREV_ITEM = MenuItem("Prev", PREV, loadImage("/previous2.png"))
 
     private val startupMenu = listOf(
-        MenuItem("Morning"),
-        MenuItem("Daytime"),
+        MenuItem("Morning", special = loadImage("/morning2.png")),
+        MenuItem("Daytime", special = loadImage("/daytime2.png")),
         NEXT_ITEM,
         MenuItem("Exit", EXIT)
     )
     private val secondMenu = listOf(
-        MenuItem("Bed Time"),
-        MenuItem("Not All"),
+        MenuItem("Bed Time", special = loadImage("/bedtime2.png")),
+        MenuItem("Not All", special = loadImage("/not_bedroom2.png")),
         NEXT_ITEM,
         PREV_ITEM
     )
     private val thirdMenu = listOf(
-        MenuItem("TV"),
-        MenuItem("Movie Time"),
+        MenuItem("TV", special = loadImage("/tv2.png")),
+        MenuItem("Movie Time", special = loadImage("/movie2.png")),
         MenuItem("", NOOP),
         PREV_ITEM
     )

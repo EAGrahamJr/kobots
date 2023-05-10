@@ -37,15 +37,15 @@ private val SLEEP_DELAY = Duration.ofSeconds(1).toNanos()
  * Uses NeoKey 1x4 as a HomeAssistant controller (and likely other things).
  */
 fun main() {
-    val screen: BBScreen = LCDScreen
+    val screen: BBScreen = Screen
     screen.startupSequence()
 
     var running = true
     keyboard[3] = Color.RED
     var lastButtonsRead: List<Boolean> = listOf(false, false, false, false)
-    var currentMenu: List<String> = emptyList()
+    var currentMenu: List<Menu.MenuItem> = emptyList()
 
-    var lastCurrent: List<String>? = null
+    var lastCurrent: List<Menu.MenuItem>? = null
 
     while (running) {
         try {
@@ -81,7 +81,7 @@ fun main() {
                             Menu.ItemType.PREV -> Color.BLUE
                             Menu.ItemType.EXIT -> Color.RED
                         }
-                        item.name
+                        item
                     }
                 } else {
                     buttonsWait()
