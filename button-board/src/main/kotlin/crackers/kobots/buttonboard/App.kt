@@ -33,11 +33,16 @@ private val keyboard by lazy {
 private val ACTIVE_DELAY = Duration.ofMillis(50).toNanos()
 private val SLEEP_DELAY = Duration.ofSeconds(1).toNanos()
 
+// TODO temporary while testing
+const val REMOTE_PI = "diozero.remote.hostname"
+const val USELESS = "useless.local"
+
 /**
  * Uses NeoKey 1x4 as a HomeAssistant controller (and likely other things).
  */
 fun main() {
-    val screen: BBScreen = Screen
+//    System.setProperty(REMOTE_PI, USELESS)
+    val screen: BBScreen = SmallScreen
     screen.startupSequence()
 
     var running = true
