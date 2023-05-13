@@ -54,6 +54,7 @@ internal object SmallScreen : BBScreen {
 
         screen.clear()
         screen.setDisplayOn(true)
+        screen.setContrast(0x20.toByte())
 
         with(screenGraphics) {
             menuFontMetrics = getFontMetrics(menuFont)
