@@ -20,42 +20,53 @@ import crackers.kobots.devices.display.SSD1327
 import crackers.kobots.utilities.loadImage
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
-import java.lang.Thread.sleep
 
 /**
  * Return of the OLED!
  */
 object TheScreen : AutoCloseable {
-
-    val screenGraphics: Graphics2D
-    val screen = SSD1327(SSD1327.ADAFRUIT_STEMMA).apply {
+    private val screenGraphics: Graphics2D
+    private val screen = SSD1327(SSD1327.ADAFRUIT_STEMMA).apply {
         clear()
     }
-    val image = BufferedImage(128, 128, BufferedImage.TYPE_BYTE_GRAY).also {
+    private val image = BufferedImage(128, 128, BufferedImage.TYPE_BYTE_GRAY).also {
         screenGraphics = it.graphics as Graphics2D
     }
-    val sleeping by lazy { loadImage("/snooze.jpg") }
-    val okImage by lazy { loadImage("/smiley.png") }
-    val scanImage by lazy { loadImage("/not-smiley.jpg") }
+    private val sleeping by lazy { loadImage("/snooze.jpg") }
+    private val okImage by lazy { loadImage("/smiley.png") }
+    private val scanImage by lazy { loadImage("/not-smiley.jpg") }
 
+    //    private var sleepTimer: Instant? = null
     private var lastImage: BufferedImage? = null
+
     fun execute() {
         val nextImage = when (TheArm.state) {
             TheArm.State.BUSY -> okImage
-            TheArm.State.REST -> sleeping
+            TheArm.State.REST -> {
+//                if (sleepTimer == null) sleepTimer = Instant.now()
+                sleeping
+            }
+
             TheArm.State.FRONT -> scanImage
             TheArm.State.GUARDING -> TODO()
         }
         if (nextImage != lastImage) {
-            screen.displayOn = true
-            screenGraphics.drawImage(nextImage, 0, 0, 128, 128, null)
+//            sleepTimer = null
             lastImage = nextImage
-            screen.display(image)
-            screen.show()
-            if (TheArm.state == TheArm.State.REST) {
-                sleep(100)
-                screen.displayOn = false
+            try {
+                screen.displayOn = true
+                screenGraphics.drawImage(nextImage, 0, 0, 128, 128, null)
+                screen.display(image)
+                screen.show()
+            } catch (e: Exception) {
+                println(e.localizedMessage)
+                lastImage = null
             }
+//        } else if (sleepTimer != null) {
+//            if (sleepTimer!!.elapsed() > Duration.ofMinutes(2)) {
+//                screen.displayOn = false
+//                sleepTimer = null
+//            }
         }
     }
 

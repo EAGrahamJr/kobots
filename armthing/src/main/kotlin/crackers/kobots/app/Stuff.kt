@@ -15,3 +15,30 @@
  */
 
 package crackers.kobots.app
+
+import com.diozero.util.SleepUtil
+import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import java.time.Duration
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+
+// shared devices
+internal val crickitHat by lazy { CRICKITHatDeviceFactory() }
+
+// threads and execution control
+internal val executor = Executors.newCachedThreadPool()
+internal val runFlag = AtomicBoolean(true)
+
+/**
+ * Run a [block] and ensure it takes up **at least** [millis] time. This is basically to keep various parts from
+ * overloading the various buses.
+ */
+fun <R> executeWithMinTime(millis: Long, block: () -> R): R {
+    val startAt = System.currentTimeMillis()
+    val response = block()
+    val runtime = System.currentTimeMillis() - startAt
+    if (runtime < millis) {
+        SleepUtil.busySleep(Duration.ofMillis(millis - runtime).toNanos())
+    }
+    return response
+}

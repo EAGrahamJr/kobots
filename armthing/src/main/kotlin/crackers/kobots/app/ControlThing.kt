@@ -107,10 +107,10 @@ object ControlThing : AutoCloseable {
                 currentMode = Mode.RETRACT
             } else if (lastUsed > IDLE_RESET && trigger) {
                 currentMode = Mode.RETRACT
-                Stripper.modeSelect(YELLOW)
+                Stripper.modeSelect(GREEN)
             } else if (lastUsed > WAITING_TOO_LONG) {
                 currentMode = Mode.RETRACT
-//                Stripper.modeSelect(BLUE)
+                Stripper.modeSelect(BLUE)
             }
         }
         return if (currentMode == Mode.RETRACT) TheArm.Request.REST else TheArm.Request.NONE

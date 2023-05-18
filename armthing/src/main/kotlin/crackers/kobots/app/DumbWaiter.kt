@@ -16,37 +16,29 @@
 
 package crackers.kobots.app
 
-import com.diozero.util.SleepUtil
-import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
-import java.time.Duration
-import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.exitProcess
 
-// devices
-internal val crickitHat by lazy { CRICKITHatDeviceFactory() }
+private val buttons by lazy { (1..4).toList().map { crickitHat.touchDigitalIn(it) } }
 
-private val buttons by lazy {
-    (1..4).toList().map { crickitHat.touchDigitalIn(it) }
-}
 
 private val NO_BUTTONS = listOf(false, false, false, false)
 private var lastButtonValues = NO_BUTTONS
+private lateinit var currentButtons: List<Boolean>
 
 // because we're looking for "presses", only return values when a value transitions _to_ true
-private fun buttonCheck(): List<Boolean> {
-    val currentButtons = buttons.map { it.value }
-    // TODO add an elapsed time check?
-    if (currentButtons == lastButtonValues) return NO_BUTTONS
-    lastButtonValues = currentButtons
-    return currentButtons
+private fun buttonCheck(): Boolean {
+    currentButtons = buttons.map { it.value }.let { read ->
+        // TODO add an elapsed time check?
+        if (read == lastButtonValues) NO_BUTTONS
+        else {
+            lastButtonValues = read
+            read
+        }
+    }
+    return currentButtons.isEmpty() || !currentButtons[3]
 }
 
 const val WAIT_LOOP = 10L
-
-// threads and execution control
-internal val executor = Executors.newCachedThreadPool()
-private val runFlag = AtomicBoolean(true)
 
 private fun checkRun(block: () -> Unit) {
     executor.submit {
@@ -67,12 +59,7 @@ fun main() {
 
     crickitHat.use { hat ->
         // main loop!!!!!
-        lateinit var currentButtons: List<Boolean>
-        while (buttonCheck().let {
-                currentButtons = it
-                currentButtons.isEmpty() || !currentButtons[3]
-            }
-        ) {
+        while (buttonCheck()) {
             executeWithMinTime(WAIT_LOOP) {
                 // figure out if we're doing anything
                 val doThisStuff = ControlThing.execute(currentButtons)
@@ -88,18 +75,4 @@ fun main() {
     }
     executor.shutdownNow()
     exitProcess(0)
-}
-
-/**
- * Run a [block] and ensure it takes up **at least** [millis] time. This is basically to keep various parts from
- * overloading the various buses.
- */
-fun <R> executeWithMinTime(millis: Long, block: () -> R): R {
-    val startAt = System.currentTimeMillis()
-    val response = block()
-    val runtime = System.currentTimeMillis() - startAt
-    if (runtime < millis) {
-        SleepUtil.busySleep(Duration.ofMillis(millis - runtime).toNanos())
-    }
-    return response
 }

@@ -47,15 +47,15 @@ object TheArm {
         BUSY, REST, FRONT, GUARDING
     }
 
-    private const val SHOULDER_DELTA = 3
-    private const val SHOULDER_MAX = 180
-    private const val SHOUDLER_MIN = 0
+    private const val SHOULDER_DELTA = 1
+    private const val SHOULDER_MAX = 0  // maximum _elevation_
+    private const val SHOUDLER_MIN = 90 // translates to about 60 degrees due to gear ratios
 
     private const val ELBOW_DELTA = 2
     private const val ELBOW_MAX = 180
     private const val ELBOW_MIN = 90
 
-    private const val MAX_WAIST_STEPS = 155 // 36->12=24->56 = 1:1.29
+    private const val MAX_WAIST_STEPS = 200 * 1.29 // 36->12=24->56 = 1:1.29
     private val QUARTER = (MAX_WAIST_STEPS / 4f).roundToInt()
 
     // shoulder: current configuration is 0 for UP and 90 for down
@@ -67,12 +67,12 @@ object TheArm {
 
     private val waistStepper by lazy { BasicStepperMotor(200, crickitHat.motorStepperPort()) }
 
-    private val servo4 by lazy {
-        crickitHat.servo(4, ServoTrim.TOWERPRO_SG90).apply {
+    private val servo2 by lazy {
+        crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
             this at SHOULDER_MAX
         }
     }
-    private val shoulderServo by lazy { ArmServo(servo4, SHOUDLER_MIN, SHOULDER_MAX, SHOULDER_DELTA) }
+    private val shoulderServo by lazy { ArmServo(servo2, SHOULDER_MAX, SHOUDLER_MIN, SHOULDER_DELTA) }
 
     private val servo3 by lazy {
         crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
@@ -82,7 +82,7 @@ object TheArm {
     private val elbowServo by lazy { ArmServo(servo3, ELBOW_MIN, ELBOW_MAX, ELBOW_DELTA) }
 
     fun close() {
-        servo4 at SHOULDER_MAX
+        servo2 at SHOULDER_MAX
         servo3 at ELBOW_MAX
         waistStepper.release()
     }
@@ -123,8 +123,6 @@ object TheArm {
             }
         }
     }
-
-// shoulder =======================================================================================================
 
     /**
      * Move stepper in desired direction and maybe hit the target.
