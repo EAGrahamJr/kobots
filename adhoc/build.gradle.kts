@@ -4,7 +4,7 @@ plugins {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
-    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
+    compileOnly("com.diozero:diozero-provider-remote:$DIOZERO_VER")
 }
 
 project.ext.set("jar.name", "marvin-pi")
