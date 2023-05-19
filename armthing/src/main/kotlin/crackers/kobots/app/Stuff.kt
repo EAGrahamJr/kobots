@@ -42,3 +42,12 @@ fun <R> executeWithMinTime(millis: Long, block: () -> R): R {
     }
     return response
 }
+
+/**
+ * Run an execution loop until the run-flag says stop
+ */
+fun checkRun(ms: Long, block: () -> Unit) {
+    executor.submit {
+        while (runFlag.get()) executeWithMinTime(ms) { block() }
+    }
+}

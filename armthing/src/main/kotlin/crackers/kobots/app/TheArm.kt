@@ -65,6 +65,7 @@ object TheArm {
         Request.REST to DesiredState(State.REST, 0, SHOULDER_MAX, ELBOW_MAX)
     )
 
+    // hardware! =====================================================================================================
     private val waistStepper by lazy { BasicStepperMotor(200, crickitHat.motorStepperPort()) }
 
     private val servo2 by lazy {
@@ -87,11 +88,13 @@ object TheArm {
         waistStepper.release()
     }
 
+    // manage the state of this construct =============================================================================
     private var busyNow = AtomicBoolean(false)
     private val currentState = AtomicReference(State.REST)
     val state: State
         get() = currentState.get()
 
+    // do stuff =======================================================================================================
     fun execute(request: Request) {
         if (busyNow.get()) {
             // TODO allow for "interrupt" type request to override busy
@@ -152,24 +155,17 @@ object TheArm {
         /**
          * Figure out where the shoulder is and see if it needs to move or not
          */
-        internal fun moveServoTowards(desiredAngle: Int): Boolean {
+        fun moveServoTowards(desiredAngle: Int): Boolean {
             var currentAngle = theServo.angle.roundToInt()
-            if (abs(currentAngle - desiredAngle) < deltaDegrees) return true
+            val diff = desiredAngle - currentAngle
 
-            // figure out if we're going up or down based on desired state and where we're at
-            (desiredAngle - currentAngle).also { diff ->
-                // apply the delta and see if it goes out of range
-                currentAngle = if (diff < 0) {
-                    (currentAngle - deltaDegrees).let {
-                        max(minimumDegrees, it)
-                    }
-                } else {
-                    (currentAngle + deltaDegrees).let {
-                        min(maximumDegrees, it)
-                    }
-                }
-                theServo at currentAngle
-            }
+            if (abs(diff) < deltaDegrees) return true
+
+            // apply the delta and see if it goes out of range
+            currentAngle = if (diff < 0) max(minimumDegrees, currentAngle - deltaDegrees)
+            else min(maximumDegrees, currentAngle + deltaDegrees)
+
+            theServo at currentAngle
             return false
         }
     }

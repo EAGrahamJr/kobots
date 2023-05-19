@@ -20,6 +20,7 @@ import crackers.kobots.app.Stripper.StripColors.*
 import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.utilities.elapsed
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicInteger
 
 class ControllerResponse(val armRequest: TheArm.Request, val proximityReading: Int)
 
@@ -44,9 +45,11 @@ object ControlThing : AutoCloseable {
 
     private var currentMode = Mode.IDLE
     private var lastDeployed = Instant.EPOCH
-    private var proximityReading: Int = 0
+    private var proximityReading = AtomicInteger(0)
     val proximity: Int
-        get() = proximityReading
+        get() = proximityReading.get()
+    val tooClose: Boolean
+        get() = proximity > CLOSE_ENOUGH
 
     override fun close() {
         proximitySensor.close()
@@ -68,10 +71,10 @@ object ControlThing : AutoCloseable {
             }
 
             Mode.RETRACT -> {
-                proximityReading = 0
                 if (armStatus == TheArm.State.REST) {
                     currentMode = Mode.IDLE
                     Stripper.modeSelect(DEFAULT)
+                    proximityReading.set(0)
                 }
                 TheArm.Request.NONE
             }
@@ -89,7 +92,7 @@ object ControlThing : AutoCloseable {
             }
         }
 
-        return ControllerResponse(armRequest, proximityReading)
+        return ControllerResponse(armRequest, proximityReading.get())
     }
 
     /**
@@ -99,7 +102,7 @@ object ControlThing : AutoCloseable {
         val lastUsed = lastDeployed.elapsed().toSeconds()
 
         proximitySensor.proximity.toInt().let { prox ->
-            proximityReading = prox
+            proximityReading.set(prox)
             // specific trigger
             // TODO should be state variable?
             if (prox > CLOSE_ENOUGH) {

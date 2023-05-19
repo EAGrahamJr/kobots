@@ -43,6 +43,10 @@ object Stripper {
 
     private val neopixelMax = 29
 
+    fun start() {
+        checkRun(20) { execute() }
+    }
+
     fun modeChange() = colorMode.get().next().let {
         colorMode.set(it)
         if (it == StripColors.DEFAULT) lastNeoPixelColor = Color.PINK
@@ -53,7 +57,7 @@ object Stripper {
     }
 
     private var lastNeoPixelColor = Color.PINK
-    fun execute() {
+    private fun execute() {
         when (colorMode.get()) {
             StripColors.RED -> colorChange(Color.RED)
             StripColors.GREEN -> colorChange(Color.GREEN)

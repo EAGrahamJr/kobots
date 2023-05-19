@@ -20,7 +20,6 @@ import kotlin.system.exitProcess
 
 private val buttons by lazy { (1..4).toList().map { crickitHat.touchDigitalIn(it) } }
 
-
 private val NO_BUTTONS = listOf(false, false, false, false)
 private var lastButtonValues = NO_BUTTONS
 private lateinit var currentButtons: List<Boolean>
@@ -38,24 +37,14 @@ private fun buttonCheck(): Boolean {
     return currentButtons.isEmpty() || !currentButtons[3]
 }
 
-const val WAIT_LOOP = 10L
-
-private fun checkRun(block: () -> Unit) {
-    executor.submit {
-        while (runFlag.get()) block()
-    }
-}
+private const val WAIT_LOOP = 10L
 
 /**
  * Run this.
  */
 fun main() {
-    checkRun {
-        executeWithMinTime(20) { Stripper.execute() }
-    }
-    checkRun {
-        executeWithMinTime(10) { TheScreen.execute() }
-    }
+    Stripper.start()
+    TheScreen.start()
 
     crickitHat.use { hat ->
         // main loop!!!!!

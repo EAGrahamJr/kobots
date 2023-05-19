@@ -17,9 +17,12 @@
 package crackers.kobots.app
 
 import crackers.kobots.devices.display.SSD1327
+import crackers.kobots.utilities.elapsed
 import crackers.kobots.utilities.loadImage
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
+import java.time.Duration
+import java.time.Instant
 
 /**
  * Return of the OLED!
@@ -35,23 +38,36 @@ object TheScreen : AutoCloseable {
     private val sleeping by lazy { loadImage("/snooze.jpg") }
     private val okImage by lazy { loadImage("/smiley.png") }
     private val scanImage by lazy { loadImage("/not-smiley.jpg") }
+    private val triggeredImage by lazy { loadImage("/screaming.png") }
 
     //    private var sleepTimer: Instant? = null
     private var lastImage: BufferedImage? = null
+    private var sleepTimer: Instant? = null
+    private val SLEEP_TIME = Duration.ofMinutes(2)
 
-    fun execute() {
-        val nextImage = when (TheArm.state) {
-            TheArm.State.BUSY -> okImage
+    fun start() {
+        checkRun(10) { execute() }
+    }
+
+    private fun execute() {
+        var nextImage = when (TheArm.state) {
+            TheArm.State.BUSY -> {
+                okImage
+            }
+
             TheArm.State.REST -> {
-//                if (sleepTimer == null) sleepTimer = Instant.now()
+                if (sleepTimer == null) sleepTimer = Instant.now()
                 sleeping
             }
 
             TheArm.State.FRONT -> scanImage
             TheArm.State.GUARDING -> TODO()
         }
+        // proximity alert over-rides image
+        if (ControlThing.tooClose) nextImage = triggeredImage
+
         if (nextImage != lastImage) {
-//            sleepTimer = null
+            sleepTimer = null
             lastImage = nextImage
             try {
                 screen.displayOn = true
@@ -62,15 +78,16 @@ object TheScreen : AutoCloseable {
                 println(e.localizedMessage)
                 lastImage = null
             }
-//        } else if (sleepTimer != null) {
-//            if (sleepTimer!!.elapsed() > Duration.ofMinutes(2)) {
-//                screen.displayOn = false
-//                sleepTimer = null
-//            }
+        } else if (sleepTimer != null) {
+            if (sleepTimer!!.elapsed() > SLEEP_TIME) {
+                screen.displayOn = false
+                sleepTimer = null
+            }
         }
     }
 
     override fun close() {
         screen.close()
     }
+
 }
