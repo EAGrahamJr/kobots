@@ -21,7 +21,6 @@ import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import crackers.kobots.devices.at
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 import kotlin.math.max
@@ -40,11 +39,11 @@ private class DesiredState(
  */
 object TheArm {
     enum class Request {
-        NONE, REST, DEPLOY_FRONT, GUARD
+        NONE, REST, DEPLOY_FRONT, GUARD, CALIBRATE
     }
 
     enum class State {
-        BUSY, REST, FRONT, GUARDING
+        BUSY, REST, FRONT, GUARDING, CALIBRATION
     }
 
     private const val SHOULDER_DELTA = 1
@@ -89,27 +88,47 @@ object TheArm {
     }
 
     // manage the state of this construct =============================================================================
-    private var busyNow = AtomicBoolean(false)
     private val currentState = AtomicReference(State.REST)
     val state: State
         get() = currentState.get()
+    private val busyNow: Boolean
+        get() = state == State.BUSY
 
     // do stuff =======================================================================================================
-    fun execute(request: Request) {
-        if (busyNow.get()) {
-            // TODO allow for "interrupt" type request to override busy
-        } else {
-            if (request == Request.NONE) return
-            busyNow.set(true)
-            currentState.set(State.BUSY)
-            executor.execute {
-                moveToSetPosition(desiredStates[request])
+    fun execute(request: Request, currentButtons: List<Boolean>) {
+        when (state) {
+            State.BUSY -> {
+                // TODO allow for "interrupt" type request to override busy
             }
+
+            State.REST -> {
+                if (request == Request.DEPLOY_FRONT) {
+                    currentState.set(State.BUSY)
+                    executor.execute {
+                        moveToSetPosition(desiredStates[request])
+                    }
+                }
+            }
+
+            State.FRONT -> {
+                if (request == Request.REST) {
+                    currentState.set(State.BUSY)
+                    executor.execute {
+                        moveToSetPosition(desiredStates[request])
+                    }
+                }
+            }
+
+            State.CALIBRATION -> {
+
+            }
+
+            State.GUARDING -> TODO()
         }
     }
 
     private fun moveToSetPosition(desiredState: DesiredState?) {
-        while (desiredState != null && busyNow.get()) {
+        while (desiredState != null && busyNow) {
             executeWithMinTime(25) {
                 // are we at the desired state?
                 val shoulderDone = shoulderServo.moveServoTowards(desiredState.shoulderPosition)
@@ -120,7 +139,6 @@ object TheArm {
 
                 if (shoulderDone && waistDone && elbowDone) {
                     currentState.set(desiredState.finalState)
-                    busyNow.set(false)
                     if (desiredState.finalState == State.REST) waistStepper.release() // "resting" allows for manual fixes
                 }
             }

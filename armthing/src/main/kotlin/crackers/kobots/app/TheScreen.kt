@@ -62,6 +62,7 @@ object TheScreen : AutoCloseable {
 
             TheArm.State.FRONT -> scanImage
             TheArm.State.GUARDING -> TODO()
+            TheArm.State.CALIBRATION -> TODO()
         }
         // proximity alert over-rides image
         if (ControlThing.tooClose) nextImage = triggeredImage

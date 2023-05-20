@@ -53,7 +53,7 @@ fun main() {
                 // figure out if we're doing anything
                 val doThisStuff = ControlThing.execute(currentButtons)
                 // TODO need to pub/sub here
-                TheArm.execute(doThisStuff.armRequest)
+                TheArm.execute(doThisStuff.armRequest, currentButtons)
             }
         }
         runFlag.set(false)

@@ -32,10 +32,6 @@ object ControlThing : AutoCloseable {
     const val WAITING_TOO_LONG = 60
     const val IDLE_RESET = 30
 
-    private enum class Mode {
-        IDLE, EXTEND, READY, RETRACT
-    }
-
     private val proximitySensor by lazy {
         VCNL4040().apply {
             proximityEnabled = true
@@ -43,9 +39,9 @@ object ControlThing : AutoCloseable {
         }
     }
 
-    private var currentMode = Mode.IDLE
-    private var lastDeployed = Instant.EPOCH
-    private var proximityReading = AtomicInteger(0)
+    //    private var currentMode = Mode.IDLE
+    private var lastDeployed: Instant? = null
+    private val proximityReading = AtomicInteger(0)
     val proximity: Int
         get() = proximityReading.get()
     val tooClose: Boolean
@@ -56,39 +52,33 @@ object ControlThing : AutoCloseable {
     }
 
     fun execute(currentButtons: List<Boolean>): ControllerResponse {
-        val myButton = currentButtons[0]
+        proximityReading.set(proximitySensor.proximity.toInt())
 
-        val armStatus = TheArm.state
-        val armRequest = when (currentMode) {
-            Mode.EXTEND -> {
-                // arrived
-                if (armStatus == TheArm.State.FRONT) {
-                    currentMode = Mode.READY
-                    lastDeployed = Instant.now()
-                    Stripper.modeSelect(LARSON)
-                }
-                TheArm.Request.NONE
-            }
+        val scanButton = currentButtons[0]
+        val calibrateButton = currentButtons[1]
 
-            Mode.RETRACT -> {
-                if (armStatus == TheArm.State.REST) {
-                    currentMode = Mode.IDLE
-                    Stripper.modeSelect(DEFAULT)
-                    proximityReading.set(0)
-                }
-                TheArm.Request.NONE
-            }
-
-            Mode.READY -> readyMode(myButton)
-            else -> {
-                // run it out
-                if (myButton) {
-                    currentMode = Mode.EXTEND
+        val armRequest = when (TheArm.state) {
+            TheArm.State.REST -> {
+                if (scanButton) {
                     Stripper.modeSelect(YELLOW)
                     TheArm.Request.DEPLOY_FRONT
                 } else {
+                    Stripper.modeSelect(DEFAULT)
                     TheArm.Request.NONE
                 }
+            }
+
+            TheArm.State.FRONT -> {
+                if (lastDeployed == null) {
+                    lastDeployed = Instant.now()
+                    Stripper.modeSelect(LARSON)
+                }
+                if (readyMode(scanButton)) TheArm.Request.REST else TheArm.Request.NONE
+            }
+
+            else -> {
+                lastDeployed = null
+                TheArm.Request.NONE
             }
         }
 
@@ -98,24 +88,20 @@ object ControlThing : AutoCloseable {
     /**
      * See if we trigger the retraction based on sensor or a delayed button.
      */
-    private fun readyMode(trigger: Boolean): TheArm.Request {
-        val lastUsed = lastDeployed.elapsed().toSeconds()
+    private fun readyMode(trigger: Boolean): Boolean {
+        val lastUsed = lastDeployed?.elapsed()?.toSeconds() ?: -1
 
-        proximitySensor.proximity.toInt().let { prox ->
-            proximityReading.set(prox)
-            // specific trigger
-            // TODO should be state variable?
+        return proximity.let { prox ->
             if (prox > CLOSE_ENOUGH) {
                 Stripper.modeSelect(RED)
-                currentMode = Mode.RETRACT
+                true
             } else if (lastUsed > IDLE_RESET && trigger) {
-                currentMode = Mode.RETRACT
                 Stripper.modeSelect(GREEN)
+                true
             } else if (lastUsed > WAITING_TOO_LONG) {
-                currentMode = Mode.RETRACT
                 Stripper.modeSelect(BLUE)
-            }
+                true
+            } else false
         }
-        return if (currentMode == Mode.RETRACT) TheArm.Request.REST else TheArm.Request.NONE
     }
 }
