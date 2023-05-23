@@ -45,6 +45,7 @@ private const val WAIT_LOOP = 10L
 fun main() {
     Stripper.start()
     TheScreen.start()
+//    Sonar.start()
 
     crickitHat.use { hat ->
         // main loop!!!!!

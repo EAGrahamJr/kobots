@@ -21,6 +21,7 @@ import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import crackers.kobots.devices.at
+import java.lang.Thread.sleep
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 import kotlin.math.max
@@ -50,9 +51,12 @@ object TheArm {
     private const val SHOULDER_MAX = 0  // maximum _elevation_
     private const val SHOUDLER_MIN = 90 // translates to about 60 degrees due to gear ratios
 
-    private const val ELBOW_DELTA = 2
+    private const val ELBOW_DELTA = 1
     private const val ELBOW_MAX = 180
     private const val ELBOW_MIN = 90
+
+    private const val GRIPPER_OPEN = 180
+    private const val GRIPPER_CLOSE = 130
 
     private const val MAX_WAIST_STEPS = 200 * 1.29 // 36->12=24->56 = 1:1.29
     private val QUARTER = (MAX_WAIST_STEPS / 4f).roundToInt()
@@ -60,30 +64,36 @@ object TheArm {
     // shoulder: current configuration is 0 for UP and 90 for down
     // waist: start depends on manual adjustment, but tries to keep a notion of "where it is"
     private val desiredStates = mapOf(
-        Request.DEPLOY_FRONT to (DesiredState(State.FRONT, QUARTER, SHOUDLER_MIN, 135)),
-        Request.REST to DesiredState(State.REST, 0, SHOULDER_MAX, ELBOW_MAX)
+        Request.DEPLOY_FRONT to (DesiredState(State.FRONT, QUARTER, SHOUDLER_MIN, ELBOW_MAX)),
+        Request.REST to DesiredState(State.REST, 0, SHOULDER_MAX, ELBOW_MIN)
     )
 
     // hardware! =====================================================================================================
     private val waistStepper by lazy { BasicStepperMotor(200, crickitHat.motorStepperPort()) }
 
-    private val servo2 by lazy {
-        crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
+    private val shoulderServo by lazy {
+        val servo2 = crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
             this at SHOULDER_MAX
         }
+        ArmServo(servo2, SHOULDER_MAX, SHOUDLER_MIN, SHOULDER_DELTA)
     }
-    private val shoulderServo by lazy { ArmServo(servo2, SHOULDER_MAX, SHOUDLER_MIN, SHOULDER_DELTA) }
 
-    private val servo3 by lazy {
-        crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
-            this at ELBOW_MAX
+    private val elbowServo by lazy {
+        val servo3 = crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
+            this at ELBOW_MIN
+        }
+        ArmServo(servo3, ELBOW_MIN, ELBOW_MAX, ELBOW_DELTA)
+    }
+
+    private val servo4 by lazy {
+        crickitHat.servo(4, ServoTrim.TOWERPRO_SG90).apply {
+            this at GRIPPER_OPEN
         }
     }
-    private val elbowServo by lazy { ArmServo(servo3, ELBOW_MIN, ELBOW_MAX, ELBOW_DELTA) }
 
     fun close() {
-        servo2 at SHOULDER_MAX
-        servo3 at ELBOW_MAX
+        shoulderServo.theServo at SHOULDER_MAX
+        elbowServo.theServo at ELBOW_MIN
         waistStepper.release()
     }
 
@@ -124,6 +134,18 @@ object TheArm {
             }
 
             State.GUARDING -> TODO()
+        }
+    }
+
+    /**
+     * Just a silly thing for the gripper integration.
+     */
+    fun chomp(iterations: Int = 4) {
+        for (i in 1..iterations) {
+            servo4 at GRIPPER_CLOSE
+            sleep(100)
+            servo4 at GRIPPER_OPEN
+            sleep(100)
         }
     }
 
@@ -187,4 +209,11 @@ object TheArm {
             return false
         }
     }
+
+    fun isAt() = listOf(
+        stepperPosition,
+        shoulderServo.theServo.angle.roundToInt(),
+        elbowServo.theServo.angle.roundToInt(),
+        servo4.angle.roundToInt() > (GRIPPER_OPEN - 2)
+    )
 }

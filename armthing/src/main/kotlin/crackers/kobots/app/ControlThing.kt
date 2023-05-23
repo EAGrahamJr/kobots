@@ -72,6 +72,7 @@ object ControlThing : AutoCloseable {
                 if (lastDeployed == null) {
                     lastDeployed = Instant.now()
                     Stripper.modeSelect(LARSON)
+                    TheArm.chomp()
                 }
                 if (readyMode(scanButton)) TheArm.Request.REST else TheArm.Request.NONE
             }

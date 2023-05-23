@@ -19,6 +19,8 @@ package crackers.kobots.app
 import crackers.kobots.devices.display.SSD1327
 import crackers.kobots.utilities.elapsed
 import crackers.kobots.utilities.loadImage
+import java.awt.Color
+import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.time.Duration
@@ -29,10 +31,14 @@ import java.time.Instant
  */
 object TheScreen : AutoCloseable {
     private val screenGraphics: Graphics2D
+    private val screehHeight: Int
+    private val screenWidth: Int
     private val screen = SSD1327(SSD1327.ADAFRUIT_STEMMA).apply {
         clear()
+        screenWidth = 128
+        screehHeight = 128
     }
-    private val image = BufferedImage(128, 128, BufferedImage.TYPE_BYTE_GRAY).also {
+    private val image = BufferedImage(screenWidth, screehHeight, BufferedImage.TYPE_BYTE_GRAY).also {
         screenGraphics = it.graphics as Graphics2D
     }
     private val sleeping by lazy { loadImage("/snooze.jpg") }
@@ -62,7 +68,11 @@ object TheScreen : AutoCloseable {
 
             TheArm.State.FRONT -> scanImage
             TheArm.State.GUARDING -> TODO()
-            TheArm.State.CALIBRATION -> TODO()
+            TheArm.State.CALIBRATION -> {
+                sleepTimer = null
+                showCalibration()
+                return
+            }
         }
         // proximity alert over-rides image
         if (ControlThing.tooClose) nextImage = triggeredImage
@@ -72,7 +82,7 @@ object TheScreen : AutoCloseable {
             lastImage = nextImage
             try {
                 screen.displayOn = true
-                screenGraphics.drawImage(nextImage, 0, 0, 128, 128, null)
+                screenGraphics.drawImage(nextImage, 0, 0, screenWidth, screehHeight, null)
                 screen.display(image)
                 screen.show()
             } catch (e: Exception) {
@@ -87,8 +97,28 @@ object TheScreen : AutoCloseable {
         }
     }
 
+    private const val FONT_SIZE = 12
+    private fun showCalibration() {
+        with(screenGraphics) {
+            color = Color.BLACK
+            fillRect(0, 0, screenWidth, screehHeight)
+            font = Font(Font.SANS_SERIF, Font.PLAIN, FONT_SIZE)
+            color = Color.WHITE
+            TheArm.isAt().forEachIndexed { index, position ->
+                val stringToDraw = when (index) {
+                    0 -> "Waist: ${position}"
+                    1 -> "Shoulder: $position"
+                    2 -> "Elbow: $position"
+                    3 -> "Gripper: open = $position"
+                    else -> "ignore"
+                }
+                drawString(stringToDraw, 0, index * fontMetrics.height + fontMetrics.ascent)
+            }
+        }
+        screen.display(image)
+    }
+
     override fun close() {
         screen.close()
     }
-
 }
