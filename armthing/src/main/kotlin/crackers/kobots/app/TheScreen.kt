@@ -56,26 +56,26 @@ object TheScreen : AutoCloseable {
     }
 
     private fun execute() {
-        var nextImage = when (TheArm.state) {
-            TheArm.State.BUSY -> {
-                okImage
-            }
+        when (TheArm.state) {
+            TheArm.State.BUSY -> okImage.displayThis()
 
             TheArm.State.REST -> {
                 if (sleepTimer == null) sleepTimer = Instant.now()
-                sleeping
+                sleeping.displayThis()
             }
 
-            TheArm.State.FRONT -> scanImage
+            TheArm.State.FRONT -> scanImage.displayThis()
             TheArm.State.GUARDING -> TODO()
             TheArm.State.CALIBRATION -> {
                 sleepTimer = null
                 showCalibration()
-                return
             }
         }
+    }
+
+    private fun BufferedImage.displayThis() {
         // proximity alert over-rides image
-        if (ControlThing.tooClose) nextImage = triggeredImage
+        val nextImage = if (ControlThing.tooClose) triggeredImage else this
 
         if (nextImage != lastImage) {
             sleepTimer = null
@@ -104,18 +104,24 @@ object TheScreen : AutoCloseable {
             fillRect(0, 0, screenWidth, screehHeight)
             font = Font(Font.SANS_SERIF, Font.PLAIN, FONT_SIZE)
             color = Color.WHITE
-            TheArm.isAt().forEachIndexed { index, position ->
-                val stringToDraw = when (index) {
-                    0 -> "Waist: ${position}"
-                    1 -> "Shoulder: $position"
-                    2 -> "Elbow: $position"
-                    3 -> "Gripper: open = $position"
-                    else -> "ignore"
-                }
-                drawString(stringToDraw, 0, index * fontMetrics.height + fontMetrics.ascent)
+            (TheArm.isAt() + "").forEachIndexed { index, position ->
+                val stringToDraw =
+                    when (index) {
+                        0 -> "Waist: ${position}"
+                        1 -> "Shoulder: $position"
+                        2 -> "Elbow: $position"
+                        3 -> "Gripper: open = $position"
+                        4 -> "Exit"
+                        else -> TODO()
+                    }
+                val prefix = if (index == TheArm.currentCalirationItem.get()) "*" else " "
+                drawString(prefix + stringToDraw, 0, index * fontMetrics.height + fontMetrics.ascent)
             }
+            font = Font(Font.MONOSPACED, Font.PLAIN, 8)
+            drawString("A:Next B:Back/No C:Forward:Yes", 0, 127)
         }
         screen.display(image)
+        screen.show()
     }
 
     override fun close() {

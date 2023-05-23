@@ -62,6 +62,8 @@ object ControlThing : AutoCloseable {
                 if (scanButton) {
                     Stripper.modeSelect(YELLOW)
                     TheArm.Request.DEPLOY_FRONT
+                } else if (calibrateButton) {
+                    TheArm.Request.CALIBRATE
                 } else {
                     Stripper.modeSelect(DEFAULT)
                     TheArm.Request.NONE

@@ -22,6 +22,7 @@ import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import crackers.kobots.devices.at
 import java.lang.Thread.sleep
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.abs
 import kotlin.math.max
@@ -48,12 +49,12 @@ object TheArm {
     }
 
     private const val SHOULDER_DELTA = 1
-    private const val SHOULDER_MAX = 0  // maximum _elevation_
-    private const val SHOUDLER_MIN = 90 // translates to about 60 degrees due to gear ratios
+    private const val SHOULDER_MIN = 0  // pulled in
+    private const val SHOULDER_MAX = 90 // translates to about 60 degrees due to gear ratios
 
     private const val ELBOW_DELTA = 1
-    private const val ELBOW_MAX = 180
     private const val ELBOW_MIN = 90
+    private const val ELBOW_MAX = 180
 
     private const val GRIPPER_OPEN = 180
     private const val GRIPPER_CLOSE = 130
@@ -64,8 +65,8 @@ object TheArm {
     // shoulder: current configuration is 0 for UP and 90 for down
     // waist: start depends on manual adjustment, but tries to keep a notion of "where it is"
     private val desiredStates = mapOf(
-        Request.DEPLOY_FRONT to (DesiredState(State.FRONT, QUARTER, SHOUDLER_MIN, ELBOW_MAX)),
-        Request.REST to DesiredState(State.REST, 0, SHOULDER_MAX, ELBOW_MIN)
+        Request.DEPLOY_FRONT to (DesiredState(State.FRONT, QUARTER, SHOULDER_MAX, ELBOW_MAX)),
+        Request.REST to DesiredState(State.REST, 0, SHOULDER_MIN, ELBOW_MIN)
     )
 
     // hardware! =====================================================================================================
@@ -73,9 +74,9 @@ object TheArm {
 
     private val shoulderServo by lazy {
         val servo2 = crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
-            this at SHOULDER_MAX
+            this at SHOULDER_MIN
         }
-        ArmServo(servo2, SHOULDER_MAX, SHOUDLER_MIN, SHOULDER_DELTA)
+        ArmServo(servo2, SHOULDER_MIN, SHOULDER_MAX, SHOULDER_DELTA)
     }
 
     private val elbowServo by lazy {
@@ -85,14 +86,14 @@ object TheArm {
         ArmServo(servo3, ELBOW_MIN, ELBOW_MAX, ELBOW_DELTA)
     }
 
-    private val servo4 by lazy {
+    private val gripper by lazy {
         crickitHat.servo(4, ServoTrim.TOWERPRO_SG90).apply {
             this at GRIPPER_OPEN
         }
     }
 
     fun close() {
-        shoulderServo.theServo at SHOULDER_MAX
+        shoulderServo.theServo at SHOULDER_MIN
         elbowServo.theServo at ELBOW_MIN
         waistStepper.release()
     }
@@ -118,6 +119,9 @@ object TheArm {
                         moveToSetPosition(desiredStates[request])
                     }
                 }
+                if (request == Request.CALIBRATE) {
+                    currentState.set(State.CALIBRATION)
+                }
             }
 
             State.FRONT -> {
@@ -130,7 +134,7 @@ object TheArm {
             }
 
             State.CALIBRATION -> {
-
+                handleCalibration(currentButtons)
             }
 
             State.GUARDING -> TODO()
@@ -142,9 +146,9 @@ object TheArm {
      */
     fun chomp(iterations: Int = 4) {
         for (i in 1..iterations) {
-            servo4 at GRIPPER_CLOSE
+            gripper at GRIPPER_CLOSE
             sleep(100)
-            servo4 at GRIPPER_OPEN
+            gripper at GRIPPER_OPEN
             sleep(100)
         }
     }
@@ -214,6 +218,42 @@ object TheArm {
         stepperPosition,
         shoulderServo.theServo.angle.roundToInt(),
         elbowServo.theServo.angle.roundToInt(),
-        servo4.angle.roundToInt() > (GRIPPER_OPEN - 2)
+        gripper.angle.roundToInt() > (GRIPPER_OPEN - 2)
     )
+
+    val currentCalirationItem = AtomicInteger(0)
+
+    // calibration
+    fun handleCalibration(currentButtons: List<Boolean>) {
+        if (currentButtons[0]) {
+            val x = currentCalirationItem.incrementAndGet()
+            if (x > 4) currentCalirationItem.set(0)
+        } else if (currentButtons[1]) {
+            when (currentCalirationItem.get()) {
+                0 -> {}
+                1 -> shoulderServo.moveServoTowards(SHOULDER_MIN)
+                2 -> elbowServo.moveServoTowards(ELBOW_MIN)
+                3 -> gripper at GRIPPER_OPEN
+            }
+
+        } else if (currentButtons[2]) {
+            when (currentCalirationItem.get()) {
+                0 -> {}
+                1 -> shoulderServo.moveServoTowards(SHOULDER_MAX)
+                2 -> elbowServo.moveServoTowards(ELBOW_MAX)
+                3 -> gripper at GRIPPER_CLOSE
+                4 -> {
+                    currentState.set(State.BUSY)
+                    executor.execute {
+                        moveToSetPosition(desiredStates[Request.REST])
+                    }
+                }
+            }
+        }
+    }
+}
+
+internal object CalibrationProcessor {
+
+
 }
