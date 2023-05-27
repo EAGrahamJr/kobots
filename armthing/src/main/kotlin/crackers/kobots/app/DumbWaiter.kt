@@ -28,6 +28,12 @@ private lateinit var currentButtons: List<Boolean>
 private fun buttonCheck(): Boolean {
     currentButtons = buttons.map { it.value }.let { read ->
         // TODO add an elapsed time check?
+
+        // allow for repeat buttons during calibration
+        if (TheArm.state == TheArm.State.CALIBRATION && (read[1] || read[2])) {
+            lastButtonValues = NO_BUTTONS
+        }
+
         if (read == lastButtonValues) NO_BUTTONS
         else {
             lastButtonValues = read
@@ -45,6 +51,7 @@ private const val WAIT_LOOP = 10L
 fun main() {
     Stripper.start()
     TheScreen.start()
+    ProximitySensor.start()
 //    Sonar.start()
 
     crickitHat.use { hat ->
@@ -62,6 +69,7 @@ fun main() {
         ControlThing.close()
         TheArm.close()
         TheScreen.close()
+        ProximitySensor.close()
     }
     executor.shutdownNow()
     exitProcess(0)

@@ -40,6 +40,7 @@ private class DesiredState(
  * First attempt at a controlled "arm-like" structure.
  */
 object TheArm {
+    const val STATE_TOPIC = "TheArm.State"
     enum class Request {
         NONE, REST, DEPLOY_FRONT, GUARD, CALIBRATE
     }
@@ -59,7 +60,7 @@ object TheArm {
     private const val GRIPPER_OPEN = 180
     private const val GRIPPER_CLOSE = 130
 
-    private const val MAX_WAIST_STEPS = 200 * 1.29 // 36->12=24->56 = 1:1.29
+    private const val MAX_WAIST_STEPS = 200 * 1.39 // 36->12=24->60
     private val QUARTER = (MAX_WAIST_STEPS / 4f).roundToInt()
 
     // shoulder: current configuration is 0 for UP and 90 for down
@@ -93,15 +94,18 @@ object TheArm {
     }
 
     fun close() {
-        shoulderServo.theServo at SHOULDER_MIN
-        elbowServo.theServo at ELBOW_MIN
+        moveToSetPosition(desiredStates[Request.REST])
         waistStepper.release()
     }
 
     // manage the state of this construct =============================================================================
-    private val currentState = AtomicReference(State.REST)
-    val state: State
-        get() = currentState.get()
+    private val _currentState = AtomicReference(State.REST)
+    var state: State
+        get() = _currentState.get()
+        private set(s) {
+            publishToTopic(STATE_TOPIC, s)
+            _currentState.set(s)
+        }
     private val busyNow: Boolean
         get() = state == State.BUSY
 
@@ -114,19 +118,20 @@ object TheArm {
 
             State.REST -> {
                 if (request == Request.DEPLOY_FRONT) {
-                    currentState.set(State.BUSY)
+                    state = State.BUSY
                     executor.execute {
                         moveToSetPosition(desiredStates[request])
                     }
                 }
                 if (request == Request.CALIBRATE) {
-                    currentState.set(State.CALIBRATION)
+                    currentCalirationItem.set(0)
+                    state = State.CALIBRATION
                 }
             }
 
             State.FRONT -> {
                 if (request == Request.REST) {
-                    currentState.set(State.BUSY)
+                    state = State.BUSY
                     executor.execute {
                         moveToSetPosition(desiredStates[request])
                     }
@@ -164,7 +169,7 @@ object TheArm {
                 // TODO other joints
 
                 if (shoulderDone && waistDone && elbowDone) {
-                    currentState.set(desiredState.finalState)
+                    state = desiredState.finalState
                     if (desiredState.finalState == State.REST) waistStepper.release() // "resting" allows for manual fixes
                 }
             }
@@ -230,7 +235,7 @@ object TheArm {
             if (x > 4) currentCalirationItem.set(0)
         } else if (currentButtons[1]) {
             when (currentCalirationItem.get()) {
-                0 -> {}
+                0 -> moveWaist(stepperPosition - 1)
                 1 -> shoulderServo.moveServoTowards(SHOULDER_MIN)
                 2 -> elbowServo.moveServoTowards(ELBOW_MIN)
                 3 -> gripper at GRIPPER_OPEN
@@ -238,22 +243,18 @@ object TheArm {
 
         } else if (currentButtons[2]) {
             when (currentCalirationItem.get()) {
-                0 -> {}
+                0 -> moveWaist(stepperPosition + 1)
                 1 -> shoulderServo.moveServoTowards(SHOULDER_MAX)
                 2 -> elbowServo.moveServoTowards(ELBOW_MAX)
                 3 -> gripper at GRIPPER_CLOSE
                 4 -> {
-                    currentState.set(State.BUSY)
+                    state = State.BUSY
                     executor.execute {
                         moveToSetPosition(desiredStates[Request.REST])
                     }
                 }
             }
         }
+        publishToTopic(STATE_TOPIC, State.CALIBRATION)
     }
-}
-
-internal object CalibrationProcessor {
-
-
 }

@@ -32,7 +32,7 @@ object Stripper {
         fun next(): StripColors = if (this == LARSON) DEFAULT else values()[ordinal + 1]
     }
 
-    val colorMode = AtomicReference(StripColors.DEFAULT)
+    private val colorMode = AtomicReference(StripColors.DEFAULT)
 
     private val neoPixel by lazy {
         crickitHat.neoPixel(30).apply {
@@ -44,6 +44,7 @@ object Stripper {
     private val neopixelMax = 29
 
     fun start() {
+        // TODO change this to a request/event topic, except what to do about "larson" mode?
         checkRun(20) { execute() }
     }
 

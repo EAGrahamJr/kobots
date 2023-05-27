@@ -16,6 +16,7 @@
 
 package crackers.kobots.app
 
+import crackers.kobots.app.TheArm.STATE_TOPIC
 import crackers.kobots.devices.display.SSD1327
 import crackers.kobots.utilities.elapsed
 import crackers.kobots.utilities.loadImage
@@ -52,11 +53,20 @@ object TheScreen : AutoCloseable {
     private val SLEEP_TIME = Duration.ofMinutes(2)
 
     fun start() {
-        checkRun(10) { execute() }
+//        checkRun(if (state == TheArm.State.CALIBRATION) 100 else 500) { execute(state) }
+        joinTopic(STATE_TOPIC, KobotsSubscriber<TheArm.State> { msg -> execute(msg) })
+        checkRun(SLEEP_TIME.toMillis()) {
+            sleepTimer?.run {
+                if (elapsed() > SLEEP_TIME) {
+                    screen.displayOn = false
+                    sleepTimer = null
+                }
+            }
+        }
     }
 
-    private fun execute() {
-        when (TheArm.state) {
+    private fun execute(state: TheArm.State) {
+        when (state) {
             TheArm.State.BUSY -> okImage.displayThis()
 
             TheArm.State.REST -> {
@@ -68,6 +78,7 @@ object TheScreen : AutoCloseable {
             TheArm.State.GUARDING -> TODO()
             TheArm.State.CALIBRATION -> {
                 sleepTimer = null
+                lastImage = null
                 showCalibration()
             }
         }
@@ -75,7 +86,7 @@ object TheScreen : AutoCloseable {
 
     private fun BufferedImage.displayThis() {
         // proximity alert over-rides image
-        val nextImage = if (ControlThing.tooClose) triggeredImage else this
+        val nextImage = if (ProximitySensor.tooClose) triggeredImage else this
 
         if (nextImage != lastImage) {
             sleepTimer = null
@@ -89,16 +100,13 @@ object TheScreen : AutoCloseable {
                 println(e.localizedMessage)
                 lastImage = null
             }
-        } else if (sleepTimer != null) {
-            if (sleepTimer!!.elapsed() > SLEEP_TIME) {
-                screen.displayOn = false
-                sleepTimer = null
-            }
         }
     }
 
     private const val FONT_SIZE = 12
     private fun showCalibration() {
+        if (!screen.displayOn) screen.displayOn = true
+
         with(screenGraphics) {
             color = Color.BLACK
             fillRect(0, 0, screenWidth, screehHeight)
@@ -110,7 +118,7 @@ object TheScreen : AutoCloseable {
                         0 -> "Waist: ${position}"
                         1 -> "Shoulder: $position"
                         2 -> "Elbow: $position"
-                        3 -> "Gripper: open = $position"
+                        3 -> "Gripper: ${if (position == true) "OPEN" else "closed"}"
                         4 -> "Exit"
                         else -> TODO()
                     }
@@ -118,7 +126,7 @@ object TheScreen : AutoCloseable {
                 drawString(prefix + stringToDraw, 0, index * fontMetrics.height + fontMetrics.ascent)
             }
             font = Font(Font.MONOSPACED, Font.PLAIN, 8)
-            drawString("A:Next B:Back/No C:Forward:Yes", 0, 127)
+            drawString("A:Next B:No/- C:Yes/+", 0, 127)
         }
         screen.display(image)
         screen.show()
