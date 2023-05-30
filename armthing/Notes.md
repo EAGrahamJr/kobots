@@ -1,3 +1,9 @@
+# Thoughts and Plans
+
+- Actions (requests) produce states
+- State transitions are "events"
+  - are "events" propagated or does everyone just check current state?
+
 ## Servo/Stepper
 
 Because both have the notion of _current position_: the servo can be queried and the stepper can be mainatined within the software, after "calibration" (set a "zero" mark).
