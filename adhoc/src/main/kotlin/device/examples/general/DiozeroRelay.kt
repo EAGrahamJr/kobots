@@ -23,8 +23,8 @@ import com.diozero.internal.provider.remote.grpc.GrpcClientDeviceFactory
 import com.diozero.util.Diozero
 import crackers.kobots.devices.DebouncedButton
 import crackers.kobots.devices.display.SSD1327
-import crackers.kobots.devices.lighting.DEFAULT_SHIM_ADDRESS
 import crackers.kobots.devices.lighting.PimoroniLEDShim
+import crackers.kobots.devices.lighting.PimoroniLEDShim.Companion.DEFAULT_SHIM_ADDRESS
 import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.utilities.PointerGauge
 import crackers.kobots.utilities.colorInterval
