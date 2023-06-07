@@ -28,7 +28,7 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * Return of the OLED!
+ * --Return of the OLED!-- And gone again - TODO this into a smaller screen
  */
 object TheScreen : AutoCloseable {
     private val screenGraphics: Graphics2D

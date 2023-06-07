@@ -49,8 +49,6 @@ private const val WAIT_LOOP = 10L
  * Run this.
  */
 fun main() {
-    Stripper.start()
-    TheScreen.start()
     ProximitySensor.start()
 //    Sonar.start()
 
