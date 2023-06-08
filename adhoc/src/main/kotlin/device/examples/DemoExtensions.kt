@@ -19,7 +19,7 @@ package device.examples
 import com.diozero.sbc.LocalSystemInfo
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
-import crackers.kobots.devices.expander.CRICKITNeoPixel
+import crackers.kobots.devices.lighting.NeoPixel
 import crackers.kobots.devices.lighting.PimoroniLEDShim
 import crackers.kobots.utilities.colorInterval
 import crackers.kobots.utilities.scale
@@ -34,7 +34,7 @@ import kotlin.math.roundToInt
  * Runs a semi-familiar "chase" pattern based on several TV shows.
  */
 private val larsonLogger by lazy { LoggerFactory.getLogger("LarsonDemo") }
-fun CRICKITNeoPixel.larson(runFlag: AtomicBoolean, loopDelay: AtomicLong = AtomicLong(30), andThen: () -> Unit = {}) {
+fun NeoPixel.larson(runFlag: AtomicBoolean, loopDelay: AtomicLong = AtomicLong(30), andThen: () -> Unit = {}) {
     brightness = .1f
     autoWrite = false
 
