@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * Simple proximity sensor with events and state.
  */
 object ProximitySensor : AutoCloseable {
-    const val CLOSE_ENOUGH = 15
+    const val CLOSE_ENOUGH = 15 // this is **aproximately**  25mm
     const val ALARM_TOPIC = "Prox.TooClose"
 
     private lateinit var future: Future<*>

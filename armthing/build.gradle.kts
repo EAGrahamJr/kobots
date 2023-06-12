@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
+//    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
 //    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
     implementation("crackers.automation:hassk:0.0.1")
 }

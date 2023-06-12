@@ -16,6 +16,15 @@
 
 package crackers.kobots.app
 
+import crackers.kobots.app.arm.ArmMovement
+import crackers.kobots.app.arm.ArmRequest
+import crackers.kobots.app.arm.JointMovement
+import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.arm.TheArm.ELBOW_STRAIGHT
+import crackers.kobots.app.arm.TheArm.GO_HOME
+import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
+import crackers.kobots.app.arm.TheArm.SHOULDER_UP
+import java.time.Duration
 import kotlin.system.exitProcess
 
 private val buttons by lazy { (1..4).toList().map { crickitHat.touchDigitalIn(it) } }
@@ -29,13 +38,9 @@ private fun buttonCheck(): Boolean {
     currentButtons = buttons.map { it.value }.let { read ->
         // TODO add an elapsed time check?
 
-        // allow for repeat buttons during calibration
-        if (TheArm.state == TheArm.State.CALIBRATION && (read[1] || read[2])) {
-            lastButtonValues = NO_BUTTONS
-        }
-
-        if (read == lastButtonValues) NO_BUTTONS
-        else {
+        if (read == lastButtonValues) {
+            NO_BUTTONS
+        } else {
             lastButtonValues = read
             read
         }
@@ -43,32 +48,86 @@ private fun buttonCheck(): Boolean {
     return currentButtons.isEmpty() || !currentButtons[3]
 }
 
-private const val WAIT_LOOP = 10L
+private const val WAIT_LOOP = 100L
+
+// TODO temporary while testing
+const val REMOTE_PI = "diozero.remote.hostname"
+const val MARVIN = "marvin.local"
 
 /**
  * Run this.
  */
 fun main() {
-    ProximitySensor.start()
-//    Sonar.start()
+//    System.setProperty(REMOTE_PI, MARVIN)
 
     crickitHat.use { hat ->
+        TheArm.start()
+
+
+        val waistDance = ArmRequest(
+            listOf(
+                ArmMovement(waist = JointMovement(90f), stepPause = Duration.ofMillis(25)),
+                GO_HOME
+            )
+        )
+        val elbowDance = ArmRequest(
+            listOf(
+                ArmMovement(elbow = JointMovement(15f)), GO_HOME
+            )
+        )
+
+
         // main loop!!!!!
         while (buttonCheck()) {
             executeWithMinTime(WAIT_LOOP) {
                 // figure out if we're doing anything
-                val doThisStuff = ControlThing.execute(currentButtons)
-                // TODO need to pub/sub here
-                TheArm.execute(doThisStuff.armRequest, currentButtons)
+                if (!TheArm.state.busy && currentButtons[0]) publishToTopic(TheArm.REQUEST_TOPIC, tireDance)
+                if (!TheArm.state.busy && currentButtons[1]) publishToTopic(TheArm.REQUEST_TOPIC, elbowDance)
             }
         }
         runFlag.set(false)
-
-        ControlThing.close()
-        TheArm.close()
-        TheScreen.close()
-        ProximitySensor.close()
+        TheArm.stop()
     }
     executor.shutdownNow()
     exitProcess(0)
+}
+
+val tireDance by lazy {
+    val ELB_MOVE = 30f
+    val SH_DOWN = 10f
+    val SH_MID = 90f
+    val GR_GRAB = 20f
+    val WST_HALF = 45f
+    val WST_ALL = 90f
+    ArmRequest(
+        listOf(
+            GO_HOME,
+            // open first
+            ArmMovement(gripper = JointMovement(GRIPPER_OPEN), stepPause = Duration.ZERO),
+            // down
+            ArmMovement(shoulder = JointMovement(SH_DOWN), elbow = JointMovement(ELB_MOVE)),
+            // grab
+            ArmMovement(gripper = JointMovement(GR_GRAB), stepPause = Duration.ZERO),
+            // up a bit
+            ArmMovement(shoulder = JointMovement(SH_MID)),
+            // 1/2 way
+            ArmMovement(
+                waist = JointMovement(WST_HALF),
+                shoulder = JointMovement(SHOULDER_UP),
+                elbow = JointMovement(ELBOW_STRAIGHT)
+            ),
+            ArmMovement(
+                waist = JointMovement(WST_ALL),
+                shoulder = JointMovement(SH_MID),
+                elbow = JointMovement(ELB_MOVE)
+            ),
+            // put it down
+            ArmMovement(shoulder = JointMovement(SH_DOWN)),
+            ArmMovement(gripper = JointMovement(GRIPPER_OPEN), stepPause = Duration.ZERO),
+            // clear
+            ArmMovement(shoulder = JointMovement(SH_MID)),
+            // home
+            GO_HOME
+        )
+    )
 }

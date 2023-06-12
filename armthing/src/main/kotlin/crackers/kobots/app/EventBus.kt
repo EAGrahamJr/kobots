@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Flow
 import java.util.concurrent.SubmissionPublisher
 
-private val eventBusMap = ConcurrentHashMap<String, Flow.Publisher<*>>()
+private val eventBusMap = ConcurrentHashMap<String, SubmissionPublisher<*>>()
 
 /**
  * Receives an item from a topic. See [joinTopic]
@@ -58,6 +58,7 @@ private class KobotsSubscriberDecorator<T>(val listener: KobotsSubscriber<T>, va
 /**
  * Get items (default 1 at a time) asynchronously.
  */
+@Suppress("UNCHECKED_CAST")
 fun <T> joinTopic(topic: String, listener: KobotsSubscriber<T>, batchSize: Long = 1) {
     val publisher = eventBusMap.computeIfAbsent(topic) { SubmissionPublisher<T>() } as SubmissionPublisher<T>
     publisher.subscribe(KobotsSubscriberDecorator(listener, batchSize))
@@ -66,6 +67,7 @@ fun <T> joinTopic(topic: String, listener: KobotsSubscriber<T>, batchSize: Long 
 /**
  * Stop getting items.
  */
+@Suppress("UNCHECKED_CAST")
 fun <T> leaveTopic(topic: String, listener: KobotsSubscriber<T>) {
     val publisher = eventBusMap.computeIfAbsent(topic) { SubmissionPublisher<T>() } as SubmissionPublisher<T>
     publisher.subscribers.removeIf { (it as KobotsSubscriberDecorator<T>).listener == listener }
@@ -81,6 +83,7 @@ fun <T> publishToTopic(topic: String, vararg items: T) {
 /**
  * Publish a collection of [items] to a [topic]
  */
+@Suppress("UNCHECKED_CAST")
 fun <T> publishToTopic(topic: String, items: Collection<T>) {
     val publisher = eventBusMap.computeIfAbsent(topic) { SubmissionPublisher<T>() } as SubmissionPublisher<T>
     items.forEach { item -> publisher.submit(item) }

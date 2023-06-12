@@ -51,7 +51,7 @@ class DiozeroRelay {
     }
 
     private val sensor: VCNL4040 = run {
-        val i2CDevice = I2CDevice.builder(VCNL4040.QWIIC_I2C_ADDRESS)
+        val i2CDevice = I2CDevice.builder(VCNL4040.DEFAULT_I2C_ADDRESS)
             .setDeviceFactory(localFactory)
             .setController(1)
             .build()
