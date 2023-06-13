@@ -21,19 +21,23 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Flow
 import java.util.concurrent.SubmissionPublisher
 
+interface KobotsMessage {
+    val interruptable: Boolean
+}
+
 private val eventBusMap = ConcurrentHashMap<String, SubmissionPublisher<*>>()
 
 /**
  * Receives an item from a topic. See [joinTopic]
  */
-fun interface KobotsSubscriber<T> {
+fun interface KobotsSubscriber<T : KobotsMessage> {
     fun receive(msg: T)
 }
 
 /**
  * Wraps the subscriber in all the extra stuff necessary. Requests [batchSize] items.
  */
-private class KobotsSubscriberDecorator<T>(val listener: KobotsSubscriber<T>, val batchSize: Long) :
+private class KobotsSubscriberDecorator<T : KobotsMessage>(val listener: KobotsSubscriber<T>, val batchSize: Long) :
     Flow.Subscriber<T> {
     private lateinit var mySub: Flow.Subscription
     override fun onSubscribe(subscription: Flow.Subscription) {
@@ -59,7 +63,7 @@ private class KobotsSubscriberDecorator<T>(val listener: KobotsSubscriber<T>, va
  * Get items (default 1 at a time) asynchronously.
  */
 @Suppress("UNCHECKED_CAST")
-fun <T> joinTopic(topic: String, listener: KobotsSubscriber<T>, batchSize: Long = 1) {
+fun <T : KobotsMessage> joinTopic(topic: String, listener: KobotsSubscriber<T>, batchSize: Long = 1) {
     val publisher = eventBusMap.computeIfAbsent(topic) { SubmissionPublisher<T>() } as SubmissionPublisher<T>
     publisher.subscribe(KobotsSubscriberDecorator(listener, batchSize))
 }
@@ -68,7 +72,7 @@ fun <T> joinTopic(topic: String, listener: KobotsSubscriber<T>, batchSize: Long 
  * Stop getting items.
  */
 @Suppress("UNCHECKED_CAST")
-fun <T> leaveTopic(topic: String, listener: KobotsSubscriber<T>) {
+fun <T : KobotsMessage> leaveTopic(topic: String, listener: KobotsSubscriber<T>) {
     val publisher = eventBusMap.computeIfAbsent(topic) { SubmissionPublisher<T>() } as SubmissionPublisher<T>
     publisher.subscribers.removeIf { (it as KobotsSubscriberDecorator<T>).listener == listener }
 }
@@ -76,7 +80,7 @@ fun <T> leaveTopic(topic: String, listener: KobotsSubscriber<T>) {
 /**
  * Publish one or more [items] to a [topic].
  */
-fun <T> publishToTopic(topic: String, vararg items: T) {
+fun <T : KobotsMessage> publishToTopic(topic: String, vararg items: T) {
     publishToTopic(topic, items.toList())
 }
 
@@ -84,7 +88,7 @@ fun <T> publishToTopic(topic: String, vararg items: T) {
  * Publish a collection of [items] to a [topic]
  */
 @Suppress("UNCHECKED_CAST")
-fun <T> publishToTopic(topic: String, items: Collection<T>) {
+fun <T : KobotsMessage> publishToTopic(topic: String, items: Collection<T>) {
     val publisher = eventBusMap.computeIfAbsent(topic) { SubmissionPublisher<T>() } as SubmissionPublisher<T>
     items.forEach { item -> publisher.submit(item) }
 }

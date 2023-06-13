@@ -36,7 +36,6 @@ object TheArm {
     const val SHOULDER_UP = 180f // pulled in`
     const val SHOULDER_DOWN = 0f // close to horizontal
 
-    // TODO do we have enough torque for another servo?
     private const val ELBOW_DELTA = 1f
     const val ELBOW_STRAIGHT = 0f
     const val ELBOW_BENT = 90f
@@ -116,21 +115,33 @@ object TheArm {
     // do stuff =======================================================================================================
     private val moveInProgress = AtomicBoolean(false)
 
-    private fun handleRequest(request: ArmRequest) {
+    private fun handleRequest(request: KobotsMessage) {
+        // TODO add interrupt message(s)
+
+        when (request) {
+            is ArmSequence -> {
+                executeSequence(request)
+            }
+
+            else -> {}
+        }
+    }
+
+    fun executeSequence(request: ArmSequence) {
         // claim it for ourselves and then use that for loop control
         if (!moveInProgress.compareAndSet(false, true)) return
         state = ArmState(state.position, true)
 
         executor.submit {
             request.movements.forEach { moveHere ->
-                // TODO figure out interrupt mechanism?
                 if (runFlag.get()) {
                     val moveThese = mutableMapOf<Rotatable, Float>()
                     if (moveHere.waist != NO_OP) moveThese[waistStepper] =
                         calculateMovement(moveHere.waist, waistStepper)
                     if (moveHere.shoulder != NO_OP) moveThese[shoulderServo] =
                         calculateMovement(moveHere.shoulder, shoulderServo)
-                    if (moveHere.elbow != NO_OP) moveThese[elbowServo] = calculateMovement(moveHere.elbow, elbowServo)
+                    if (moveHere.elbow != NO_OP) moveThese[elbowServo] =
+                        calculateMovement(moveHere.elbow, elbowServo)
                     if (moveHere.gripper != NO_OP) moveThese[gripperServo] =
                         calculateMovement(moveHere.gripper, gripperServo)
                     moveTo(moveThese, moveHere.stepPause)
@@ -146,8 +157,6 @@ object TheArm {
                     )
                 }
             }
-            // TODO this is temporary to figure out WTF is going on with the waist
-            waistStepper.release()
 
             // done
             state = ArmState(

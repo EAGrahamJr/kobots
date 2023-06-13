@@ -47,12 +47,16 @@ object ProximitySensor : AutoCloseable {
     val tooClose: Boolean
         get() = proximity > CLOSE_ENOUGH
 
+    class ProximityAlert : KobotsMessage {
+        override val interruptable: Boolean = false
+    }
+
     fun start() {
         future = checkRun(10) {
             val reading = proximitySensor.proximity.toInt()
             // todo publish instead of state?
             proximity = reading
-            publishToTopic(ALARM_TOPIC, tooClose)
+            if (tooClose) publishToTopic(ALARM_TOPIC, ProximityAlert())
         }
     }
 

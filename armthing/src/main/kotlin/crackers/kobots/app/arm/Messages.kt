@@ -16,6 +16,7 @@
 
 package crackers.kobots.app.arm
 
+import crackers.kobots.app.KobotsMessage
 import java.time.Duration
 
 /**
@@ -37,7 +38,9 @@ class ArmPosition(
 /**
  * Current state
  */
-class ArmState(val position: ArmPosition, val busy: Boolean = false)
+class ArmState(val position: ArmPosition, val busy: Boolean = false) : KobotsMessage {
+    override val interruptable: Boolean = true
+}
 
 /**
  * Where to go - default is exact movement.
@@ -60,7 +63,11 @@ class ArmMovement(
     val interruptable: Boolean = true
 )
 
+interface ArmRequest : KobotsMessage
+
 /**
  * Do these things.
  */
-class ArmRequest(val movements: List<ArmMovement>)
+class ArmSequence(vararg val movements: ArmMovement) : ArmRequest {
+    override val interruptable: Boolean = true
+}

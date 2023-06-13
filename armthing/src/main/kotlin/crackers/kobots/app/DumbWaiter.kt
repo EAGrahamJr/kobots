@@ -17,7 +17,7 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.arm.ArmMovement
-import crackers.kobots.app.arm.ArmRequest
+import crackers.kobots.app.arm.ArmSequence
 import crackers.kobots.app.arm.JointMovement
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.ELBOW_STRAIGHT
@@ -64,16 +64,12 @@ fun main() {
         TheArm.start()
 
 
-        val waistDance = ArmRequest(
-            listOf(
-                ArmMovement(waist = JointMovement(90f), stepPause = Duration.ofMillis(25)),
-                GO_HOME
-            )
+        val waistDance = ArmSequence(
+            ArmMovement(waist = JointMovement(90f), stepPause = Duration.ofMillis(25)),
+            GO_HOME
         )
-        val elbowDance = ArmRequest(
-            listOf(
-                ArmMovement(elbow = JointMovement(15f)), GO_HOME
-            )
+        val elbowDance = ArmSequence(
+            ArmMovement(elbow = JointMovement(15f)), GO_HOME
         )
 
 
@@ -99,35 +95,33 @@ val tireDance by lazy {
     val GR_GRAB = 20f
     val WST_HALF = 45f
     val WST_ALL = 90f
-    ArmRequest(
-        listOf(
-            GO_HOME,
-            // open first
-            ArmMovement(gripper = JointMovement(GRIPPER_OPEN), stepPause = Duration.ZERO),
-            // down
-            ArmMovement(shoulder = JointMovement(SH_DOWN), elbow = JointMovement(ELB_MOVE)),
-            // grab
-            ArmMovement(gripper = JointMovement(GR_GRAB), stepPause = Duration.ZERO),
-            // up a bit
-            ArmMovement(shoulder = JointMovement(SH_MID)),
-            // 1/2 way
-            ArmMovement(
-                waist = JointMovement(WST_HALF),
-                shoulder = JointMovement(SHOULDER_UP),
-                elbow = JointMovement(ELBOW_STRAIGHT)
-            ),
-            ArmMovement(
-                waist = JointMovement(WST_ALL),
-                shoulder = JointMovement(SH_MID),
-                elbow = JointMovement(ELB_MOVE)
-            ),
-            // put it down
-            ArmMovement(shoulder = JointMovement(SH_DOWN)),
-            ArmMovement(gripper = JointMovement(GRIPPER_OPEN), stepPause = Duration.ZERO),
-            // clear
-            ArmMovement(shoulder = JointMovement(SH_MID)),
-            // home
-            GO_HOME
-        )
+    ArmSequence(
+        GO_HOME,
+        // open first
+        ArmMovement(gripper = JointMovement(GRIPPER_OPEN), stepPause = Duration.ZERO),
+        // down
+        ArmMovement(shoulder = JointMovement(SH_DOWN), elbow = JointMovement(ELB_MOVE)),
+        // grab
+        ArmMovement(gripper = JointMovement(GR_GRAB), stepPause = Duration.ZERO),
+        // up a bit
+        ArmMovement(shoulder = JointMovement(SH_MID)),
+        // 1/2 way
+        ArmMovement(
+            waist = JointMovement(WST_HALF),
+            shoulder = JointMovement(SHOULDER_UP),
+            elbow = JointMovement(ELBOW_STRAIGHT)
+        ),
+        ArmMovement(
+            waist = JointMovement(WST_ALL),
+            shoulder = JointMovement(SH_MID),
+            elbow = JointMovement(ELB_MOVE)
+        ),
+        // put it down
+        ArmMovement(shoulder = JointMovement(SH_DOWN)),
+        ArmMovement(gripper = JointMovement(GRIPPER_OPEN), stepPause = Duration.ZERO),
+        // clear
+        ArmMovement(shoulder = JointMovement(SH_MID)),
+        // home
+        GO_HOME
     )
 }
