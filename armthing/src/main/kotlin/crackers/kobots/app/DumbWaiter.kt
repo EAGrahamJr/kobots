@@ -60,6 +60,12 @@ const val MARVIN = "marvin.local"
 fun main() {
 //    System.setProperty(REMOTE_PI, MARVIN)
 
+    ProximitySensor.start()
+
+    joinTopic(ProximitySensor.ALARM_TOPIC, KobotsSubscriber {
+        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
+    })
+
     crickitHat.use { hat ->
         TheArm.start()
 

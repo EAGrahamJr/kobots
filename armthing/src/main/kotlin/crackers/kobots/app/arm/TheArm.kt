@@ -114,11 +114,13 @@ object TheArm {
 
     // do stuff =======================================================================================================
     private val moveInProgress = AtomicBoolean(false)
+    private val stopImmediately = AtomicBoolean(false)
+
+    private fun canRun() = runFlag.get() && !stopImmediately.get()
 
     private fun handleRequest(request: KobotsMessage) {
-        // TODO add interrupt message(s)
-
         when (request) {
+            is EmergencyStop -> if (moveInProgress.get()) stopImmediately.set(true)
             is ArmSequence -> {
                 executeSequence(request)
             }
@@ -134,7 +136,8 @@ object TheArm {
 
         executor.submit {
             request.movements.forEach { moveHere ->
-                if (runFlag.get()) {
+                // application still running and the interrupt isn't set
+                if (canRun()) {
                     val moveThese = mutableMapOf<Rotatable, Float>()
                     if (moveHere.waist != NO_OP) moveThese[waistStepper] =
                         calculateMovement(moveHere.waist, waistStepper)
@@ -169,6 +172,7 @@ object TheArm {
                 false
             )
             moveInProgress.compareAndSet(true, false)
+            stopImmediately.compareAndSet(true, false)
         }
     }
 
@@ -184,7 +188,7 @@ object TheArm {
      */
     private fun moveTo(moveThese: Map<Rotatable, Float>, stepPause: Duration) {
         var movementDone = false
-        while (!movementDone && runFlag.get()) {
+        while (!movementDone && canRun()) {
             executeWithMinTime(stepPause.toMillis()) {
                 // are we at the desired state?
                 movementDone = moveThese.map { e -> e.key.moveTowards(e.value) }.all { it }

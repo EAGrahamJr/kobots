@@ -21,9 +21,12 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Flow
 import java.util.concurrent.SubmissionPublisher
 
-interface KobotsMessage {
+interface KobotsMessage
+interface KobotsAction : KobotsMessage {
     val interruptable: Boolean
 }
+
+interface KobotsEvent : KobotsMessage
 
 private val eventBusMap = ConcurrentHashMap<String, SubmissionPublisher<*>>()
 
@@ -51,7 +54,7 @@ private class KobotsSubscriberDecorator<T : KobotsMessage>(val listener: KobotsS
     }
 
     override fun onError(throwable: Throwable?) {
-        LoggerFactory.getLogger("EventSubscriber").error("Error in bus")
+        LoggerFactory.getLogger("EventSubscriber").error("Error in bus", throwable)
     }
 
     override fun onComplete() {
@@ -92,3 +95,10 @@ fun <T : KobotsMessage> publishToTopic(topic: String, items: Collection<T>) {
     val publisher = eventBusMap.computeIfAbsent(topic) { SubmissionPublisher<T>() } as SubmissionPublisher<T>
     items.forEach { item -> publisher.submit(item) }
 }
+
+// specific messages ==================================================================================================
+class EmergencyStop() : KobotsAction {
+    override val interruptable: Boolean = false
+}
+
+val allStop = EmergencyStop()

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * Simple proximity sensor with events and state.
  */
 object ProximitySensor : AutoCloseable {
-    const val CLOSE_ENOUGH = 15 // this is **aproximately**  25mm
+    const val CLOSE_ENOUGH = 15 // this is **approximately**  25mm
     const val ALARM_TOPIC = "Prox.TooClose"
 
     private lateinit var future: Future<*>
@@ -47,16 +47,15 @@ object ProximitySensor : AutoCloseable {
     val tooClose: Boolean
         get() = proximity > CLOSE_ENOUGH
 
-    class ProximityAlert : KobotsMessage {
-        override val interruptable: Boolean = false
-    }
+    class ProximityAlert : KobotsEvent
+
+    private val ohCrap = ProximityAlert()
 
     fun start() {
         future = checkRun(10) {
             val reading = proximitySensor.proximity.toInt()
-            // todo publish instead of state?
             proximity = reading
-            if (tooClose) publishToTopic(ALARM_TOPIC, ProximityAlert())
+            if (tooClose) publishToTopic(ALARM_TOPIC, ohCrap)
         }
     }
 
