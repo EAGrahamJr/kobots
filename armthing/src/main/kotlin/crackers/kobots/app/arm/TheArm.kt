@@ -44,6 +44,7 @@ object TheArm {
     // traverse gears
     const val GRIPPER_OPEN = 60f
     const val GRIPPER_CLOSE = 9f
+    val GRIPPER_HOME = JointMovement(GRIPPER_CLOSE)
 
     private const val MAX_WAIST_STEPS = 200 * 1.31f // 36->20->->24->24->60S
 
@@ -83,7 +84,7 @@ object TheArm {
         waist = JointMovement(HOME_POSITION.waist.angle),
         shoulder = JointMovement(HOME_POSITION.shoulder.angle),
         elbow = JointMovement(HOME_POSITION.elbow.angle),
-        gripper = JointMovement(HOME_POSITION.gripper.angle)
+        gripper = GRIPPER_HOME
     )
 
 
@@ -194,7 +195,8 @@ object TheArm {
                     .map { e ->
                         val rotator = e.key
                         val movement = e.value
-                        movement.stopCheck() || rotator.moveTowards(movement.angle)
+                        val stopCheck = movement.stopCheck()
+                        stopCheck || rotator.moveTowards(movement.angle)
                     }.all { it }
             }
         }

@@ -62,19 +62,23 @@ fun main() {
 
     ProximitySensor.start()
 
-    joinTopic(ProximitySensor.ALARM_TOPIC, KobotsSubscriber {
-        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-    })
+//    joinTopic(ProximitySensor.ALARM_TOPIC, KobotsSubscriber {
+//        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
+//    })
 
     crickitHat.use { hat ->
         TheArm.start()
+        var yeahDidIt = false
 
         // main loop!!!!!
         while (buttonCheck()) {
             executeWithMinTime(WAIT_LOOP) {
                 // figure out if we're doing anything
-                if (!TheArm.state.busy && currentButtons[0]) publishToTopic(TheArm.REQUEST_TOPIC, tireDance)
-                if (!TheArm.state.busy && currentButtons[1]) publishToTopic(TheArm.REQUEST_TOPIC, ArmSequence(GO_HOME))
+                when {
+                    currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, tireDance)
+                    currentButtons[1] -> publishToTopic(TheArm.REQUEST_TOPIC, ArmSequence(GO_HOME))
+                    currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, getTire)
+                }
             }
         }
         runFlag.set(false)
@@ -118,6 +122,30 @@ val tireDance by lazy {
         // clear
         ArmMovement(shoulder = JointMovement(SH_MID)),
         // home
+        GO_HOME
+    )
+}
+
+val getTire by lazy {
+    ArmSequence(
+        GO_HOME,
+        // get tire
+        ArmMovement(waist = JointMovement(90f), gripper = JointMovement(GRIPPER_OPEN)),
+        ArmMovement(shoulder = JointMovement(20f), elbow = JointMovement(30f)),
+        ArmMovement(gripper = JointMovement(20f)),
+        ArmMovement(elbow = JointMovement(40f)),
+        ArmMovement(shoulder = JointMovement(90f), elbow = JointMovement(ELBOW_STRAIGHT)),
+        ArmMovement(
+            waist = JointMovement(0f) {
+                ProximitySensor.proximity > 10
+            }, shoulder = JointMovement(87f),
+            stepPause = Duration.ofMillis(50)
+        ),
+        ArmMovement(shoulder = JointMovement(80f) {
+            ProximitySensor.proximity > 42f
+        }),
+        ArmMovement(gripper = JointMovement(GRIPPER_OPEN)),
+        ArmMovement(shoulder = JointMovement(145f)),
         GO_HOME
     )
 }
