@@ -69,22 +69,12 @@ fun main() {
     crickitHat.use { hat ->
         TheArm.start()
 
-
-        val waistDance = ArmSequence(
-            ArmMovement(waist = JointMovement(90f), stepPause = Duration.ofMillis(25)),
-            GO_HOME
-        )
-        val elbowDance = ArmSequence(
-            ArmMovement(elbow = JointMovement(15f)), GO_HOME
-        )
-
-
         // main loop!!!!!
         while (buttonCheck()) {
             executeWithMinTime(WAIT_LOOP) {
                 // figure out if we're doing anything
                 if (!TheArm.state.busy && currentButtons[0]) publishToTopic(TheArm.REQUEST_TOPIC, tireDance)
-                if (!TheArm.state.busy && currentButtons[1]) publishToTopic(TheArm.REQUEST_TOPIC, elbowDance)
+                if (!TheArm.state.busy && currentButtons[1]) publishToTopic(TheArm.REQUEST_TOPIC, ArmSequence(GO_HOME))
             }
         }
         runFlag.set(false)

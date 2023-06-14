@@ -25,12 +25,12 @@ import java.time.Duration
  * Describes the basic data for an arm joint location.
  * TODO add in radii to try to calculate endpoint coordintes of things
  */
-class JointPosition(val angle: Float, val radius: Float = 0f)
+data class JointPosition(val angle: Float, val radius: Float = 0f)
 
 /**
  * Describes a location for the arm.
  */
-class ArmPosition(
+data class ArmPosition(
     val waist: JointPosition,
     val shoulder: JointPosition,
     val gripper: JointPosition,
@@ -43,13 +43,16 @@ class ArmPosition(
 class ArmState(val position: ArmPosition, val busy: Boolean = false) : KobotsEvent
 
 /**
- * Where to go - default is exact movement.
+ * Where to go - default is exact movement. An [stopCheck] function may also be supplied to terminate movement prior
+ * to reaching the desired [angle]
  */
-class JointMovement(val angle: Float, val relative: Boolean = false)
+class JointMovement(val angle: Float, val relative: Boolean = false, val stopCheck: () -> Boolean = { false })
 
-val NO_OP = JointMovement(0f, true)
+val NO_OP = JointMovement(0f, true) { true }
 
 val STD_PAUSE = Duration.ofMillis(15)
+
+interface ArmRequest : KobotsAction
 
 /**
  * Describes an action to perform.
@@ -59,10 +62,9 @@ class ArmMovement(
     val shoulder: JointMovement = NO_OP,
     val elbow: JointMovement = NO_OP,
     val gripper: JointMovement = NO_OP,
-    val stepPause: Duration = STD_PAUSE // controls "rate of change" to get to the desired position
-)
-
-interface ArmRequest : KobotsAction
+    val stepPause: Duration = STD_PAUSE, // controls "rate of change" to get to the desired position
+    override val interruptable: Boolean = true
+) : ArmRequest
 
 /**
  * Do these things.

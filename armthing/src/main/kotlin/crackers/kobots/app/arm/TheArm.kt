@@ -20,6 +20,7 @@ import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.*
 import crackers.kobots.devices.at
+import crackers.kobots.utilities.KobotSleep
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -46,7 +47,7 @@ object TheArm {
 
     private const val MAX_WAIST_STEPS = 200 * 1.31f // 36->20->->24->24->60S
 
-    val HOME_POSITION = ArmPosition(
+    private val HOME_POSITION = ArmPosition(
         JointPosition(0f), JointPosition(SHOULDER_UP), JointPosition(GRIPPER_CLOSE),
         JointPosition(ELBOW_STRAIGHT)
     )
@@ -87,28 +88,29 @@ object TheArm {
 
 
     // manage the state of this construct =============================================================================
-    private val MOVE_TO_HOME = mapOf(waistStepper to 0f, shoulderServo to SHOULDER_UP, gripperServo to GRIPPER_CLOSE)
-
     private val _currentState = AtomicReference(ArmState(HOME_POSITION, false))
+    private val atHome = AtomicBoolean(true)
+
     var state: ArmState
         get() = _currentState.get()
         private set(s) {
             publishToTopic(STATE_TOPIC, s)
             _currentState.set(s)
+            atHome.set(s.position == HOME_POSITION)
         }
 
     fun start() {
         joinTopic(
             REQUEST_TOPIC,
-            KobotsSubscriber<ArmRequest> {
+            KobotsSubscriber<KobotsAction> {
                 handleRequest(it)
             }
         )
     }
 
     fun stop() {
-        moveInProgress.set(true)
-        moveTo(MOVE_TO_HOME, Duration.ofMillis(50))
+        if (moveInProgress.get()) stopImmediately.set(true)
+        while (stopImmediately.get()) KobotSleep.millis(5)
         waistStepper.release()
     }
 
@@ -118,7 +120,7 @@ object TheArm {
 
     private fun canRun() = runFlag.get() && !stopImmediately.get()
 
-    private fun handleRequest(request: KobotsMessage) {
+    private fun handleRequest(request: KobotsAction) {
         when (request) {
             is EmergencyStop -> if (moveInProgress.get()) stopImmediately.set(true)
             is ArmSequence -> {
@@ -129,24 +131,21 @@ object TheArm {
         }
     }
 
-    fun executeSequence(request: ArmSequence) {
+    private fun executeSequence(request: ArmSequence) {
         // claim it for ourselves and then use that for loop control
         if (!moveInProgress.compareAndSet(false, true)) return
         state = ArmState(state.position, true)
+        atHome.set(false)   // any request is treated as being "not home" but the GO_HOME will reset this
 
         executor.submit {
             request.movements.forEach { moveHere ->
                 // application still running and the interrupt isn't set
                 if (canRun()) {
-                    val moveThese = mutableMapOf<Rotatable, Float>()
-                    if (moveHere.waist != NO_OP) moveThese[waistStepper] =
-                        calculateMovement(moveHere.waist, waistStepper)
-                    if (moveHere.shoulder != NO_OP) moveThese[shoulderServo] =
-                        calculateMovement(moveHere.shoulder, shoulderServo)
-                    if (moveHere.elbow != NO_OP) moveThese[elbowServo] =
-                        calculateMovement(moveHere.elbow, elbowServo)
-                    if (moveHere.gripper != NO_OP) moveThese[gripperServo] =
-                        calculateMovement(moveHere.gripper, gripperServo)
+                    val moveThese = mutableMapOf<Rotatable, JointMovement>()
+                    moveThese[waistStepper] = calculateMovement(moveHere.waist, waistStepper)
+                    moveThese[shoulderServo] = calculateMovement(moveHere.shoulder, shoulderServo)
+                    moveThese[elbowServo] = calculateMovement(moveHere.elbow, elbowServo)
+                    moveThese[gripperServo] = calculateMovement(moveHere.gripper, gripperServo)
                     moveTo(moveThese, moveHere.stepPause)
                     // where everything is
                     state = ArmState(
@@ -176,22 +175,27 @@ object TheArm {
         }
     }
 
-    private fun calculateMovement(movement: JointMovement, device: Rotatable): Float =
+    private fun calculateMovement(movement: JointMovement, device: Rotatable): JointMovement =
         if (movement.relative) {
-            device.current() + movement.angle
+            JointMovement(device.current() + movement.angle, false, movement.stopCheck)
         } else {
-            movement.angle
+            movement
         }
 
     /**
      * Attempts to complete a full position change
      */
-    private fun moveTo(moveThese: Map<Rotatable, Float>, stepPause: Duration) {
+    private fun moveTo(moveThese: Map<Rotatable, JointMovement>, stepPause: Duration) {
         var movementDone = false
         while (!movementDone && canRun()) {
             executeWithMinTime(stepPause.toMillis()) {
                 // are we at the desired state?
-                movementDone = moveThese.map { e -> e.key.moveTowards(e.value) }.all { it }
+                movementDone = moveThese
+                    .map { e ->
+                        val rotator = e.key
+                        val movement = e.value
+                        movement.stopCheck() || rotator.moveTowards(movement.angle)
+                    }.all { it }
             }
         }
     }

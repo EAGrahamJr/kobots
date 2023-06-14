@@ -1,5 +1,5 @@
 plugins {
-    kotlin("jvm") version "1.8.20"
+    kotlin("jvm") version "1.8.22"
     `kotlin-dsl`
 }
 
@@ -9,7 +9,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20-RC")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.22")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("org.jmailen.gradle:kotlinter-gradle:3.12.0")
     // TODO uncomment if there's something to publish
