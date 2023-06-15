@@ -1,3 +1,7 @@
+# Demos
+
+See the [picture gallery](https://photos.app.goo.gl/kWWJ8uUjWdHnsVDY6)
+
 # Thoughts and Plans
 
 - Actions (requests) produce states
@@ -26,3 +30,8 @@ Because both have the notion of _current position_: the servo can be queried and
   - degrees/sec
     - but at what rate is it _updated_?
     - depends on "deadband" (5 microsec for SG90)
+
+## DSL
+
+- Perhaps using "string" to define which aspect of an "arm" (appendage?)
+  - e.g. `"shoulder" at 44f stops {whatever}` 

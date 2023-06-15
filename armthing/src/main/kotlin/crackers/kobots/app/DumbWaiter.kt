@@ -16,15 +16,8 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.arm.ArmMovement
-import crackers.kobots.app.arm.ArmSequence
-import crackers.kobots.app.arm.JointMovement
 import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.arm.TheArm.ELBOW_STRAIGHT
-import crackers.kobots.app.arm.TheArm.GO_HOME
-import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
-import crackers.kobots.app.arm.TheArm.SHOULDER_UP
-import java.time.Duration
+import crackers.kobots.app.arm.armPark
 import kotlin.system.exitProcess
 
 private val buttons by lazy { (1..4).toList().map { crickitHat.touchDigitalIn(it) } }
@@ -76,7 +69,7 @@ fun main() {
                 // figure out if we're doing anything
                 when {
                     currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, tireDance)
-                    currentButtons[1] -> publishToTopic(TheArm.REQUEST_TOPIC, ArmSequence(GO_HOME))
+                    currentButtons[1] -> publishToTopic(TheArm.REQUEST_TOPIC, armPark)
                     currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, getTire)
                 }
             }
@@ -86,66 +79,4 @@ fun main() {
     }
     executor.shutdownNow()
     exitProcess(0)
-}
-
-val tireDance by lazy {
-    val ELB_MOVE = 30f
-    val SH_DOWN = 10f
-    val SH_MID = 90f
-    val GR_GRAB = 20f
-    val WST_HALF = 45f
-    val WST_ALL = 90f
-    ArmSequence(
-        GO_HOME,
-        // open first
-        ArmMovement(gripper = JointMovement(GRIPPER_OPEN), stepPause = Duration.ZERO),
-        // down
-        ArmMovement(shoulder = JointMovement(SH_DOWN), elbow = JointMovement(ELB_MOVE)),
-        // grab
-        ArmMovement(gripper = JointMovement(GR_GRAB), stepPause = Duration.ZERO),
-        // up a bit
-        ArmMovement(shoulder = JointMovement(SH_MID)),
-        // 1/2 way
-        ArmMovement(
-            waist = JointMovement(WST_HALF),
-            shoulder = JointMovement(SHOULDER_UP),
-            elbow = JointMovement(ELBOW_STRAIGHT)
-        ),
-        ArmMovement(
-            waist = JointMovement(WST_ALL),
-            shoulder = JointMovement(SH_MID),
-            elbow = JointMovement(ELB_MOVE)
-        ),
-        // put it down
-        ArmMovement(shoulder = JointMovement(SH_DOWN)),
-        ArmMovement(gripper = JointMovement(GRIPPER_OPEN), stepPause = Duration.ZERO),
-        // clear
-        ArmMovement(shoulder = JointMovement(SH_MID)),
-        // home
-        GO_HOME
-    )
-}
-
-val getTire by lazy {
-    ArmSequence(
-        GO_HOME,
-        // get tire
-        ArmMovement(waist = JointMovement(90f), gripper = JointMovement(GRIPPER_OPEN)),
-        ArmMovement(shoulder = JointMovement(20f), elbow = JointMovement(30f)),
-        ArmMovement(gripper = JointMovement(20f)),
-        ArmMovement(elbow = JointMovement(40f)),
-        ArmMovement(shoulder = JointMovement(90f), elbow = JointMovement(ELBOW_STRAIGHT)),
-        ArmMovement(
-            waist = JointMovement(0f) {
-                ProximitySensor.proximity > 10
-            }, shoulder = JointMovement(87f),
-            stepPause = Duration.ofMillis(50)
-        ),
-        ArmMovement(shoulder = JointMovement(80f) {
-            ProximitySensor.proximity > 42f
-        }),
-        ArmMovement(gripper = JointMovement(GRIPPER_OPEN)),
-        ArmMovement(shoulder = JointMovement(145f)),
-        GO_HOME
-    )
 }

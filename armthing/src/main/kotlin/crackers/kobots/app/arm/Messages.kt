@@ -19,6 +19,8 @@ package crackers.kobots.app.arm
 import crackers.kobots.app.KobotsAction
 import crackers.kobots.app.KobotsEvent
 import crackers.kobots.app.arm.TheArm.GO_HOME
+import crackers.kobots.app.arm.TheArm.GRIPPER_CLOSE
+import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
 import java.time.Duration
 
 /**
@@ -43,14 +45,14 @@ data class ArmPosition(
 class ArmState(val position: ArmPosition, val busy: Boolean = false) : KobotsEvent
 
 /**
- * Where to go - default is exact movement. An [stopCheck] function may also be supplied to terminate movement prior
+ * Where to go - default is exact movement. A [stopCheck] function may also be supplied to terminate movement **prior**
  * to reaching the desired [angle]
  */
 class JointMovement(val angle: Float, val relative: Boolean = false, val stopCheck: () -> Boolean = { false })
 
 val NO_OP = JointMovement(0f, true) { true }
 
-val STD_PAUSE = Duration.ofMillis(15)
+val STD_PAUSE = Duration.ofMillis(10)
 
 interface ArmRequest : KobotsAction
 
@@ -72,3 +74,84 @@ class ArmMovement(
 class ArmSequence(vararg val movements: ArmMovement, override val interruptable: Boolean = true) : ArmRequest
 
 val armPark = ArmSequence(GO_HOME)
+
+/**
+ * Builder used for DSL.
+ */
+class JointMovementBuilder {
+    fun build() = JointMovement(angle, relative, stopCheck)
+    var angle: Float = 0f
+    var relative = false
+    var stopCheck: () -> Boolean = { false }
+}
+
+/**
+ * Builder used for DSL.
+ */
+class ArmMovementBuilder {
+    private var shoulder: JointMovement = NO_OP
+    private var elbow: JointMovement = NO_OP
+    private var waist: JointMovement = NO_OP
+    private var gripper: JointMovement = NO_OP
+    var pauseBetweenMoves = STD_PAUSE
+
+    fun build() = ArmMovement(waist, shoulder, elbow, gripper, pauseBetweenMoves)
+
+    fun shoulder(movement: JointMovementBuilder.() -> Unit) {
+        shoulder = JointMovementBuilder().apply(movement).build()
+    }
+
+    fun elbow(movement: JointMovementBuilder.() -> Unit) {
+        elbow = JointMovementBuilder().apply(movement).build()
+    }
+
+    fun waist(movement: JointMovementBuilder.() -> Unit) {
+        waist = JointMovementBuilder().apply(movement).build()
+    }
+
+    fun gripper(movement: JointMovementBuilder.() -> Unit) {
+        gripper = JointMovementBuilder().apply(movement).build()
+    }
+
+    fun gripperClose() {
+        gripper = JointMovement(GRIPPER_CLOSE)
+    }
+
+    fun gripperOpen() {
+        gripper = JointMovement(GRIPPER_OPEN)
+    }
+}
+
+/**
+ * Builder used for DSL.
+ */
+class ArmSequenceBuilder {
+    private val movements = mutableListOf<ArmMovement>()
+
+    fun build() = ArmSequence(*movements.toTypedArray())
+
+    fun movement(initializer: ArmMovementBuilder.() -> Unit) {
+        movements += ArmMovementBuilder().apply(initializer).build()
+    }
+
+    fun home() {
+        movements += GO_HOME
+    }
+
+    fun gripperOpen(b: Boolean = true) {
+        movements += ArmMovement(gripper = JointMovement(if (b) GRIPPER_OPEN else GRIPPER_CLOSE))
+    }
+
+    fun gripper(angle: Float) {
+        movements += ArmMovement(gripper = JointMovement(angle))
+    }
+
+}
+
+/**
+ * Create the context for DSL to describe an arm movement.
+ */
+fun armSequence(initializer: ArmSequenceBuilder.() -> Unit): ArmSequence {
+    val blder = ArmSequenceBuilder().apply(initializer)
+    return blder.build()
+}
