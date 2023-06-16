@@ -25,7 +25,7 @@ import java.time.Duration
  */
 
 /**
- * Pick up a LEGO tire from the starting point and deliver it to teh exit point.
+ * Pick up a LEGO tire from the starting point and deliver it to the exit point.
  */
 val tireDance by lazy {
     val ELBOW_MOVE = 30f
@@ -95,22 +95,26 @@ val getTire by lazy {
                 angle = 0f
                 // found it?
                 stopCheck = {
-                    ProximitySensor.proximity > 10
+                    ProximitySensor.proximity > 5
                 }
-            }
-            shoulder {
-                angle = 87f
             }
             pauseBetweenMoves = Duration.ofMillis(50)
         }
 
+        // put it down "gently"
         movement {
+            waist {
+                angle = -2f
+                relative = true
+            }
+            elbow { angle = 15f }
             shoulder {
-                angle = 80f
+                angle = 50f
                 stopCheck = {
-                    ProximitySensor.proximity > 42f
+                    (ProximitySensor.proximity > 30f)
                 }
             }
+            pauseBetweenMoves = Duration.ofMillis(100)
         }
         gripperOpen()
         movement {

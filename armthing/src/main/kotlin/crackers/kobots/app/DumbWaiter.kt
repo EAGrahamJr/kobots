@@ -16,6 +16,7 @@
 
 package crackers.kobots.app
 
+import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.armPark
 import kotlin.system.exitProcess
@@ -54,6 +55,7 @@ fun main() {
 //    System.setProperty(REMOTE_PI, MARVIN)
 
     ProximitySensor.start()
+    ArmMonitor.start()
 
 //    joinTopic(ProximitySensor.ALARM_TOPIC, KobotsSubscriber {
 //        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
@@ -77,6 +79,8 @@ fun main() {
         runFlag.set(false)
         TheArm.stop()
     }
+    ProximitySensor.close()
+    ArmMonitor.stop()
     executor.shutdownNow()
     exitProcess(0)
 }

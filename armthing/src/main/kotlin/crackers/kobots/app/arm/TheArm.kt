@@ -173,6 +173,8 @@ object TheArm {
             )
             moveInProgress.compareAndSet(true, false)
             stopImmediately.compareAndSet(true, false)
+            // TODO currently needs constant manual re-calibration
+            waistStepper.release()
         }
     }
 
