@@ -76,9 +76,10 @@ object ArmMonitor {
             if (message is ArmState) lastStateReceived.set(message)
         })
         future = executor.submit {
-            // write column headers - each one gets 1/4 display (?)
+            // write column headers
             screen.clear()
             with(screenGraphics) {
+                font = monitorFont.deriveFont(Font.BOLD)
 
                 val headers = listOf("WST", "SHL", "ELB", "GRP")
                 for (i in 0 until 4) {
@@ -93,22 +94,23 @@ object ArmMonitor {
             while (runFlag.get() && myRunFlag.get()) {
                 // show last recorded status
                 lastStateReceived.get()?.let { state ->
-                    val values = state.position.let { arm ->
-                        listOf(arm.waist, arm.shoulder, arm.elbow, arm.gripper)
-                    }.map {
-                        it.angle.toInt().toString()
-                    }
                     with(screenGraphics) {
-                        for (i in 0 until 4) {
+                        font = monitorFont
+                        state.position.let { arm ->
+                            listOf(arm.waist, arm.shoulder, arm.elbow, arm.gripper)
+                        }.map {
+                            it.angle.toInt().toString()
+                        }.forEachIndexed { i, string ->
                             color = Color.BLACK
                             fillRect(i * COL_WD, HALF_HT, COL_WD - 1, HALF_HT)
                             color = Color.WHITE
-                            val x = monitorMetrics.center(values[i], COL_WD - 1)
-                            drawString(values[i], (COL_WD * i) + x, MH - 1)
+                            val x = monitorMetrics.center(string, COL_WD - 1)
+                            drawString(string, (COL_WD * i) + x, MH - 1)
                         }
-//                        drawString(ProximitySensor.proximity.toString(), 120, 31)
+
                         if (state.busy) {
                             Color.RED
+                            font = busyFont
                             drawString("B", busyTextLocation.first, busyTextLocation.second)
                         } else {
                             color = Color.BLACK

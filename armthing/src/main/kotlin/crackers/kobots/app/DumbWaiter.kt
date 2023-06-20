@@ -57,9 +57,9 @@ fun main() {
     ProximitySensor.start()
     ArmMonitor.start()
 
-//    joinTopic(ProximitySensor.ALARM_TOPIC, KobotsSubscriber {
-//        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-//    })
+    joinTopic(ProximitySensor.ALARM_TOPIC, KobotsSubscriber {
+        publishToTopic(TheArm.REQUEST_TOPIC, sayHi)
+    })
 
     crickitHat.use { hat ->
         TheArm.start()
@@ -71,8 +71,8 @@ fun main() {
                 // figure out if we're doing anything
                 when {
                     currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, tireDance)
-                    currentButtons[1] -> publishToTopic(TheArm.REQUEST_TOPIC, armPark)
-                    currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, getTire)
+                    currentButtons[1] -> publishToTopic(TheArm.REQUEST_TOPIC, downAndOut)
+                    currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, armPark)
                 }
             }
         }

@@ -77,13 +77,13 @@ internal class ArmServo(
 
             // if we're at the limits of the servo, we can't move more - so we're done
             val moveDone = (
-                nextAngle.almostEquals(minimumDegrees, deltaDegrees / 2) ||
-                    nextAngle.almostEquals(maximumDegrees, deltaDegrees / 2)
+                nextAngle.almostEquals(minimumDegrees, deltaDegrees / 3) ||
+                    nextAngle.almostEquals(maximumDegrees, deltaDegrees / 3)
                 )
             Pair(nextAngle, moveDone)
         }
 
-        if (!moveDone) theServo at nextAngle
+        theServo at nextAngle
         return moveDone
     }
 
@@ -110,7 +110,7 @@ internal class ArmStepper(
 
     private val maxSteps = stepsPerRotation.roundToInt()
 
-    private var currentLocation = 0 // in steps
+    internal var currentLocation = 0 // in steps
 
     override fun current(): Float = 360 * currentLocation / stepsPerRotation
 

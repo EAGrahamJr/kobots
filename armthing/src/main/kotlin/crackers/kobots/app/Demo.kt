@@ -28,9 +28,10 @@ import java.time.Duration
  * Pick up a LEGO tire from the starting point and deliver it to the exit point.
  */
 val tireDance by lazy {
-    val ELBOW_MOVE = 30f
-    val SHOULDER_DOWN = 10f
+    val ELBOW_DOWN = 0f
+    val SHOULDER_DOWN = 35f
     val SHOULDER_MIDMOVE = 90f
+    val ELBOW_MIDMOVE = 45f
     val GRIPPER_GRAB = 20f
     val WAIST_HALFWAY = 45f
     val WAIST_ALLTHEWAY = 90f
@@ -38,8 +39,12 @@ val tireDance by lazy {
         home()
         gripperOpen()
         movement {
+            shoulder { angle = SHOULDER_MIDMOVE }
+            elbow { angle = ELBOW_MIDMOVE }
+        }
+        movement {
             shoulder { angle = SHOULDER_DOWN }
-            elbow { angle = ELBOW_MOVE }
+            elbow { angle = ELBOW_DOWN }
         }
         gripper(GRIPPER_GRAB)
         movement {
@@ -48,12 +53,12 @@ val tireDance by lazy {
         movement {
             waist { angle = WAIST_HALFWAY }
             shoulder { angle = TheArm.SHOULDER_UP }
-            elbow { angle = TheArm.ELBOW_STRAIGHT }
+            elbow { angle = TheArm.ELBOW_HOME }
         }
         movement {
             waist { angle = WAIST_ALLTHEWAY }
             shoulder { angle = SHOULDER_MIDMOVE }
-            elbow { angle = ELBOW_MOVE }
+            elbow { angle = ELBOW_DOWN }
         }
         movement {
             shoulder { angle = SHOULDER_DOWN }
@@ -75,19 +80,19 @@ val getTire by lazy {
         home()
         // get tire
         movement {
-            waist { angle = 90f }
+            waist { angle = 126f }
             gripperOpen()
         }
         movement {
-            shoulder { angle = 20f }
+            shoulder { angle = 40f }
             elbow { angle = 30f }
         }
         gripper(20f)
         // move up a bit
         movement { elbow { angle = 40f } }
         movement {
-            shoulder { angle = 90f }
-            elbow { angle = TheArm.ELBOW_STRAIGHT }
+            shoulder { angle = 110f }
+            elbow { angle = TheArm.ELBOW_UP }
         }
         // schwing
         movement {
@@ -120,6 +125,48 @@ val getTire by lazy {
         movement {
             shoulder {
                 angle = 145f
+            }
+        }
+        home()
+    }
+}
+
+val downAndOut by lazy {
+    armSequence {
+        home()
+        movement {
+            shoulder { angle = 45f }
+            elbow { angle = 45f }
+        }
+        movement {
+            pauseBetweenMoves = Duration.ofSeconds(2)
+        }
+        home()
+    }
+}
+
+val sayHi by lazy {
+    armSequence {
+        home()
+        movement {
+            elbow {
+                angle = 0f
+                pauseBetweenMoves = Duration.ofMillis(1)
+            }
+            gripper {
+                angle = 70f
+            }
+        }
+        (1..4).forEach {
+            movement {
+                waist {
+                    angle = 90f
+                }
+            }
+            movement {
+                waist {
+                    angle = 0f
+                }
             }
         }
         home()

@@ -16,6 +16,7 @@
 
 package crackers.kobots.app
 
+import crackers.kobots.app.arm.TheArm
 import crackers.kobots.devices.sensors.VCNL4040
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
@@ -44,18 +45,26 @@ object ProximitySensor : AutoCloseable {
             proximityReading.set(i)
         }
 
+    val lumens: Int
+        get() = proximitySensor.luminosity.toInt()
+
     val tooClose: Boolean
         get() = proximity > CLOSE_ENOUGH
 
     class ProximityAlert : KobotsEvent
 
     private val ohCrap = ProximityAlert()
+    private var previousLumenus: Int = 0
 
     fun start() {
         future = checkRun(10) {
             val reading = proximitySensor.proximity.toInt()
             proximity = reading
             if (tooClose) publishToTopic(ALARM_TOPIC, ohCrap)
+            lumens.also { l ->
+                if (l > 100 && previousLumenus < 100) publishToTopic(TheArm.REQUEST_TOPIC, sayHi)
+                previousLumenus = l
+            }
         }
     }
 
