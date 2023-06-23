@@ -71,66 +71,6 @@ val tireDance by lazy {
     }
 }
 
-/**
- * Uses a fixed starting location, picks up an object (LEGO tire) from that location
- * and deposits it on the proximity sensor places on an arc the arm can reach.
- */
-val getTire by lazy {
-    armSequence {
-        home()
-        // get tire
-        movement {
-            waist { angle = 126f }
-            gripperOpen()
-        }
-        movement {
-            shoulder { angle = 40f }
-            elbow { angle = 30f }
-        }
-        gripper(20f)
-        // move up a bit
-        movement { elbow { angle = 40f } }
-        movement {
-            shoulder { angle = 110f }
-            elbow { angle = TheArm.ELBOW_UP }
-        }
-        // schwing
-        movement {
-            waist {
-                angle = 0f
-                // found it?
-                stopCheck = {
-                    ProximitySensor.proximity > 5
-                }
-            }
-            pauseBetweenMoves = Duration.ofMillis(50)
-        }
-
-        // put it down "gently"
-        movement {
-            waist {
-                angle = -2f
-                relative = true
-            }
-            elbow { angle = 15f }
-            shoulder {
-                angle = 50f
-                stopCheck = {
-                    (ProximitySensor.proximity > 30f)
-                }
-            }
-            pauseBetweenMoves = Duration.ofMillis(100)
-        }
-        gripperOpen()
-        movement {
-            shoulder {
-                angle = 145f
-            }
-        }
-        home()
-    }
-}
-
 val downAndOut by lazy {
     armSequence {
         home()

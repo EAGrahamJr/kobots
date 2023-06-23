@@ -26,9 +26,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 /**
  * --First-- --Second-- Third attempt at a controlled "arm-like" structure.
- *
- * The "lowest" point that should be used is 45 on the shoulder and 45 on the elbow. If the elbow is > 45, it will
- * try to life the arm off the table.
  */
 object TheArm {
     const val STATE_TOPIC = "TheArm.State"
@@ -36,7 +33,7 @@ object TheArm {
 
     // build 2 gear ratio = 1.4:1
     private const val SHOULDER_DELTA = 1f
-    const val SHOULDER_UP = 180f // pulled in`
+    const val SHOULDER_UP = 180f // pulled in
     const val SHOULDER_DOWN = 35f // close to horizontal
 
     private const val ELBOW_DELTA = 1f
