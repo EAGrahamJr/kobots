@@ -17,6 +17,7 @@
 package crackers.kobots.app.arm
 
 import com.diozero.api.ServoTrim
+import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.*
 import crackers.kobots.devices.at
 import crackers.kobots.utilities.KobotSleep
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * --First-- --Second-- Third attempt at a controlled "arm-like" structure.
+ * --First-- --Second-- --Third-- Fourth iteration of a controlled "arm-like" structure.
  */
 object TheArm {
     const val STATE_TOPIC = "TheArm.State"
@@ -34,12 +35,11 @@ object TheArm {
     // build 2 gear ratio = 1.4:1
     private const val SHOULDER_DELTA = 1f
     const val SHOULDER_UP = 180f // pulled in
-    const val SHOULDER_DOWN = 35f // close to horizontal
+    const val SHOULDER_DOWN = 120f // close to horizontal
 
     private const val ELBOW_DELTA = 1f
     const val ELBOW_UP = 0f
-    const val ELBOW_HOME = 90f
-    const val ELBOW_BENT = 180f
+    const val ELBOW_DOWN = 180f
 
     // traverse gears
     const val GRIPPER_OPEN = 70f
@@ -52,26 +52,19 @@ object TheArm {
 
     private val HOME_POSITION = ArmPosition(
         JointPosition(WAIST_HOME), JointPosition(SHOULDER_UP), JointPosition(GRIPPER_CLOSE),
-        JointPosition(ELBOW_HOME)
+        JointPosition(ELBOW_DOWN)
     )
 
     // hardware! =====================================================================================================
-    private val waistServo by lazy {
-        val servo1 = crickitHat.servo(1, ServoTrim.TOWERPRO_SG90).apply {
-            this at WAIST_HOME
-        }
-        ArmServo(servo1, WAIST_HOME, WAIST_MAX, WAIST_DELTA)
-    }
-
     private val gripperServo by lazy {
-        val servo4 = crickitHat.servo(4, ServoTrim.TOWERPRO_SG90).apply {
+        val servo4 = crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
             this at GRIPPER_CLOSE
         }
         ArmServo(servo4, GRIPPER_CLOSE, GRIPPER_OPEN)
     }
 
     private val shoulderServo by lazy {
-        val servo3 = crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
+        val servo3 = crickitHat.servo(1, ServoTrim.TOWERPRO_SG90).apply {
             this at SHOULDER_UP
         }
         ArmServo(servo3, SHOULDER_UP, SHOULDER_DOWN, SHOULDER_DELTA)
@@ -79,9 +72,13 @@ object TheArm {
 
     private val elbowServo by lazy {
         val servo2 = crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
-            this at ELBOW_HOME
+            this at ELBOW_DOWN
         }
-        ArmServo(servo2, ELBOW_UP, ELBOW_BENT, ELBOW_DELTA)
+        ArmServo(servo2, ELBOW_UP, ELBOW_DOWN, ELBOW_DELTA)
+    }
+
+    private val waistStepper by lazy {
+        ArmStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 258f, false)
     }
 
     val GO_HOME = ArmMovement(
@@ -116,6 +113,7 @@ object TheArm {
     fun stop() {
         if (moveInProgress.get()) stopImmediately.set(true)
         while (stopImmediately.get()) KobotSleep.millis(5)
+        waistStepper.release()
     }
 
     // do stuff =======================================================================================================
@@ -130,6 +128,7 @@ object TheArm {
             is ArmSequence -> {
                 executeSequence(request)
             }
+
             else -> {}
         }
     }
@@ -145,18 +144,20 @@ object TheArm {
                 // application still running and the interrupt isn't set
                 if (canRun()) {
                     val moveThese = mutableMapOf<Rotatable, JointMovement>()
-                    moveThese[waistServo] = calculateMovement(moveHere.waist, waistServo)
+                    moveThese[waistStepper] = calculateMovement(moveHere.waist, waistStepper)
                     moveThese[shoulderServo] = calculateMovement(moveHere.shoulder, shoulderServo)
                     moveThese[elbowServo] = calculateMovement(moveHere.elbow, elbowServo)
                     moveThese[gripperServo] = calculateMovement(moveHere.gripper, gripperServo)
                     moveTo(moveThese, moveHere.stepPause)
                 }
+                // release the stepper temporarily for heat dissipation
+                waistStepper.release()
             }
 
             // done
             state = ArmState(
                 ArmPosition(
-                    JointPosition(waistServo.current()),
+                    JointPosition(waistStepper.current()),
                     JointPosition(shoulderServo.current()),
                     JointPosition(gripperServo.current()),
                     JointPosition(elbowServo.current())
@@ -194,7 +195,7 @@ object TheArm {
             // where everything is
             state = ArmState(
                 ArmPosition(
-                    JointPosition(waistServo.current()),
+                    JointPosition(waistStepper.current()),
                     JointPosition(shoulderServo.current()),
                     JointPosition(gripperServo.current()),
                     JointPosition(elbowServo.current())

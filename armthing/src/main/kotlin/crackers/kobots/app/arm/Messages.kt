@@ -52,7 +52,7 @@ class JointMovement(val angle: Float, val relative: Boolean = false, val stopChe
 
 val NO_OP = JointMovement(0f, true) { true }
 
-val STD_PAUSE = Duration.ofMillis(10)
+val STD_PAUSE = Duration.ofMillis(20)
 
 interface ArmRequest : KobotsAction
 

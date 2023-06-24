@@ -16,7 +16,8 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.arm.TheArm.SHOULDER_DOWN
+import crackers.kobots.app.arm.TheArm.SHOULDER_UP
 import crackers.kobots.app.arm.armSequence
 import java.time.Duration
 
@@ -28,10 +29,10 @@ import java.time.Duration
  * Pick up a LEGO tire from the starting point and deliver it to the exit point.
  */
 val tireDance by lazy {
-    val ELBOW_DOWN = 0f
-    val SHOULDER_DOWN = 35f
-    val SHOULDER_MIDMOVE = 90f
+    val ELBOW_WHEEL = 130f
+    val SHOULDER_MIDMOVE = 150f
     val ELBOW_MIDMOVE = 45f
+    val ELBOW_MIDWAY = 90f
     val GRIPPER_GRAB = 20f
     val WAIST_HALFWAY = 45f
     val WAIST_ALLTHEWAY = 90f
@@ -44,7 +45,7 @@ val tireDance by lazy {
         }
         movement {
             shoulder { angle = SHOULDER_DOWN }
-            elbow { angle = ELBOW_DOWN }
+            elbow { angle = ELBOW_WHEEL }
         }
         gripper(GRIPPER_GRAB)
         movement {
@@ -52,13 +53,13 @@ val tireDance by lazy {
         }
         movement {
             waist { angle = WAIST_HALFWAY }
-            shoulder { angle = TheArm.SHOULDER_UP }
-            elbow { angle = TheArm.ELBOW_HOME }
+            shoulder { angle = SHOULDER_UP }
+            elbow { angle = ELBOW_MIDWAY }
         }
         movement {
             waist { angle = WAIST_ALLTHEWAY }
             shoulder { angle = SHOULDER_MIDMOVE }
-            elbow { angle = ELBOW_DOWN }
+            elbow { angle = ELBOW_WHEEL }
         }
         movement {
             shoulder { angle = SHOULDER_DOWN }
