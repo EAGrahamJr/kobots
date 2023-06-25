@@ -30,7 +30,7 @@ import java.time.Duration
  */
 val tireDance by lazy {
     val ELBOW_WHEEL = 130f
-    val SHOULDER_MIDMOVE = 150f
+    val SHOULDER_MIDMOVE = 120f
     val ELBOW_MIDMOVE = 45f
     val ELBOW_MIDWAY = 90f
     val GRIPPER_GRAB = 20f
@@ -72,42 +72,32 @@ val tireDance by lazy {
     }
 }
 
-val downAndOut by lazy {
-    armSequence {
-        home()
-        movement {
-            shoulder { angle = 45f }
-            elbow { angle = 45f }
-        }
-        movement {
-            pauseBetweenMoves = Duration.ofSeconds(2)
-        }
-        home()
-    }
-}
-
 val sayHi by lazy {
     armSequence {
         home()
         movement {
             elbow {
                 angle = 0f
-                pauseBetweenMoves = Duration.ofMillis(1)
             }
             gripper {
                 angle = 70f
+            }
+            waist {
+                angle = 90f
             }
         }
         (1..4).forEach {
             movement {
                 waist {
-                    angle = 90f
+                    angle = 105f
                 }
+                pauseBetweenMoves = Duration.ofMillis(10)
             }
             movement {
                 waist {
-                    angle = 0f
+                    angle = 75f
                 }
+                pauseBetweenMoves = Duration.ofMillis(10)
             }
         }
         home()

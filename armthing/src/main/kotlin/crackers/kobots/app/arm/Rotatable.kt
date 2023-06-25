@@ -42,9 +42,14 @@ interface Rotatable {
     fun current(): Float
 }
 
+/**
+ * Servo with "absolute" positioning - e.g. not related to real world degrees.
+ *
+ * TODO add gear ratio to this and use it to calculate real world degrees
+ */
 internal class ArmServo(
     val theServo: ServoDevice,
-    val minimumDegrees: Float, // gear ratios determine extents
+    val minimumDegrees: Float,
     val maximumDegrees: Float,
     val deltaDegrees: Float? = null // also used as "margin of error"
 ) : Rotatable {
@@ -96,10 +101,12 @@ internal class ArmServo(
         }
 }
 
-// TODO allow for > 360 rotation?
+/**
+ * Stepper motor with a gear ratio.
+ */
 internal class ArmStepper(
     val theStepper: StepperMotorInterface,
-    val stepsPerRotation: Float, // must take into account any gear ratios
+    val gearRatio: Float,
     reversed: Boolean = false
 ) : Rotatable {
 
@@ -108,14 +115,14 @@ internal class ArmStepper(
 
     fun release() = theStepper.release()
 
-    private val maxSteps = stepsPerRotation.roundToInt()
+    private val maxSteps = theStepper.stepsPerRotation * gearRatio
 
     internal var currentLocation = 0 // in steps
 
-    override fun current(): Float = 360 * currentLocation / stepsPerRotation
+    override fun current(): Float = 360 * currentLocation / maxSteps
 
     override fun moveTowards(angle: Float): Boolean {
-        val destinationSteps = (stepsPerRotation * angle / 360).roundToInt()
+        val destinationSteps = (maxSteps * angle / 360).roundToInt()
         if (destinationSteps == currentLocation) return true
 
         // move backwards

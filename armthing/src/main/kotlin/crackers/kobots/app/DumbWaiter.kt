@@ -18,7 +18,6 @@ package crackers.kobots.app
 
 import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.arm.armSequence
 import kotlin.system.exitProcess
 
 private val buttons by lazy { (1..4).toList().map { crickitHat.touchDigitalIn(it) } }
@@ -65,13 +64,9 @@ fun main() {
 
     crickitHat.use { hat ->
         TheArm.start()
-        val xAxis = hat.signalAnalogIn(6)
-        val yAxis = hat.signalAnalogIn(7)
-        val zButton = hat.signalDigitalIn(8)
-        val waist = hat.signalAnalogIn(1)
 
         // main loop!!!!!
-        var ignoreJoystick = true
+        var manualMode = true
         while (buttonCheck()) {
             try {
                 executeWithMinTime(WAIT_LOOP) {
@@ -80,23 +75,13 @@ fun main() {
                         currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, tireDance)
                         currentButtons[1] -> {
 //                        publishToTopic(TheArm.REQUEST_TOPIC, downAndOut)
-                            ignoreJoystick = !ignoreJoystick
+                            manualMode = !manualMode
 //                        if (!ignoreJoystick) publishToTopic(TheArm.REQUEST_TOPIC, armPark)
                         }
 
-//                    currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, armPark)
+                        currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, sayHi)
                     }
 
-                    if (!ignoreJoystick) {
-                        publishToTopic(TheArm.REQUEST_TOPIC, armSequence {
-                            movement {
-                                waist { angle = (waist.unscaledValue * 180) }
-                                shoulder { angle = (xAxis.unscaledValue * 180) }
-                                elbow { angle = (yAxis.unscaledValue * 180) }
-                                if (zButton.value) gripperOpen() else gripperClose()
-                            }
-                        })
-                    }
                 }
             } catch (e: Exception) {
                 println("Exception: $e")

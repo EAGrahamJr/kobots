@@ -23,7 +23,6 @@ import crackers.kobots.app.KobotsSubscriber
 import crackers.kobots.app.executor
 import crackers.kobots.app.joinTopic
 import crackers.kobots.app.runFlag
-import crackers.kobots.utilities.KobotSleep
 import crackers.kobots.utilities.center
 import java.awt.Color
 import java.awt.Font
@@ -31,7 +30,6 @@ import java.awt.FontMetrics
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.util.concurrent.Future
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -68,7 +66,6 @@ object ArmMonitor {
     }
 
     private val lastStateReceived = AtomicReference<ArmState>()
-    private val myRunFlag = AtomicBoolean(true)
     private lateinit var future: Future<*>
 
     fun start() {
@@ -91,7 +88,7 @@ object ArmMonitor {
                 }
             }
             screen.display(image)
-            while (runFlag.get() && myRunFlag.get()) {
+            while (runFlag.get()) {
                 // show last recorded status
                 lastStateReceived.get()?.let { state ->
                     with(screenGraphics) {
@@ -119,13 +116,11 @@ object ArmMonitor {
                     }
                     screen.display(image)
                 }
-                KobotSleep.millis(100)
             }
         }
     }
 
     fun stop() {
-        myRunFlag.set(false)
         future.get()
         screen.close()
     }

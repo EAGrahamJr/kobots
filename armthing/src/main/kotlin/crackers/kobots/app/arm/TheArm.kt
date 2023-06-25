@@ -34,8 +34,8 @@ object TheArm {
 
     // build 2 gear ratio = 1.4:1
     private const val SHOULDER_DELTA = 1f
-    const val SHOULDER_UP = 180f // pulled in
-    const val SHOULDER_DOWN = 120f // close to horizontal
+    const val SHOULDER_UP = 180f // straight up
+    const val SHOULDER_DOWN = 80f // close to horizontal
 
     private const val ELBOW_DELTA = 1f
     const val ELBOW_UP = 0f
@@ -56,29 +56,29 @@ object TheArm {
     )
 
     // hardware! =====================================================================================================
-    private val gripperServo by lazy {
+    private val gripper by lazy {
         val servo4 = crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
             this at GRIPPER_CLOSE
         }
         ArmServo(servo4, GRIPPER_CLOSE, GRIPPER_OPEN)
     }
 
-    private val shoulderServo by lazy {
+    private val shoulder by lazy {
         val servo3 = crickitHat.servo(1, ServoTrim.TOWERPRO_SG90).apply {
             this at SHOULDER_UP
         }
         ArmServo(servo3, SHOULDER_UP, SHOULDER_DOWN, SHOULDER_DELTA)
     }
 
-    private val elbowServo by lazy {
+    private val elbow by lazy {
         val servo2 = crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
             this at ELBOW_DOWN
         }
         ArmServo(servo2, ELBOW_UP, ELBOW_DOWN, ELBOW_DELTA)
     }
 
-    private val waistStepper by lazy {
-        ArmStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 258f, false)
+    private val waist by lazy {
+        ArmStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 1.29f, false)
     }
 
     val GO_HOME = ArmMovement(
@@ -113,7 +113,7 @@ object TheArm {
     fun stop() {
         if (moveInProgress.get()) stopImmediately.set(true)
         while (stopImmediately.get()) KobotSleep.millis(5)
-        waistStepper.release()
+        waist.release()
     }
 
     // do stuff =======================================================================================================
@@ -144,23 +144,23 @@ object TheArm {
                 // application still running and the interrupt isn't set
                 if (canRun()) {
                     val moveThese = mutableMapOf<Rotatable, JointMovement>()
-                    moveThese[waistStepper] = calculateMovement(moveHere.waist, waistStepper)
-                    moveThese[shoulderServo] = calculateMovement(moveHere.shoulder, shoulderServo)
-                    moveThese[elbowServo] = calculateMovement(moveHere.elbow, elbowServo)
-                    moveThese[gripperServo] = calculateMovement(moveHere.gripper, gripperServo)
+                    moveThese[waist] = calculateMovement(moveHere.waist, waist)
+                    moveThese[shoulder] = calculateMovement(moveHere.shoulder, shoulder)
+                    moveThese[elbow] = calculateMovement(moveHere.elbow, elbow)
+                    moveThese[gripper] = calculateMovement(moveHere.gripper, gripper)
                     moveTo(moveThese, moveHere.stepPause)
                 }
                 // release the stepper temporarily for heat dissipation
-                waistStepper.release()
+                waist.release()
             }
 
             // done
             state = ArmState(
                 ArmPosition(
-                    JointPosition(waistStepper.current()),
-                    JointPosition(shoulderServo.current()),
-                    JointPosition(gripperServo.current()),
-                    JointPosition(elbowServo.current())
+                    JointPosition(waist.current()),
+                    JointPosition(shoulder.current()),
+                    JointPosition(gripper.current()),
+                    JointPosition(elbow.current())
                 ),
                 false
             )
@@ -195,10 +195,10 @@ object TheArm {
             // where everything is
             state = ArmState(
                 ArmPosition(
-                    JointPosition(waistStepper.current()),
-                    JointPosition(shoulderServo.current()),
-                    JointPosition(gripperServo.current()),
-                    JointPosition(elbowServo.current())
+                    JointPosition(waist.current()),
+                    JointPosition(shoulder.current()),
+                    JointPosition(gripper.current()),
+                    JointPosition(elbow.current())
                 ),
                 true
             )

@@ -69,7 +69,6 @@ object ProximitySensor : AutoCloseable {
     }
 
     override fun close() {
-        future.cancel(true)
         future.get()
         proximitySensor.close()
     }
