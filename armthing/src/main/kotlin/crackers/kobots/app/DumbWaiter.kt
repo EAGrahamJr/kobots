@@ -17,6 +17,8 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.arm.ArmMonitor
+import crackers.kobots.app.arm.ManualMode
+import crackers.kobots.app.arm.ManualModeEvent
 import crackers.kobots.app.arm.TheArm
 import kotlin.system.exitProcess
 
@@ -27,18 +29,20 @@ private var lastButtonValues = NO_BUTTONS
 private lateinit var currentButtons: List<Boolean>
 
 // because we're looking for "presses", only return values when a value transitions _to_ true
-private fun buttonCheck(): Boolean {
+private fun buttonCheck(manualMode: Boolean): Boolean {
     currentButtons = buttons.map { it.value }.let { read ->
-        // TODO add an elapsed time check?
-
-        if (read == lastButtonValues) {
-            NO_BUTTONS
-        } else {
-            lastButtonValues = read
-            read
+        // "auto repeat" for manual mode
+        if (manualMode && (read[1] || read[2])) listOf(false, read[1], read[2], false)
+        else {
+            if (read == lastButtonValues) {
+                NO_BUTTONS
+            } else {
+                lastButtonValues = read
+                read
+            }
         }
     }
-    return currentButtons.isEmpty() || !currentButtons[3]
+    return currentButtons.isEmpty() || !currentButtons[3] || manualMode
 }
 
 private const val WAIT_LOOP = 100L
@@ -53,11 +57,11 @@ const val MARVIN = "marvin.local"
 fun main() {
 //    System.setProperty(REMOTE_PI, MARVIN)
 
-    ProximitySensor.start()
+    SensorSuite.start()
     ArmMonitor.start()
 
     // emergency stop
-    joinTopic(ProximitySensor.ALARM_TOPIC, KobotsSubscriber {
+    joinTopic(SensorSuite.ALARM_TOPIC, KobotsSubscriber {
         publishToTopic(TheArm.REQUEST_TOPIC, allStop)
         runFlag.set(false)
     })
@@ -66,22 +70,13 @@ fun main() {
         TheArm.start()
 
         // main loop!!!!!
-        var manualMode = true
-        while (buttonCheck()) {
+        var manualMode = false
+        while (buttonCheck(manualMode)) {
             try {
                 executeWithMinTime(WAIT_LOOP) {
                     // figure out if we're doing anything
-                    when {
-                        currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, tireDance)
-                        currentButtons[1] -> {
-//                        publishToTopic(TheArm.REQUEST_TOPIC, downAndOut)
-                            manualMode = !manualMode
-//                        if (!ignoreJoystick) publishToTopic(TheArm.REQUEST_TOPIC, armPark)
-                        }
-
-                        currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, sayHi)
-                    }
-
+                    if (currentButtons.isNotEmpty())
+                        manualMode = if (manualMode) manualMode() else demoMode()
                 }
             } catch (e: Exception) {
                 println("Exception: $e")
@@ -90,8 +85,31 @@ fun main() {
         runFlag.set(false)
         TheArm.stop()
     }
-    ProximitySensor.close()
+    SensorSuite.close()
     ArmMonitor.stop()
     executor.shutdownNow()
     exitProcess(0)
+}
+
+private fun demoMode(): Boolean {
+    when {
+        currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, tireDance)
+        currentButtons[1] -> return true
+        currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, sayHi)
+    }
+    return false
+}
+
+private fun manualMode(): Boolean {
+    when {
+        currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, ManualMode())
+        currentButtons[1] -> publishToTopic(TheArm.REQUEST_TOPIC, ManualMode(false))
+        currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, ManualMode(true))
+        // bail
+        currentButtons[3] -> {
+            publishToTopic(TheArm.STATE_TOPIC, ManualModeEvent(-1))
+            return false
+        }
+    }
+    return true
 }

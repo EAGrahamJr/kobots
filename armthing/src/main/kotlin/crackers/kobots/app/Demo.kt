@@ -22,7 +22,7 @@ import crackers.kobots.app.arm.armSequence
 import java.time.Duration
 
 /*
- * Demonstration type sequences.
+ * Demonstration type sequences for V3, and V4.
  */
 
 /**

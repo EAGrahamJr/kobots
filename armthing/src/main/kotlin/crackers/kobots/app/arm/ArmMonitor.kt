@@ -67,27 +67,18 @@ object ArmMonitor {
 
     private val lastStateReceived = AtomicReference<ArmState>()
     private lateinit var future: Future<*>
+    private val headers = listOf("WST", "SHL", "ELB", "GRP")
 
     fun start() {
         joinTopic(TheArm.STATE_TOPIC, KobotsSubscriber { message ->
             if (message is ArmState) lastStateReceived.set(message)
+            if (message is ManualModeEvent) drawHeaders(message.index)
         })
-        future = executor.submit {
-            // write column headers
-            screen.clear()
-            with(screenGraphics) {
-                font = monitorFont.deriveFont(Font.BOLD)
 
-                val headers = listOf("WST", "SHL", "ELB", "GRP")
-                for (i in 0 until 4) {
-                    color = Color.GRAY
-                    fillRect(i * COL_WD, 0, COL_WD - 1, HALF_HT)
-                    color = Color.BLACK
-                    val x = monitorMetrics.center(headers[i], COL_WD - 1)
-                    drawString(headers[i], (COL_WD * i) + x, monitorMetrics.ascent)
-                }
-            }
+        future = executor.submit {
+            drawHeaders(-1)
             screen.display(image)
+
             while (runFlag.get()) {
                 // show last recorded status
                 lastStateReceived.get()?.let { state ->
@@ -116,6 +107,22 @@ object ArmMonitor {
                     }
                     screen.display(image)
                 }
+            }
+        }
+    }
+
+    private fun drawHeaders(manualModeIndex: Int) {
+        // write column headers
+        screen.clear()
+        with(screenGraphics) {
+            font = monitorFont.deriveFont(Font.BOLD)
+
+            for (i in 0 until 4) {
+                color = if (i == manualModeIndex) Color.BLACK else Color.GRAY
+                fillRect(i * COL_WD, 0, COL_WD - 1, HALF_HT)
+                color = if (i == manualModeIndex) Color.WHITE else Color.BLACK
+                val x = monitorMetrics.center(headers[i], COL_WD - 1)
+                drawString(headers[i], (COL_WD * i) + x, monitorMetrics.ascent)
             }
         }
     }

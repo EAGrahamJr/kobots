@@ -22,6 +22,7 @@ import com.diozero.devices.sandpit.motor.StepperMotorInterface.Direction.BACKWAR
 import com.diozero.devices.sandpit.motor.StepperMotorInterface.Direction.FORWARD
 import crackers.kobots.app.almostEquals
 import crackers.kobots.devices.at
+import crackers.kobots.utilities.KobotSleep
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -116,6 +117,7 @@ internal class ArmStepper(
     fun release() = theStepper.release()
 
     private val maxSteps = theStepper.stepsPerRotation * gearRatio
+    private val stepsPerAngle = min(maxSteps / 360, 1f).roundToInt()
 
     internal var currentLocation = 0 // in steps
 
@@ -126,14 +128,16 @@ internal class ArmStepper(
         if (destinationSteps == currentLocation) return true
 
         // move backwards
-        if (destinationSteps < currentLocation) {
-            currentLocation--
-            theStepper.step(backwardDirection)
-        } else {
-            currentLocation++
-            theStepper.step(forwardDirection)
+        (1..stepsPerAngle).forEach {
+            if (destinationSteps < currentLocation) {
+                currentLocation--
+                theStepper.step(backwardDirection)
+            } else {
+                currentLocation++
+                theStepper.step(forwardDirection)
+            }
+            KobotSleep.millis(1)
         }
-
         return false
     }
 }

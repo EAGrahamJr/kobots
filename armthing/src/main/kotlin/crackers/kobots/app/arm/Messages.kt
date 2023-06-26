@@ -52,7 +52,7 @@ class JointMovement(val angle: Float, val relative: Boolean = false, val stopChe
 
 val NO_OP = JointMovement(0f, true) { true }
 
-val STD_PAUSE = Duration.ofMillis(20)
+val STD_PAUSE = Duration.ofMillis(10)
 
 interface ArmRequest : KobotsAction
 
@@ -155,3 +155,15 @@ fun armSequence(initializer: ArmSequenceBuilder.() -> Unit): ArmSequence {
     val blder = ArmSequenceBuilder().apply(initializer)
     return blder.build()
 }
+
+/**
+ * Special request for moving individual joints.
+ */
+class ManualMode(val direction: Boolean? = null) : KobotsAction {
+    override val interruptable: Boolean = true
+}
+
+/**
+ * Which thang is now active.
+ */
+class ManualModeEvent(val index: Int) : KobotsEvent

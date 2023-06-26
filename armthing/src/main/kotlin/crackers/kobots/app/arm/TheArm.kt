@@ -78,7 +78,7 @@ object TheArm {
     }
 
     private val waist by lazy {
-        ArmStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 1.29f, false)
+        ArmStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 4.67f, true)
     }
 
     val GO_HOME = ArmMovement(
@@ -124,13 +124,49 @@ object TheArm {
 
     private fun handleRequest(request: KobotsAction) {
         when (request) {
-            is EmergencyStop -> if (moveInProgress.get()) stopImmediately.set(true)
+            is EmergencyStop -> stopImmediately.set(true)
             is ArmSequence -> {
                 executeSequence(request)
             }
 
+            is ManualMode -> manualMode(request.direction)
+
             else -> {}
         }
+    }
+
+    private val manualJoints = listOf(waist, shoulder, elbow, gripper)
+    private var manualJointIndex = 0
+
+    /**
+     * "Manual" mode is a single joint movement in a single direction. `null` indicates "switch" to another joint.
+     */
+    private fun manualMode(direction: Boolean?) {
+        when (direction) {
+            null -> {
+                manualJointIndex = (manualJointIndex + 1) % manualJoints.size
+                publishToTopic(STATE_TOPIC, ManualModeEvent(manualJointIndex))
+            }
+
+            true -> {
+                val rotatable = manualJoints[manualJointIndex]
+                rotatable.moveTowards(rotatable.current() + 1f)
+            }
+
+            false -> {
+                val rotatable = manualJoints[manualJointIndex]
+                rotatable.moveTowards(rotatable.current() - 1f)
+            }
+        }
+        state = ArmState(
+            ArmPosition(
+                JointPosition(waist.current()),
+                JointPosition(shoulder.current()),
+                JointPosition(gripper.current()),
+                JointPosition(elbow.current())
+            ),
+            false
+        )
     }
 
     private fun executeSequence(request: ArmSequence) {
