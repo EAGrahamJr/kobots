@@ -117,7 +117,7 @@ internal class ArmStepper(
     fun release() = theStepper.release()
 
     private val maxSteps = theStepper.stepsPerRotation * gearRatio
-    private val stepsPerAngle = min(maxSteps / 360, 1f).roundToInt()
+    private val stepsPerAngle = max(maxSteps / 360, 1f).roundToInt()
 
     internal var currentLocation = 0 // in steps
 

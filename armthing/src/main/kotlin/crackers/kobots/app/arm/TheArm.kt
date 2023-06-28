@@ -35,7 +35,7 @@ object TheArm {
     // build 2 gear ratio = 1.4:1
     private const val SHOULDER_DELTA = 1f
     const val SHOULDER_UP = 180f // straight up
-    const val SHOULDER_DOWN = 80f // close to horizontal
+    const val SHOULDER_DOWN = 0f // close to horizontal
 
     private const val ELBOW_DELTA = 1f
     const val ELBOW_UP = 0f
