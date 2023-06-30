@@ -16,10 +16,7 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.arm.ArmMonitor
-import crackers.kobots.app.arm.ManualMode
-import crackers.kobots.app.arm.ManualModeEvent
-import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.arm.*
 import kotlin.system.exitProcess
 
 private val buttons by lazy { (1..4).toList().map { crickitHat.touchDigitalIn(it) } }

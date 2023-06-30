@@ -14,10 +14,9 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app
+package crackers.kobots.app.arm
 
 import crackers.kobots.app.arm.TheArm.SHOULDER_UP
-import crackers.kobots.app.arm.armSequence
 import java.time.Duration
 
 /*
@@ -32,7 +31,7 @@ val tireDance by lazy {
     val SHOULDER_WHEEL = 70f
     val SHOULDER_MIDMOVE = 110f
     val ELBOW_MIDMOVE = 45f
-    val GRIPPER_GRAB = 20f
+    val GRIPPER_GRAB = 90f
     val WAIST_HALFWAY = 45f
     val WAIST_ALLTHEWAY = 90f
     armSequence {
@@ -70,9 +69,7 @@ val sayHi by lazy {
             elbow {
                 angle = 0f
             }
-            gripper {
-                angle = 70f
-            }
+            gripperOpen()
             waist {
                 angle = 90f
             }

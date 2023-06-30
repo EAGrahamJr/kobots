@@ -11,5 +11,5 @@ dependencies {
 project.ext.set("jar.name", "kobots-app")
 
 application {
-    mainClass.set("crackers.kobots.app.DumbWaiterKt")
+    mainClass.set("crackers.kobots.app.ThingieKt")
 }

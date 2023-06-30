@@ -19,6 +19,9 @@ package crackers.kobots.app.arm
 import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.*
+import crackers.kobots.app.parts.Rotatable
+import crackers.kobots.app.parts.RotatableServo
+import crackers.kobots.app.parts.RotatableStepper
 import crackers.kobots.devices.at
 import crackers.kobots.utilities.KobotSleep
 import java.time.Duration
@@ -42,8 +45,8 @@ object TheArm {
     const val ELBOW_DOWN = 180f
 
     // traverse gears
-    const val GRIPPER_OPEN = 70f
-    const val GRIPPER_CLOSE = 9f
+    const val GRIPPER_OPEN = 45f
+    const val GRIPPER_CLOSE = 110f
     val GRIPPER_HOME = JointMovement(GRIPPER_CLOSE)
 
     private const val WAIST_DELTA = 1f
@@ -60,25 +63,25 @@ object TheArm {
         val servo4 = crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
             this at GRIPPER_CLOSE
         }
-        ArmServo(servo4, GRIPPER_CLOSE, GRIPPER_OPEN)
+        RotatableServo(servo4, GRIPPER_CLOSE, GRIPPER_OPEN)
     }
 
     private val shoulder by lazy {
         val servo3 = crickitHat.servo(1, ServoTrim.TOWERPRO_SG90).apply {
             this at SHOULDER_UP
         }
-        ArmServo(servo3, SHOULDER_UP, SHOULDER_DOWN, SHOULDER_DELTA)
+        RotatableServo(servo3, SHOULDER_UP, SHOULDER_DOWN, SHOULDER_DELTA)
     }
 
     private val elbow by lazy {
         val servo2 = crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
             this at ELBOW_DOWN
         }
-        ArmServo(servo2, ELBOW_UP, ELBOW_DOWN, ELBOW_DELTA)
+        RotatableServo(servo2, ELBOW_UP, ELBOW_DOWN, ELBOW_DELTA)
     }
 
     private val waist by lazy {
-        ArmStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 4.67f, true)
+        RotatableStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 4.67f, true)
     }
 
     val GO_HOME = ArmMovement(
