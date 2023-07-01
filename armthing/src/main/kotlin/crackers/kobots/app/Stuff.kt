@@ -17,7 +17,7 @@
 package crackers.kobots.app
 
 import com.diozero.util.SleepUtil
-import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import crackers.kobots.devices.expander.CRICKITHat
 import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 
 // shared devices
-internal val crickitHat by lazy { CRICKITHatDeviceFactory() }
+internal val crickitHat by lazy { CRICKITHat() }
 
 // TODO this might be useful as a generic app convention?
 // threads and execution control
