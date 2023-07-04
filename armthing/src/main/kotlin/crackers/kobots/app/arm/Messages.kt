@@ -34,7 +34,7 @@ data class JointPosition(val angle: Float, val radius: Float = 0f)
  */
 data class ArmPosition(
     val waist: JointPosition,
-    val shoulder: JointPosition,
+    val extender: JointPosition,
     val gripper: JointPosition,
     val elbow: JointPosition
 )
@@ -52,7 +52,7 @@ class JointMovement(val angle: Float, val relative: Boolean = false, val stopChe
 
 val NO_OP = JointMovement(0f, true) { true }
 
-val STD_PAUSE = Duration.ofMillis(10)
+val STD_PAUSE = Duration.ofMillis(5)
 
 interface ArmRequest : KobotsAction
 
@@ -61,7 +61,7 @@ interface ArmRequest : KobotsAction
  */
 class ArmMovement(
     val waist: JointMovement = NO_OP,
-    val shoulder: JointMovement = NO_OP,
+    val extender: JointMovement = NO_OP,
     val elbow: JointMovement = NO_OP,
     val gripper: JointMovement = NO_OP,
     val stepPause: Duration = STD_PAUSE, // controls "rate of change" to get to the desired position
@@ -89,16 +89,16 @@ class JointMovementBuilder {
  * Builder used for DSL.
  */
 class ArmMovementBuilder {
-    private var shoulder: JointMovement = NO_OP
+    private var extender: JointMovement = NO_OP
     private var elbow: JointMovement = NO_OP
     private var waist: JointMovement = NO_OP
     private var gripper: JointMovement = NO_OP
     var pauseBetweenMoves = STD_PAUSE
 
-    fun build() = ArmMovement(waist, shoulder, elbow, gripper, pauseBetweenMoves)
+    fun build() = ArmMovement(waist, extender, elbow, gripper, pauseBetweenMoves)
 
-    fun shoulder(movement: JointMovementBuilder.() -> Unit) {
-        shoulder = JointMovementBuilder().apply(movement).build()
+    fun extender(movement: JointMovementBuilder.() -> Unit) {
+        extender = JointMovementBuilder().apply(movement).build()
     }
 
     fun elbow(movement: JointMovementBuilder.() -> Unit) {

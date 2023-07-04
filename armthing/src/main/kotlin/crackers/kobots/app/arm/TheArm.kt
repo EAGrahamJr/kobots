@@ -24,29 +24,30 @@ import crackers.kobots.app.parts.RotatableServo
 import crackers.kobots.app.parts.RotatableStepper
 import crackers.kobots.devices.at
 import crackers.kobots.utilities.KobotSleep
+import org.tinylog.Logger
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * --First-- --Second-- --Third-- Fourth iteration of a controlled "arm-like" structure.
+ * V5 iteration of a controlled "arm-like" structure.
  */
 object TheArm {
     const val STATE_TOPIC = "TheArm.State"
     const val REQUEST_TOPIC = "TheArm.Request"
 
     // build 2 gear ratio = 1.4:1
-    private const val SHOULDER_DELTA = 1f
-    const val SHOULDER_UP = 180f // straight up
-    const val SHOULDER_DOWN = 0f // close to horizontal
+    private const val EXTENDER_DELTA = 1f
+    const val EXTENDER_IN = 180f // straight up
+    const val EXTENDER_OUT = 0f // all the way out
 
     private const val ELBOW_DELTA = 1f
     const val ELBOW_UP = 0f
     const val ELBOW_DOWN = 180f
 
     // traverse gears
-    const val GRIPPER_OPEN = 45f
-    const val GRIPPER_CLOSE = 110f
+    const val GRIPPER_OPEN = 0f
+    const val GRIPPER_CLOSE = 65f
     val GRIPPER_HOME = JointMovement(GRIPPER_CLOSE)
 
     private const val WAIST_DELTA = 1f
@@ -54,8 +55,8 @@ object TheArm {
     const val WAIST_MAX = 180f
 
     private val HOME_POSITION = ArmPosition(
-        JointPosition(WAIST_HOME), JointPosition(SHOULDER_UP), JointPosition(GRIPPER_CLOSE),
-        JointPosition(ELBOW_DOWN)
+        JointPosition(WAIST_HOME), JointPosition(EXTENDER_IN), JointPosition(GRIPPER_CLOSE),
+        JointPosition(ELBOW_UP)
     )
 
     // hardware! =====================================================================================================
@@ -66,27 +67,27 @@ object TheArm {
         RotatableServo(servo4, GRIPPER_CLOSE, GRIPPER_OPEN)
     }
 
-    private val shoulder by lazy {
+    private val extender by lazy {
         val servo3 = crickitHat.servo(1, ServoTrim.TOWERPRO_SG90).apply {
-            this at SHOULDER_UP
+            this at EXTENDER_IN
         }
-        RotatableServo(servo3, SHOULDER_UP, SHOULDER_DOWN, SHOULDER_DELTA)
+        RotatableServo(servo3, EXTENDER_IN, EXTENDER_OUT, EXTENDER_DELTA)
     }
 
     private val elbow by lazy {
         val servo2 = crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
-            this at ELBOW_DOWN
+            this at ELBOW_UP
         }
         RotatableServo(servo2, ELBOW_UP, ELBOW_DOWN, ELBOW_DELTA)
     }
 
     private val waist by lazy {
-        RotatableStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 4.67f, true)
+        RotatableStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 2.33f, true)
     }
 
     val GO_HOME = ArmMovement(
         waist = JointMovement(HOME_POSITION.waist.angle),
-        shoulder = JointMovement(HOME_POSITION.shoulder.angle),
+        extender = JointMovement(HOME_POSITION.extender.angle),
         elbow = JointMovement(HOME_POSITION.elbow.angle),
         gripper = GRIPPER_HOME
     )
@@ -138,38 +139,42 @@ object TheArm {
         }
     }
 
-    private val manualJoints = listOf(waist, shoulder, elbow, gripper)
+    private val manualJoints = listOf(waist, extender, elbow, gripper)
     private var manualJointIndex = 0
 
     /**
      * "Manual" mode is a single joint movement in a single direction. `null` indicates "switch" to another joint.
      */
     private fun manualMode(direction: Boolean?) {
-        when (direction) {
-            null -> {
-                manualJointIndex = (manualJointIndex + 1) % manualJoints.size
-                publishToTopic(STATE_TOPIC, ManualModeEvent(manualJointIndex))
-            }
+        try {
+            when (direction) {
+                null -> {
+                    manualJointIndex = (manualJointIndex + 1) % manualJoints.size
+                    publishToTopic(STATE_TOPIC, ManualModeEvent(manualJointIndex))
+                }
 
-            true -> {
-                val rotatable = manualJoints[manualJointIndex]
-                rotatable.moveTowards(rotatable.current() + 1f)
-            }
+                true -> {
+                    val rotatable = manualJoints[manualJointIndex]
+                    rotatable.moveTowards(rotatable.current() + 1f)
+                }
 
-            false -> {
-                val rotatable = manualJoints[manualJointIndex]
-                rotatable.moveTowards(rotatable.current() - 1f)
+                false -> {
+                    val rotatable = manualJoints[manualJointIndex]
+                    rotatable.moveTowards(rotatable.current() - 1f)
+                }
             }
+            state = ArmState(
+                ArmPosition(
+                    JointPosition(waist.current()),
+                    JointPosition(extender.current()),
+                    JointPosition(gripper.current()),
+                    JointPosition(elbow.current())
+                ),
+                false
+            )
+        } catch (e: Exception) {
+            Logger.error("ManualMode", e)
         }
-        state = ArmState(
-            ArmPosition(
-                JointPosition(waist.current()),
-                JointPosition(shoulder.current()),
-                JointPosition(gripper.current()),
-                JointPosition(elbow.current())
-            ),
-            false
-        )
     }
 
     private fun executeSequence(request: ArmSequence) {
@@ -180,14 +185,18 @@ object TheArm {
 
         executor.submit {
             request.movements.forEach { moveHere ->
-                // application still running and the interrupt isn't set
-                if (canRun()) {
-                    val moveThese = mutableMapOf<Rotatable, JointMovement>()
-                    moveThese[waist] = calculateMovement(moveHere.waist, waist)
-                    moveThese[shoulder] = calculateMovement(moveHere.shoulder, shoulder)
-                    moveThese[elbow] = calculateMovement(moveHere.elbow, elbow)
-                    moveThese[gripper] = calculateMovement(moveHere.gripper, gripper)
-                    moveTo(moveThese, moveHere.stepPause)
+                try {
+                    // application still running and the interrupt isn't set
+                    if (canRun()) {
+                        val moveThese = mutableMapOf<Rotatable, JointMovement>()
+                        moveThese[waist] = calculateMovement(moveHere.waist, waist)
+                        moveThese[extender] = calculateMovement(moveHere.extender, extender)
+                        moveThese[elbow] = calculateMovement(moveHere.elbow, elbow)
+                        moveThese[gripper] = calculateMovement(moveHere.gripper, gripper)
+                        moveTo(moveThese, moveHere.stepPause)
+                    }
+                } catch (e: Exception) {
+                    Logger.error("Error moving arm", e)
                 }
                 // release the stepper temporarily for heat dissipation
                 waist.release()
@@ -197,7 +206,7 @@ object TheArm {
             state = ArmState(
                 ArmPosition(
                     JointPosition(waist.current()),
-                    JointPosition(shoulder.current()),
+                    JointPosition(extender.current()),
                     JointPosition(gripper.current()),
                     JointPosition(elbow.current())
                 ),
@@ -226,16 +235,16 @@ object TheArm {
                 movementDone = moveThese
                     .map { e ->
                         val rotator = e.key
-                        val movement = e.value
-                        val stopCheck = movement.stopCheck()
-                        stopCheck || rotator.moveTowards(movement.angle)
+                        with(e.value) {
+                            stopCheck() || rotator.moveTowards(angle)
+                        }
                     }.all { it }
             }
             // where everything is
             state = ArmState(
                 ArmPosition(
                     JointPosition(waist.current()),
-                    JointPosition(shoulder.current()),
+                    JointPosition(extender.current()),
                     JointPosition(gripper.current()),
                     JointPosition(elbow.current())
                 ),

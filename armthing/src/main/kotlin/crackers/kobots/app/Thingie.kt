@@ -17,9 +17,15 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.arm.*
+import crackers.kobots.devices.io.NeoKey
+import java.awt.Color
 import kotlin.system.exitProcess
 
-private val buttons by lazy { (1..4).toList().map { crickitHat.touchDigitalIn(it) } }
+private val keyboard by lazy {
+    NeoKey().apply {
+        brightness = 0.25f
+    }
+}
 
 private val NO_BUTTONS = listOf(false, false, false, false)
 private var lastButtonValues = NO_BUTTONS
@@ -27,15 +33,21 @@ private lateinit var currentButtons: List<Boolean>
 
 // because we're looking for "presses", only return values when a value transitions _to_ true
 private fun buttonCheck(manualMode: Boolean): Boolean {
-    currentButtons = buttons.map { it.value }.let { read ->
+    currentButtons = keyboard.read().let { read ->
         // "auto repeat" for manual mode
-        if (manualMode && (read[1] || read[2])) listOf(false, read[1], read[2], false)
-        else {
+        if (manualMode && (read[1] || read[2])) {
+            keyboard.pixels[1] = if (read[1]) Color.RED else Color.GREEN
+            keyboard.pixels[2] = if (read[2]) Color.RED else Color.GREEN
+            listOf(false, read[1], read[2], false)
+        } else {
             if (read == lastButtonValues) {
+                keyboard.pixels.fill(Color.GREEN)
                 NO_BUTTONS
             } else {
                 lastButtonValues = read
-                read
+                read.also {
+                    it.forEachIndexed { index, b -> keyboard.pixels[index] = if (b) Color.RED else Color.GREEN }
+                }
             }
         }
     }
@@ -46,22 +58,22 @@ private const val WAIT_LOOP = 100L
 
 // TODO temporary while testing
 const val REMOTE_PI = "diozero.remote.hostname"
-const val MARVIN = "marvin.local"
+const val BRAINZ = "brainz.local"
 
 /**
  * Run this.
  */
 fun main() {
-//    System.setProperty(REMOTE_PI, MARVIN)
+//    System.setProperty(REMOTE_PI, BRAINZ)
 
     SensorSuite.start()
     ArmMonitor.start()
 
     // emergency stop
-    joinTopic(SensorSuite.ALARM_TOPIC, KobotsSubscriber {
-        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-        runFlag.set(false)
-    })
+//    joinTopic(SensorSuite.ALARM_TOPIC, KobotsSubscriber {
+//        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
+//        runFlag.set(false)
+//    })
 
     crickitHat.use { hat ->
         TheArm.start()
@@ -72,7 +84,7 @@ fun main() {
             try {
                 executeWithMinTime(WAIT_LOOP) {
                     // figure out if we're doing anything
-                    if (currentButtons.isNotEmpty())
+                    if (currentButtons.any { it })
                         manualMode = if (manualMode) manualMode() else demoMode()
                 }
             } catch (e: Exception) {
@@ -85,12 +97,13 @@ fun main() {
     SensorSuite.close()
     ArmMonitor.stop()
     executor.shutdownNow()
+    keyboard.close()
     exitProcess(0)
 }
 
 private fun demoMode(): Boolean {
     when {
-        currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, tireDance)
+        currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, pickAndMove)
         currentButtons[1] -> return true
         currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, sayHi)
     }

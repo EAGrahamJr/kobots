@@ -16,7 +16,9 @@
 
 package crackers.kobots.app.arm
 
-import crackers.kobots.app.arm.TheArm.SHOULDER_UP
+import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
+import crackers.kobots.app.arm.TheArm.ELBOW_UP
+import crackers.kobots.app.arm.TheArm.EXTENDER_OUT
 import java.time.Duration
 
 /*
@@ -24,40 +26,42 @@ import java.time.Duration
  */
 
 /**
- * Pick up a LEGO tire from the starting point and deliver it to the exit point.
+ * Pick up something from the starting point and deliver it to the exit point.
  */
-val tireDance by lazy {
-    val ELBOW_WHEEL = 90f
-    val SHOULDER_WHEEL = 70f
-    val SHOULDER_MIDMOVE = 110f
-    val ELBOW_MIDMOVE = 45f
-    val GRIPPER_GRAB = 90f
+val pickAndMove by lazy {
+    val EXTENDER_MIDMOVE = 90f
+    val ELBOW_MIDMOVE = 90f
+    val GRIPPER_GRAB = 50f
     val WAIST_HALFWAY = 45f
     val WAIST_ALLTHEWAY = 90f
     armSequence {
         home()
-        movement { elbow { angle = ELBOW_MIDMOVE } }
-        movement { shoulder { angle = SHOULDER_MIDMOVE } }
+        movement {
+            elbow { angle = ELBOW_MIDMOVE }
+            extender { angle = EXTENDER_MIDMOVE }
+        }
         gripperOpen()
         movement {
-            shoulder { angle = SHOULDER_WHEEL }
-            elbow { angle = ELBOW_WHEEL }
+            extender { angle = EXTENDER_OUT }
+            elbow { angle = ELBOW_DOWN }
         }
         gripper(GRIPPER_GRAB)
-        movement { shoulder { angle = SHOULDER_MIDMOVE } }
+        movement { elbow { angle = ELBOW_MIDMOVE } }
         movement {
             waist { angle = WAIST_HALFWAY }
-            shoulder { angle = SHOULDER_UP }
+            extender { angle = EXTENDER_MIDMOVE }
+        }
+        movement { elbow { angle = ELBOW_UP } }
+        movement {
+            waist { angle = WAIST_ALLTHEWAY }
             elbow { angle = ELBOW_MIDMOVE }
         }
         movement {
-            waist { angle = WAIST_ALLTHEWAY }
-            shoulder { angle = SHOULDER_MIDMOVE }
-            elbow { angle = ELBOW_WHEEL }
+            extender { angle = 135f }
+            elbow { angle = ELBOW_DOWN }
         }
-        movement { shoulder { angle = SHOULDER_WHEEL } }
         gripperOpen()
-        movement { shoulder { angle = SHOULDER_MIDMOVE } }
+        movement { elbow { angle = ELBOW_MIDMOVE } }
         home()
     }
 }
@@ -66,9 +70,8 @@ val sayHi by lazy {
     armSequence {
         home()
         movement {
-            elbow {
-                angle = 0f
-            }
+            elbow { angle = 45f }
+            extender { angle = EXTENDER_OUT }
             gripperOpen()
             waist {
                 angle = 90f

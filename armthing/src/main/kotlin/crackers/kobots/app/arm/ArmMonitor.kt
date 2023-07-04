@@ -67,7 +67,7 @@ object ArmMonitor {
 
     private val lastStateReceived = AtomicReference<ArmState>()
     private lateinit var future: Future<*>
-    private val headers = listOf("WST", "SHL", "ELB", "GRP")
+    private val headers = listOf("WST", "XTN", "ELB", "GRP")
 
     fun start() {
         joinTopic(TheArm.STATE_TOPIC, KobotsSubscriber { message ->
@@ -85,7 +85,7 @@ object ArmMonitor {
                     with(screenGraphics) {
                         font = monitorFont
                         state.position.let { arm ->
-                            listOf(arm.waist, arm.shoulder, arm.elbow, arm.gripper)
+                            listOf(arm.waist, arm.extender, arm.elbow, arm.gripper)
                         }.map {
                             it.angle.toInt().toString()
                         }.forEachIndexed { i, string ->
