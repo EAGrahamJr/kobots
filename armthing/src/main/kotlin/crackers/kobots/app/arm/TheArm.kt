@@ -19,9 +19,6 @@ package crackers.kobots.app.arm
 import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.*
-import crackers.kobots.app.parts.Rotatable
-import crackers.kobots.app.parts.RotatableServo
-import crackers.kobots.app.parts.RotatableStepper
 import crackers.kobots.devices.at
 import crackers.kobots.utilities.KobotSleep
 import org.tinylog.Logger
@@ -55,7 +52,9 @@ object TheArm {
     const val WAIST_MAX = 180f
 
     private val HOME_POSITION = ArmPosition(
-        JointPosition(WAIST_HOME), JointPosition(EXTENDER_IN), JointPosition(GRIPPER_CLOSE),
+        JointPosition(WAIST_HOME),
+        JointPosition(EXTENDER_IN),
+        JointPosition(GRIPPER_CLOSE),
         JointPosition(ELBOW_UP)
     )
 
@@ -91,7 +90,6 @@ object TheArm {
         elbow = JointMovement(HOME_POSITION.elbow.angle),
         gripper = GRIPPER_HOME
     )
-
 
     // manage the state of this construct =============================================================================
     private val _currentState = AtomicReference(ArmState(HOME_POSITION, false))
@@ -181,7 +179,7 @@ object TheArm {
         // claim it for ourselves and then use that for loop control
         if (!moveInProgress.compareAndSet(false, true)) return
         state = ArmState(state.position, true)
-        atHome.set(false)   // any request is treated as being "not home" but the GO_HOME will reset this
+        atHome.set(false) // any request is treated as being "not home" but the GO_HOME will reset this
 
         executor.submit {
             request.movements.forEach { moveHere ->

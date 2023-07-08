@@ -32,11 +32,16 @@ import kotlin.math.roundToInt
  * absolutely, somewhat interchangeably. Rotation is roughly based on angular _motor_ movement, not necessarily
  * corresponding to real world coordinates.
  */
-interface Rotatable {
+interface Rotator : Actuator<RotationMovement> {
+    override fun move(movement: RotationMovement): Boolean {
+        val target = if (movement.relative) current() + movement.angle else movement.angle
+        return rotateTo(target)
+    }
+
     /**
      * Take a "step" towards this destination. Returns `true` if the target has been reached.
      */
-    fun moveTowards(angle: Float): Boolean
+    fun rotateTo(angle: Float): Boolean
 
     /**
      * Current location.
@@ -46,15 +51,14 @@ interface Rotatable {
 
 /**
  * Stepper motor with an optional gear ratio. If [reversed] is `true`, the motor is mounted "backwards" relative to
- * desired rotation. If the `gearRatio` is greater than 1, each "movement" will potentially be multiple steps, which will
- * [stepPauseMillis] between each step.
+ * desired rotation. Each movement is executed as a single step of the motor. The accuracy of the movement is dependent
+ * on rounding errors in the calculation of the number of steps required to reach the destination.
  */
-class RotatableStepper(
+class RotatorStepper(
     val theStepper: StepperMotorInterface,
     gearRatio: Float = 1f,
-    reversed: Boolean = false,
-    val stepPauseMillis: Long = 1
-) : Rotatable {
+    reversed: Boolean = false
+) : Rotator {
 
     private val forwardDirection = if (reversed) BACKWARD else FORWARD
     private val backwardDirection = if (reversed) FORWARD else BACKWARD
@@ -67,7 +71,7 @@ class RotatableStepper(
 
     override fun current(): Float = 360 * currentLocation / maxSteps
 
-    override fun moveTowards(angle: Float): Boolean {
+    override fun rotateTo(angle: Float): Boolean {
         val destinationSteps = (maxSteps * angle / 360).roundToInt()
         if (destinationSteps == currentLocation) return true
 
@@ -79,33 +83,33 @@ class RotatableStepper(
             currentLocation++
             theStepper.step(forwardDirection)
         }
-        return false
+        // are we there yet?
+        return destinationSteps == currentLocation
     }
 }
 
 /**
  * Servo, with software limits to prevent over-rotation. Movement "speed" is controlled by the `deltaDegrees` parameter
- * (`null` means absolute movement). The [precision] is the level at which angles are compared (fuzziness).
- *
- * The final goal should be within the [delta] of the target. Example:
+ * (`null` means absolute movement). The [precision] is the amount of "wiggle room" to allow for the target to be
+ * considered "reached". Example:
  * ```
- * delta = 5
+ * precision = 5
  * current = 47
  * target = 50
  * ```
- * This would indicate that the servo would **not** move, as the target is within the delta of the current position.
+ * This would indicate that the servo would **not** move, as the target is within the precision given.
  *
  * **NOTE** [homeDegrees] is defined as the "zero" point for the servo, and [maximumDegrees] is the _absolute_ maximum
  * position. Thus, the maximum may be **less** than the home position. The [delta] is always a positive number and
  * the actual movement is computed relative to home and maximum.
  */
-class RotatableServo(
+class RotatorServo(
     val theServo: ServoDevice,
     val homeDegrees: Float,
     val maximumDegrees: Float,
     deltaDegrees: Float? = null,
     val precision: Float = .1f
-) : Rotatable {
+) : Rotator {
     val delta: Float? = if (deltaDegrees == null) null else abs(deltaDegrees)
 
     override fun current(): Float = theServo.angle
@@ -113,7 +117,7 @@ class RotatableServo(
     /**
      * Figure out if we need to move or not (and how much)
      */
-    override fun moveTowards(angle: Float): Boolean {
+    override fun rotateTo(angle: Float): Boolean {
         val currentAngle = current()
 
         // this is an absolute move without any steps, so set it up and fire it
@@ -121,13 +125,10 @@ class RotatableServo(
             val next = withinBounds(angle)
             Pair(next, next.almostEquals(currentAngle, precision))
         } else {
-            val diff = angle - currentAngle
-
-            // if we've reached the endpoint, we're done
-            if (abs(diff) < delta) return true
+            if (angle.almostEquals(currentAngle, precision)) return true
 
             // apply the delta and see if it goes out of range
-            var nextAngle = if (diff < 0) {
+            var nextAngle = if (currentAngle > angle) {
                 currentAngle - delta
             } else {
                 currentAngle + delta
@@ -135,15 +136,16 @@ class RotatableServo(
             nextAngle = withinBounds(nextAngle)
 
             // if we're at the limits of the servo, we can't move more - so we're done
-            val moveDone = (
-                nextAngle.almostEquals(homeDegrees, precision) ||
-                    nextAngle.almostEquals(maximumDegrees, precision)
-                )
+            val moveDone =
+                nextAngle.almostEquals(homeDegrees, precision) || nextAngle.almostEquals(maximumDegrees, precision)
+
             Pair(nextAngle, moveDone)
         }
 
         theServo at nextAngle
-        return moveDone
+
+        // if we're done, we're done
+        return moveDone || angle.almostEquals(currentAngle, precision)
     }
 
     private fun withinBounds(angle: Float) =

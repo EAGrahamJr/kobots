@@ -145,7 +145,6 @@ class ArmSequenceBuilder {
     fun gripper(angle: Float) {
         movements += ArmMovement(gripper = JointMovement(angle))
     }
-
 }
 
 /**

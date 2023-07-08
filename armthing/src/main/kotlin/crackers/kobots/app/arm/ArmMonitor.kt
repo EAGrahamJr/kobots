@@ -70,10 +70,13 @@ object ArmMonitor {
     private val headers = listOf("WST", "XTN", "ELB", "GRP")
 
     fun start() {
-        joinTopic(TheArm.STATE_TOPIC, KobotsSubscriber { message ->
-            if (message is ArmState) lastStateReceived.set(message)
-            if (message is ManualModeEvent) drawHeaders(message.index)
-        })
+        joinTopic(
+            TheArm.STATE_TOPIC,
+            KobotsSubscriber { message ->
+                if (message is ArmState) lastStateReceived.set(message)
+                if (message is ManualModeEvent) drawHeaders(message.index)
+            }
+        )
 
         future = executor.submit {
             drawHeaders(-1)

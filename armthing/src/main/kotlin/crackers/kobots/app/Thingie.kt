@@ -84,8 +84,9 @@ fun main() {
             try {
                 executeWithMinTime(WAIT_LOOP) {
                     // figure out if we're doing anything
-                    if (currentButtons.any { it })
+                    if (currentButtons.any { it }) {
                         manualMode = if (manualMode) manualMode() else demoMode()
+                    }
                 }
             } catch (e: Exception) {
                 println("Exception: $e")
