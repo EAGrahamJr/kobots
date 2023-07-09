@@ -17,6 +17,7 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.arm.*
+import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.devices.io.NeoKey
 import java.awt.Color
 import kotlin.system.exitProcess
@@ -54,7 +55,7 @@ private fun buttonCheck(manualMode: Boolean): Boolean {
     return currentButtons.isEmpty() || !currentButtons[3] || manualMode
 }
 
-private const val WAIT_LOOP = 100L
+private const val WAIT_LOOP = 10L
 
 // TODO temporary while testing
 const val REMOTE_PI = "diozero.remote.hostname"
@@ -86,7 +87,7 @@ fun main() {
                     // figure out if we're doing anything
                     if (currentButtons.any { it }) {
                         manualMode = if (manualMode) manualMode() else demoMode()
-                    }
+                    } else if (manualMode) joyRide()
                 }
             } catch (e: Exception) {
                 println("Exception: $e")
@@ -123,4 +124,25 @@ private fun manualMode(): Boolean {
         }
     }
     return true
+}
+
+private val gamepad by lazy { GamepadQT() }
+private var gpZeroX: Float = 0f
+private var gpZeroY: Float = 0f
+
+private fun joyRide() {
+    val xAxis = gamepad.xAxis
+    if (gpZeroX == 0f) gpZeroX = xAxis
+    val yAxis = gamepad.yAxis
+    if (gpZeroY == 0f) gpZeroY = yAxis
+
+    if (gpZeroX - xAxis > 15f) TheArm.waist.moveTowards(TheArm.waist.current() + 1)
+    if (gpZeroX - xAxis < -15f) TheArm.waist.moveTowards(TheArm.waist.current() - 1)
+    if (gpZeroY - yAxis > 15f) TheArm.elbow.moveTowards(TheArm.elbow.current() - 1)
+    if (gpZeroY - yAxis < -15f) TheArm.elbow.moveTowards(TheArm.elbow.current() + 1)
+    if (gamepad.aButton) TheArm.extender.moveTowards(TheArm.extender.current() - 2)
+    if (gamepad.yButton) TheArm.extender.moveTowards(TheArm.extender.current() + 2)
+    if (gamepad.xButton) TheArm.gripper.moveTowards(TheArm.gripper.current() - 1)
+    if (gamepad.bButton) TheArm.gripper.moveTowards(TheArm.gripper.current() + 1)
+    TheArm.updateCurrentState(false)
 }

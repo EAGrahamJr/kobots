@@ -59,28 +59,28 @@ object TheArm {
     )
 
     // hardware! =====================================================================================================
-    private val gripper by lazy {
+    val gripper by lazy {
         val servo4 = crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
             this at GRIPPER_CLOSE
         }
         RotatableServo(servo4, GRIPPER_CLOSE, GRIPPER_OPEN)
     }
 
-    private val extender by lazy {
+    val extender by lazy {
         val servo3 = crickitHat.servo(1, ServoTrim.TOWERPRO_SG90).apply {
             this at EXTENDER_IN
         }
         RotatableServo(servo3, EXTENDER_IN, EXTENDER_OUT, EXTENDER_DELTA)
     }
 
-    private val elbow by lazy {
+    val elbow by lazy {
         val servo2 = crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
             this at ELBOW_UP
         }
         RotatableServo(servo2, ELBOW_UP, ELBOW_DOWN, ELBOW_DELTA)
     }
 
-    private val waist by lazy {
+    val waist by lazy {
         RotatableStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 2.33f, true)
     }
 
@@ -98,8 +98,8 @@ object TheArm {
     var state: ArmState
         get() = _currentState.get()
         private set(s) {
-            publishToTopic(STATE_TOPIC, s)
             _currentState.set(s)
+            publishToTopic(STATE_TOPIC, s)
             atHome.set(s.position == HOME_POSITION)
         }
 
@@ -161,15 +161,7 @@ object TheArm {
                     rotatable.moveTowards(rotatable.current() - 1f)
                 }
             }
-            state = ArmState(
-                ArmPosition(
-                    JointPosition(waist.current()),
-                    JointPosition(extender.current()),
-                    JointPosition(gripper.current()),
-                    JointPosition(elbow.current())
-                ),
-                false
-            )
+            updateCurrentState(false)
         } catch (e: Exception) {
             Logger.error("ManualMode", e)
         }
@@ -201,15 +193,7 @@ object TheArm {
             }
 
             // done
-            state = ArmState(
-                ArmPosition(
-                    JointPosition(waist.current()),
-                    JointPosition(extender.current()),
-                    JointPosition(gripper.current()),
-                    JointPosition(elbow.current())
-                ),
-                false
-            )
+            updateCurrentState(false)
             moveInProgress.compareAndSet(true, false)
             stopImmediately.compareAndSet(true, false)
         }
@@ -239,15 +223,22 @@ object TheArm {
                     }.all { it }
             }
             // where everything is
-            state = ArmState(
-                ArmPosition(
-                    JointPosition(waist.current()),
-                    JointPosition(extender.current()),
-                    JointPosition(gripper.current()),
-                    JointPosition(elbow.current())
-                ),
-                true
-            )
+            updateCurrentState(true)
         }
+    }
+
+    /**
+     * Updates the state of the arm, which in turn publishes to the event topic.
+     */
+    fun updateCurrentState(busy: Boolean) {
+        state = ArmState(
+            ArmPosition(
+                JointPosition(waist.current()),
+                JointPosition(extender.current()),
+                JointPosition(gripper.current()),
+                JointPosition(elbow.current())
+            ),
+            busy
+        )
     }
 }
