@@ -19,9 +19,9 @@ package crackers.kobots.app.arm
 import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
-import crackers.kobots.app.KobotsSubscriber
+import crackers.kobots.app.bus.KobotsSubscriber
+import crackers.kobots.app.bus.joinTopic
 import crackers.kobots.app.executor
-import crackers.kobots.app.joinTopic
 import crackers.kobots.app.runFlag
 import crackers.kobots.utilities.center
 import java.awt.Color
@@ -74,12 +74,12 @@ object ArmMonitor {
             TheArm.STATE_TOPIC,
             KobotsSubscriber { message ->
                 if (message is ArmState) lastStateReceived.set(message)
-                if (message is ManualModeEvent) drawHeaders(message.index)
+//                if (message is ManualModeEvent) drawHeaders(message.index)
             }
         )
 
         future = executor.submit {
-            drawHeaders(-1)
+            drawHeaders()
             screen.display(image)
 
             while (runFlag.get()) {
@@ -114,16 +114,16 @@ object ArmMonitor {
         }
     }
 
-    private fun drawHeaders(manualModeIndex: Int) {
+    private fun drawHeaders() {
         // write column headers
         screen.clear()
         with(screenGraphics) {
             font = monitorFont.deriveFont(Font.BOLD)
 
             for (i in 0 until 4) {
-                color = if (i == manualModeIndex) Color.BLACK else Color.GRAY
+                color = Color.GRAY
                 fillRect(i * COL_WD, 0, COL_WD - 1, HALF_HT)
-                color = if (i == manualModeIndex) Color.WHITE else Color.BLACK
+                color = Color.BLACK
                 val x = monitorMetrics.center(headers[i], COL_WD - 1)
                 drawString(headers[i], (COL_WD * i) + x, monitorMetrics.ascent)
             }

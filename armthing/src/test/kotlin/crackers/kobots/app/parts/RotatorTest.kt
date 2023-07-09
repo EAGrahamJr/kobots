@@ -18,8 +18,6 @@ package crackers.kobots.app.parts
 
 import com.diozero.api.ServoDevice
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
-import crackers.kobots.app.arm.RotatableServo
-import crackers.kobots.app.arm.RotatableStepper
 import io.kotest.core.spec.style.FunSpec
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
@@ -52,9 +50,9 @@ class RotatableTest : FunSpec(
         test("rotatable with stepper") {
             every { mockStepper.getStepsPerRotation() } answers { 200 }
             every { mockStepper.step(any()) } answers { }
-            val rotatable = RotatableStepper(mockStepper)
+            val rotatable = RotatorStepper(mockStepper)
 
-            while (!rotatable.moveTowards(83f)) {
+            while (!rotatable.rotateTo(83f)) {
                 // just count things
             }
             verify(atLeast = (74f * 200 / 360).roundToInt()) {
@@ -67,12 +65,12 @@ class RotatableTest : FunSpec(
          * at 3 degrees. The rotatable has a delta of 1 degree and the target is 90 degrees.
          */
         test("rotatable with servo") {
-            val rotatable = RotatableServo(mockServo, 105f, 3f, 1f)
+            val rotatable = RotatorServo(mockServo, 105f, 3f, 1f)
             var currentServoAngle = 42f
             every { mockServo.angle } answers { currentServoAngle }
             every { mockServo.angle = any() } answers { currentServoAngle = arg(0) }
 
-            while (!rotatable.moveTowards(90f)) {
+            while (!rotatable.rotateTo(90f)) {
                 // just count things
             }
             verify(atLeast = 90 - 42) {
@@ -86,12 +84,12 @@ class RotatableTest : FunSpec(
          * the target is 100 degrees.
          */
         test("rotatable with servo - beyond maximum") {
-            val rotatable = RotatableServo(mockServo, 0f, 90f, 1f)
+            val rotatable = RotatorServo(mockServo, 0f, 90f, 1f)
             var currentServoAngle = 0f
             every { mockServo.angle } answers { currentServoAngle }
             every { mockServo.angle = any() } answers { currentServoAngle = arg(0) }
 
-            while (!rotatable.moveTowards(100f)) {
+            while (!rotatable.rotateTo(100f)) {
                 // just count things
             }
             // one less because we hit maximum already

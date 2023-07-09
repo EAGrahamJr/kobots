@@ -19,11 +19,19 @@ package crackers.kobots.app.arm
 import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
 import crackers.kobots.app.arm.TheArm.ELBOW_UP
 import crackers.kobots.app.arm.TheArm.EXTENDER_OUT
-import java.time.Duration
+import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
+import crackers.kobots.app.arm.TheArm.elbow
+import crackers.kobots.app.arm.TheArm.extender
+import crackers.kobots.app.arm.TheArm.gripper
+import crackers.kobots.app.arm.TheArm.homeAction
+import crackers.kobots.app.arm.TheArm.waist
+import crackers.kobots.app.bus.ActionSpeed
+import crackers.kobots.app.bus.sequence
 
 /*
  * Demonstration type sequences for V3, and V4.
  */
+
 
 /**
  * Pick up something from the starting point and deliver it to the exit point.
@@ -31,66 +39,77 @@ import java.time.Duration
 val pickAndMove by lazy {
     val EXTENDER_MIDMOVE = 90f
     val ELBOW_MIDMOVE = 90f
-    val GRIPPER_GRAB = 50f
+    val GRIPPER_GRAB = 55f
     val WAIST_HALFWAY = 45f
     val WAIST_ALLTHEWAY = 90f
-    armSequence {
-        home()
-        movement {
-            elbow { angle = ELBOW_MIDMOVE }
-            extender { angle = EXTENDER_MIDMOVE }
+    sequence {
+        this + homeAction
+
+        action {
+            elbow.rotate { angle = ELBOW_MIDMOVE }
+            extender.rotate { angle = EXTENDER_MIDMOVE }
         }
-        gripperOpen()
-        movement {
-            extender { angle = EXTENDER_OUT }
-            elbow { angle = ELBOW_DOWN }
+        action {
+            gripper.rotate { angle = GRIPPER_OPEN }
         }
-        gripper(GRIPPER_GRAB)
-        movement { elbow { angle = ELBOW_MIDMOVE } }
-        movement {
-            waist { angle = WAIST_HALFWAY }
-            extender { angle = EXTENDER_MIDMOVE }
+        action {
+            extender.rotate { angle = EXTENDER_OUT }
+            elbow.rotate { angle = ELBOW_DOWN }
         }
-        movement { elbow { angle = ELBOW_UP } }
-        movement {
-            waist { angle = WAIST_ALLTHEWAY }
-            elbow { angle = ELBOW_MIDMOVE }
+        action {
+            gripper.rotate { angle = GRIPPER_GRAB }
         }
-        movement {
-            extender { angle = 135f }
-            elbow { angle = ELBOW_DOWN }
+        action {
+            elbow.rotate { angle = ELBOW_MIDMOVE }
         }
-        gripperOpen()
-        movement { elbow { angle = ELBOW_MIDMOVE } }
-        home()
+        action {
+            waist.rotate { angle = WAIST_HALFWAY }
+            extender.rotate { angle = EXTENDER_MIDMOVE }
+        }
+        action {
+            elbow.rotate { angle = ELBOW_UP }
+        }
+        action {
+            waist.rotate { angle = WAIST_ALLTHEWAY }
+            elbow.rotate { angle = ELBOW_MIDMOVE }
+        }
+        action {
+            extender.rotate { angle = 135f }
+            elbow.rotate { angle = ELBOW_DOWN }
+        }
+        action {
+            gripper.rotate { angle = GRIPPER_OPEN }
+        }
+        action {
+            elbow.rotate { angle = ELBOW_MIDMOVE }
+        }
+        this + homeAction
     }
 }
 
+/**
+ * Wave hello kinda.
+ */
 val sayHi by lazy {
-    armSequence {
-        home()
-        movement {
-            elbow { angle = 45f }
-            extender { angle = EXTENDER_OUT }
-            gripperOpen()
-            waist {
-                angle = 90f
-            }
+    sequence {
+        this + homeAction
+        action {
+            elbow.rotate { angle = 45f }
+            extender.rotate { angle = EXTENDER_OUT }
+            gripper.rotate { angle = GRIPPER_OPEN }
+            waist.rotate { angle = 90f }
+            requestedSpeed = ActionSpeed.FAST
         }
         (1..4).forEach {
-            movement {
-                waist {
-                    angle = 105f
-                }
-                pauseBetweenMoves = Duration.ofMillis(5)
+            action {
+                waist.rotate { angle = 105f }
+                requestedSpeed = ActionSpeed.SLOW
             }
-            movement {
-                waist {
-                    angle = 75f
-                }
-                pauseBetweenMoves = Duration.ofMillis(5)
+            action {
+                waist.rotate { angle = 75f }
+                requestedSpeed = ActionSpeed.SLOW
             }
         }
-        home()
+        this + homeAction
     }
 }

@@ -27,7 +27,7 @@ class SequenceTest : FunSpec(
          */
         test("simple rotate") {
             val rotator = MockRotator()
-            val testSequence = sequence {
+            val testSequence = crackers.kobots.app.bus.sequence {
                 action {
                     rotator.rotate {
                         angle = 90f
@@ -50,7 +50,7 @@ class SequenceTest : FunSpec(
         test("re-runnable") {
             val rotator = MockRotator()
             val randomAngle = randomServoAngle()
-            val testSequence = sequence {
+            val testSequence = crackers.kobots.app.bus.sequence {
                 action {
                     rotator.rotate {
                         angle = randomAngle
@@ -86,7 +86,7 @@ class SequenceTest : FunSpec(
          */
         test("rotate forward") {
             val rotator = MockRotator()
-            val testSequence = sequence {
+            val testSequence = crackers.kobots.app.bus.sequence {
                 action {
                     rotator.forwardUntil { rotator.current() >= 23f }
                 }
@@ -105,7 +105,7 @@ class SequenceTest : FunSpec(
         test("rotate forward and backward") {
             val rotator1 = MockRotator()
             val rotator2 = MockRotator()
-            val testSequence = sequence {
+            val testSequence = crackers.kobots.app.bus.sequence {
                 action {
                     rotator1.rotate {
                         angle = 45f
@@ -137,7 +137,7 @@ class SequenceTest : FunSpec(
             // N.B. moving to an absolute angle takes 1 less step than the angle
             val maxSteps = listOf(angle1, angle2, angle3).max().toInt() - 1
 
-            val testSequence = sequence {
+            val testSequence = crackers.kobots.app.bus.sequence {
                 action {
                     rotator1.rotate {
                         angle = angle1
@@ -170,7 +170,7 @@ class SequenceTest : FunSpec(
             val angles = listOf(randomServoAngle(), randomServoAngle())
             var secondStartsAt: Float? = null
 
-            val testSequence = sequence {
+            val testSequence = crackers.kobots.app.bus.sequence {
                 action {
                     rotator.rotate {
                         angle = angles[0]
@@ -217,7 +217,7 @@ class SequenceTest : FunSpec(
 
             var angleIndex = -1 // the external influence on the sequence
 
-            val testSequence = sequence {
+            val testSequence = crackers.kobots.app.bus.sequence {
                 action {
                     rotator.forwardUntil {
                         rotator.current().let { current: Float ->

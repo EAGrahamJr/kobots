@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app
+package crackers.kobots.app.bus
 
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap

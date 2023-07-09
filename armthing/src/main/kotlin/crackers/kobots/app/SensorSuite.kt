@@ -16,6 +16,11 @@
 
 package crackers.kobots.app
 
+import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.arm.sayHi
+import crackers.kobots.app.bus.KobotsEvent
+import crackers.kobots.app.bus.SequenceRequest
+import crackers.kobots.app.bus.publishToTopic
 import crackers.kobots.devices.sensors.VCNL4040
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
@@ -61,7 +66,7 @@ object SensorSuite : AutoCloseable {
             proximity = reading
             if (tooClose) publishToTopic(ALARM_TOPIC, ohCrap)
             lumens.also { l ->
-//                if (l > 100 && previousLumenus < 100) publishToTopic(TheArm.REQUEST_TOPIC, sayHi)
+                if (l > 100 && previousLumenus < 100) publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sayHi))
                 previousLumenus = l
             }
         }

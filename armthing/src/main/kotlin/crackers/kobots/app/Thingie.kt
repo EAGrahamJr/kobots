@@ -16,7 +16,14 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.arm.*
+import crackers.kobots.app.arm.ArmMonitor
+import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.arm.TheArm.homeAction
+import crackers.kobots.app.arm.pickAndMove
+import crackers.kobots.app.arm.sayHi
+import crackers.kobots.app.bus.SequenceRequest
+import crackers.kobots.app.bus.publishToTopic
+import crackers.kobots.app.bus.sequence
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.devices.io.NeoKey
 import java.awt.Color
@@ -24,7 +31,7 @@ import kotlin.system.exitProcess
 
 private val keyboard by lazy {
     NeoKey().apply {
-        brightness = 0.25f
+        brightness = 0.1f
     }
 }
 
@@ -105,21 +112,21 @@ fun main() {
 
 private fun demoMode(): Boolean {
     when {
-        currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, pickAndMove)
+        currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(pickAndMove))
         currentButtons[1] -> return true
-        currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, sayHi)
+        currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sayHi))
     }
     return false
 }
 
+val homeSequence = sequence {
+    this + homeAction
+}
 private fun manualMode(): Boolean {
     when {
-        currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, ManualMode())
-        currentButtons[1] -> publishToTopic(TheArm.REQUEST_TOPIC, ManualMode(false))
-        currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, ManualMode(true))
-        // bail
+//        // bail
         currentButtons[3] -> {
-            publishToTopic(TheArm.STATE_TOPIC, ManualModeEvent(-1))
+            publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(homeSequence))
             return false
         }
     }
@@ -131,18 +138,24 @@ private var gpZeroX: Float = 0f
 private var gpZeroY: Float = 0f
 
 private fun joyRide() {
-    val xAxis = gamepad.xAxis
-    if (gpZeroX == 0f) gpZeroX = xAxis
-    val yAxis = gamepad.yAxis
-    if (gpZeroY == 0f) gpZeroY = yAxis
+    // do not let this interrupt anything else
+    with(TheArm) {
+        if (state.busy) return
 
-    if (gpZeroX - xAxis > 15f) TheArm.waist.moveTowards(TheArm.waist.current() + 1)
-    if (gpZeroX - xAxis < -15f) TheArm.waist.moveTowards(TheArm.waist.current() - 1)
-    if (gpZeroY - yAxis > 15f) TheArm.elbow.moveTowards(TheArm.elbow.current() - 1)
-    if (gpZeroY - yAxis < -15f) TheArm.elbow.moveTowards(TheArm.elbow.current() + 1)
-    if (gamepad.aButton) TheArm.extender.moveTowards(TheArm.extender.current() - 2)
-    if (gamepad.yButton) TheArm.extender.moveTowards(TheArm.extender.current() + 2)
-    if (gamepad.xButton) TheArm.gripper.moveTowards(TheArm.gripper.current() - 1)
-    if (gamepad.bButton) TheArm.gripper.moveTowards(TheArm.gripper.current() + 1)
-    TheArm.updateCurrentState(false)
+        val xAxis = gamepad.xAxis
+        if (gpZeroX == 0f) gpZeroX = xAxis
+        val yAxis = gamepad.yAxis
+        if (gpZeroY == 0f) gpZeroY = yAxis
+
+        if (gpZeroX - xAxis > 45f) waist.rotateTo(waist.current() + 1)
+        if (gpZeroX - xAxis < -45f) waist.rotateTo(waist.current() - 1)
+        if (gpZeroY - yAxis > 45f) elbow.rotateTo(elbow.current() - 1)
+        if (gpZeroY - yAxis < -45f) elbow.rotateTo(elbow.current() + 1)
+        if (gamepad.aButton) extender.rotateTo(extender.current() - 2)
+        if (gamepad.yButton) extender.rotateTo(extender.current() + 2)
+        if (gamepad.xButton) gripper.rotateTo(gripper.current() - 1)
+        if (gamepad.bButton) gripper.rotateTo(gripper.current() + 1)
+
+        updateCurrentState()
+    }
 }
