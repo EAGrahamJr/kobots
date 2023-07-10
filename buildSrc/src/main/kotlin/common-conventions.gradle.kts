@@ -12,8 +12,8 @@ repositories {
 dependencies {
     implementation("ch.qos.logback:logback-classic:1.2.7")
 
-    testImplementation("io.kotest:kotest-runner-junit5:5.5.4")
-    testImplementation("io.mockk:mockk:1.13.3")
+    testImplementation("io.kotest:kotest-runner-junit5:5.6.2")
+    testImplementation("io.mockk:mockk:1.13.5")
 }
 
 group = "crackers.kobots"

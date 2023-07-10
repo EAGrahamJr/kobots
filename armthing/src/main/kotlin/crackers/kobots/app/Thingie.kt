@@ -19,18 +19,17 @@ package crackers.kobots.app
 import crackers.kobots.app.Keyboard.currentButtons
 import crackers.kobots.app.arm.*
 import crackers.kobots.app.arm.TheArm.homeAction
-import crackers.kobots.app.bus.ActionSequence
+import crackers.kobots.app.bus.EnviroHandler
 import crackers.kobots.app.bus.SequenceRequest
 import crackers.kobots.app.bus.publishToTopic
-import crackers.kobots.app.bus.sequence
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.devices.io.NeoKey
+import crackers.kobots.parts.ActionSequence
 import org.tinylog.Logger
 import java.awt.Color
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.exitProcess
-
 
 private val _menuIndex = AtomicInteger(0)
 val currentMenuItem: Menu
@@ -40,7 +39,6 @@ private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
 
-
 enum class Menu(val label: String, val action: () -> Unit) {
     HOME("Home", { publishSequence(homeSequence) }),
     PICK("Pick Up Drops", {
@@ -49,14 +47,12 @@ enum class Menu(val label: String, val action: () -> Unit) {
     }),
     RETURN_DROPS("Return to Sender", { publishSequence(returnTheThing) }),
     SAY_HI("Say Hi", { publishSequence(sayHi) }),
-    MANUAL("Manual", { _manualMode.set(true) }),
-
+    MANUAL("Manual", { _manualMode.set(true) })
 }
 
 private fun publishSequence(sequence: ActionSequence) {
     publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sequence))
 }
-
 
 private const val WAIT_LOOP = 10L
 
@@ -71,29 +67,37 @@ fun main() {
 
     crickitHat.use { hat ->
         TheArm.start()
+        EnviroHandler.startHandler()
 
         // main loop!!!!!
         while (Keyboard.buttonCheck()) {
             try {
                 executeWithMinTime(WAIT_LOOP) {
                     // figure out if we're doing anything
-                    if (manualMode) joyRide()
-                    else if (currentButtons.any { it }) {
+                    if (manualMode) {
+                        joyRide()
+                    } else if (currentButtons.any { it }) {
                         // we are, so do it
                         when {
+                            // previous menu item
                             currentButtons[0] -> {
-                                _menuIndex.set(_menuIndex.decrementAndGet().let {
+                                val next = _menuIndex.decrementAndGet().let {
                                     if (it < 0) Menu.values().size - 1 else it
-                                })
+                                }
+                                _menuIndex.set(next)
                             }
 
-                            currentButtons[1] -> {
-                                currentMenuItem.action()
-                            }
-
+                            // next menu item
                             currentButtons[2] -> {
-                                val i = _menuIndex.incrementAndGet() % Menu.values().size
-                                _menuIndex.set(i)
+                                val next = _menuIndex.incrementAndGet() % Menu.values().size
+                                _menuIndex.set(next)
+                            }
+
+                            // do the thing
+                            currentButtons[1] -> currentMenuItem.action()
+
+                            else -> {
+                                // do nothing
                             }
                         }
                     }
@@ -112,8 +116,7 @@ fun main() {
     exitProcess(0)
 }
 
-
-val homeSequence = sequence {
+val homeSequence = crackers.kobots.parts.sequence {
     this + homeAction
 }
 
@@ -184,5 +187,4 @@ object Keyboard {
     fun close() {
         keyboard.close()
     }
-
 }

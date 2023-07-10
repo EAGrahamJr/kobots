@@ -14,13 +14,12 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.parts
+package crackers.kobots.parts
 
 import com.diozero.api.ServoDevice
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import com.diozero.devices.sandpit.motor.StepperMotorInterface.Direction.BACKWARD
 import com.diozero.devices.sandpit.motor.StepperMotorInterface.Direction.FORWARD
-import crackers.kobots.app.almostEquals
 import crackers.kobots.devices.at
 import kotlin.math.abs
 import kotlin.math.max
@@ -47,6 +46,8 @@ interface Rotator : Actuator<RotationMovement> {
      * Current location.
      */
     fun current(): Float
+
+    fun Float.almostEquals(another: Float, wibble: Float): Boolean = abs(this - another) < wibble
 }
 
 /**
@@ -90,18 +91,21 @@ class RotatorStepper(
 
 /**
  * Servo, with software limits to prevent over-rotation. Movement "speed" is controlled by the `deltaDegrees` parameter
- * (`null` means absolute movement). The [precision] is the amount of "wiggle room" to allow for the target to be
- * considered "reached". Example:
+ * (`null` means absolute movement). The [precision] is used for floating-point comparisons.
+ *
+ * Note that the target **may** not be exact, due to rounding errors and if the [delta] is large. Example:
  * ```
- * precision = 5
+ * delta = 5
  * current = 47
  * target = 50
  * ```
- * This would indicate that the servo would **not** move, as the target is within the precision given.
+ * This would indicate that the servo would **not** move, as the target is within the delta given.
  *
  * **NOTE** [homeDegrees] is defined as the "zero" point for the servo, and [maximumDegrees] is the _absolute_ maximum
  * position. Thus, the maximum may be **less** than the home position. The [delta] is always a positive number and
  * the actual movement is computed relative to home and maximum.
+ *
+ * TODO map home/maximum to real-world coordinates
  */
 class RotatorServo(
     val theServo: ServoDevice,

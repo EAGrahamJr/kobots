@@ -25,13 +25,12 @@ import crackers.kobots.app.arm.TheArm.extender
 import crackers.kobots.app.arm.TheArm.gripper
 import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.arm.TheArm.waist
-import crackers.kobots.app.bus.ActionSpeed
-import crackers.kobots.app.bus.sequence
+import crackers.kobots.parts.ActionSpeed
+import crackers.kobots.parts.sequence
 
 /*
  * Demonstration type sequences for V3, and V4.
  */
-
 
 private val EXTENDER_MIDMOVE = 50
 private val EXTENDER_DROP = 75

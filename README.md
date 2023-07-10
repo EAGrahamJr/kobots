@@ -6,7 +6,7 @@ Experiments in electronics, robotics, and interacting with the "real world" with
 
 This is a _learning_ experience for me, but it **might** produce something useful (I'll re-write this README if that actually happens :smiley:).
 
-![Just Build](https://github.com/EAGrahamJr/kobots/actions/workflows/full-build.yaml/badge.svg)
+![Just Build](https://github.com/EAGrahamJr/kobots/actions/workflows/full-build.yaml/badge.svg) ![Kotin](https://badgen.net/badge/static/Kotlin/1.8.20/purple)
 
 ### In Memorium: Illy 5/2006 - 2/24/2023
 

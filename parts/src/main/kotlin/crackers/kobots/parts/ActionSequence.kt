@@ -14,9 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.bus
-
-import crackers.kobots.app.parts.*
+package crackers.kobots.parts
 
 // TODO define a "system wide" event bus to capture all events and actions
 
@@ -124,8 +122,3 @@ class ActionSequence {
  * Typesafe "builder" (DSL) for creating a sequence of actions.
  */
 fun sequence(init: ActionSequence.() -> Unit): ActionSequence = ActionSequence().apply(init)
-
-/**
- * Request to execute a sequence of actions.
- */
-class SequenceRequest(val sequence: ActionSequence, override val interruptable: Boolean = true) : KobotsAction

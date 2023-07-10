@@ -39,21 +39,21 @@ import java.util.concurrent.atomic.AtomicReference
  * Shows where the arm is on a timed basis.
  */
 object ArmMonitor {
-    private const val MW = 128
-    private const val MH = 32
-    private const val HALF_HT = MH / 2
+    private const val MAX_WD = 128
+    private const val MAX_HT = 32
+    private const val HALF_HT = MAX_HT / 2
     private const val COL_WD = 30
 
     private val screenGraphics: Graphics2D
 
-    private val monitorFont = Font(Font.SANS_SERIF, Font.PLAIN, 10)
+    private val monitorFont = Font(Font.SANS_SERIF, Font.PLAIN, 12)
     private val monitorMetrics: FontMetrics
     private var monitorLineHight: Int
 
     private val busyFont = Font(Font.MONOSPACED, Font.BOLD, 8)
     private val busyTextLocation: Pair<Int, Int>
 
-    private val image = BufferedImage(MW, MH, BufferedImage.TYPE_BYTE_GRAY).also { img: BufferedImage ->
+    private val image = BufferedImage(MAX_WD, MAX_HT, BufferedImage.TYPE_BYTE_GRAY).also { img: BufferedImage ->
         screenGraphics = (img.graphics as Graphics2D).also {
             monitorMetrics = it.getFontMetrics(monitorFont)
             monitorLineHight = monitorMetrics.ascent + 1
@@ -106,13 +106,13 @@ object ArmMonitor {
             color = Color.WHITE
             font = monitorFont
             val text = menuItem.label
-            val x = monitorMetrics.center(text, MW)
+            var x = monitorMetrics.center(text, MAX_WD)
             drawString(text, x, monitorLineHight)
 
             menuIcons.forEachIndexed { index, item ->
                 color = menuColors[index]
-                val x = monitorMetrics.center(item, COL_WD - 1)
-                drawString(item, (COL_WD * index) + x, MH - 1)
+                x = monitorMetrics.center(item, COL_WD - 1)
+                drawString(item, (COL_WD * index) + x, MAX_HT - 1)
             }
         }
         screen.display(image)
@@ -120,7 +120,7 @@ object ArmMonitor {
 
     private fun Graphics2D.clearImage() {
         color = Color.BLACK
-        fillRect(0, 0, MW, MH)
+        fillRect(0, 0, MAX_WD, MAX_HT)
     }
 
     private fun showLastStatus() {
@@ -146,7 +146,7 @@ object ArmMonitor {
                 }.forEachIndexed { i, string ->
                     color = Color.WHITE
                     val x = monitorMetrics.center(string, COL_WD - 1)
-                    drawString(string, (COL_WD * i) + x, MH - 1)
+                    drawString(string, (COL_WD * i) + x, MAX_HT - 1)
                 }
 
                 if (state.busy) {

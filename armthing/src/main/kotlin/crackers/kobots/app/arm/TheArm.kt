@@ -22,11 +22,9 @@ import crackers.kobots.app.bus.*
 import crackers.kobots.app.crickitHat
 import crackers.kobots.app.executeWithMinTime
 import crackers.kobots.app.executor
-import crackers.kobots.app.parts.RotatorServo
-import crackers.kobots.app.parts.RotatorStepper
-import crackers.kobots.app.parts.ServoLinearActuator
 import crackers.kobots.app.runFlag
 import crackers.kobots.devices.at
+import crackers.kobots.parts.*
 import crackers.kobots.utilities.KobotSleep
 import org.tinylog.Logger
 import java.util.concurrent.atomic.AtomicBoolean
@@ -109,7 +107,6 @@ object TheArm {
         gripper.rotate { angle = GRIPPER_CLOSE }
     }
 
-
     // manage the state of this construct =============================================================================
     private val _currentState = AtomicReference(ArmState(HOME_POSITION, false))
     private val atHome = AtomicBoolean(true)
@@ -180,7 +177,6 @@ object TheArm {
             stopImmediately.compareAndSet(true, false)
         }
     }
-
 
     /**
      * Updates the state of the arm, which in turn publishes to the event topic.

@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.parts
+package crackers.kobots.parts
 
 /**
  * Basic interface for a generic movement. A [stopCheck] function may be supplied to terminate movement, which should

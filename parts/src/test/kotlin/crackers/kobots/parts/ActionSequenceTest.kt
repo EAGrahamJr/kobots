@@ -14,14 +14,13 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.parts
+package crackers.kobots.parts
 
-import crackers.kobots.app.bus.sequence
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import kotlin.math.abs
 
-class SequenceTest : FunSpec(
+class ActionSequenceTest : FunSpec(
     {
         /**
          * Test a sequence of a single action where the mock rotator is rotated to 90 degrees

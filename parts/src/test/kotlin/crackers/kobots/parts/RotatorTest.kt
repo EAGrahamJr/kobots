@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.parts
+package crackers.kobots.parts
 
 import com.diozero.api.ServoDevice
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
@@ -29,7 +29,7 @@ import kotlin.math.roundToInt
 /**
  * Testing the rotator classes.
  */
-class RotatableTest : FunSpec(
+class RotatorTest : FunSpec(
     {
         @MockK
         lateinit var mockStepper: StepperMotorInterface
@@ -44,11 +44,11 @@ class RotatableTest : FunSpec(
 
         /**
          * Test the rotatable with a stepper motor: the gear ratio is 1:1 and the stepper motor has 200 steps per rotation.
-         * The rotatable is set to move from 0 to 360 degrees and it's starting position is assumbed to be 9 degrees.
+         * The rotatable is set to move from 0 to 360 degrees, and it's starting position is assumed to be 9 degrees.
          * The target angle is 83 degrees.
          */
         test("rotatable with stepper") {
-            every { mockStepper.getStepsPerRotation() } answers { 200 }
+            every { mockStepper.stepsPerRotation } answers { 200 }
             every { mockStepper.step(any()) } answers { }
             val rotatable = RotatorStepper(mockStepper)
 
@@ -79,7 +79,7 @@ class RotatableTest : FunSpec(
         }
 
         /**
-         * Test attempting to move a rotabable servo to an angle greater than the maximum the servo supports. The
+         * Test attempting to move a rotator servo to an angle greater than the maximum the servo supports. The
          * servo home position is 0 degrees and the maximum is 90 degrees. The rotatable has a delta of 1 degree and
          * the target is 100 degrees.
          */
@@ -103,4 +103,5 @@ class RotatableTest : FunSpec(
         /**
          * TODO test stepper with arc defined and negative direction
          */
-    })
+    }
+)

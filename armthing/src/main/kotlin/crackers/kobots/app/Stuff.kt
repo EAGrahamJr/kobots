@@ -22,7 +22,6 @@ import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.math.abs
 
 // shared devices
 internal val crickitHat by lazy { CRICKITHat() }
@@ -52,5 +51,3 @@ internal fun <R> executeWithMinTime(millis: Long, block: () -> R): R {
 internal fun checkRun(ms: Long, block: () -> Unit): Future<*> = executor.submit {
     while (runFlag.get()) executeWithMinTime(ms) { block() }
 }
-
-fun Float.almostEquals(another: Float, wibble: Float): Boolean = abs(this - another) < wibble

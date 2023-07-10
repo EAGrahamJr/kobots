@@ -3,11 +3,13 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":parts"))
     implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
 //    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
-    implementation("crackers.automation:hassk:0.0.1")
-
-    testImplementation("io.mockk:mockk:1.13.5")
+//    implementation("crackers.automation:hassk:0.0.1")
+    implementation("org.json:json:20230227")
+    // getting silly
+    implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
 }
 
 project.ext.set("jar.name", "kobots-app")

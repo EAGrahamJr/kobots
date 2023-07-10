@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.parts
+package crackers.kobots.parts
 
 import com.diozero.api.ServoDevice
 import kotlin.math.abs
