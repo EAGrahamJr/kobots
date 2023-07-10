@@ -88,7 +88,7 @@ class ExecutableAction internal constructor(private val builder: ActionBuilder) 
 /**
  * Defines a sequence of actions to be performed.
  */
-class Sequence {
+class ActionSequence {
     private val steps = mutableListOf<ActionBuilder>()
 
     /**
@@ -111,9 +111,9 @@ class Sequence {
 /**
  * Typesafe "builder" (DSL) for creating a sequence of actions.
  */
-fun sequence(init: Sequence.() -> Unit): Sequence = Sequence().apply(init)
+fun sequence(init: ActionSequence.() -> Unit): ActionSequence = ActionSequence().apply(init)
 
 /**
  * Request to execute a sequence of actions.
  */
-class SequenceRequest(val sequence: Sequence, override val interruptable: Boolean = true) : KobotsAction
+class SequenceRequest(val sequence: ActionSequence, override val interruptable: Boolean = true) : KobotsAction

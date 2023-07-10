@@ -19,10 +19,13 @@ package crackers.kobots.app.arm
 import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
+import crackers.kobots.app.Menu
 import crackers.kobots.app.bus.KobotsSubscriber
 import crackers.kobots.app.bus.joinTopic
+import crackers.kobots.app.currentMenuItem
 import crackers.kobots.app.executor
 import crackers.kobots.app.runFlag
+import crackers.kobots.utilities.KobotSleep
 import crackers.kobots.utilities.center
 import java.awt.Color
 import java.awt.Font
@@ -79,54 +82,80 @@ object ArmMonitor {
         )
 
         future = executor.submit {
-            drawHeaders()
-            screen.display(image)
+            var lastMenuItem: Menu? = null
 
             while (runFlag.get()) {
-                // show last recorded status
-                lastStateReceived.get()?.let { state ->
-                    with(screenGraphics) {
-                        font = monitorFont
-                        state.position.let { arm ->
-                            listOf(arm.waist, arm.extender, arm.elbow, arm.gripper)
-                        }.map {
-                            it.angle.toInt().toString()
-                        }.forEachIndexed { i, string ->
-                            color = Color.BLACK
-                            fillRect(i * COL_WD, HALF_HT, COL_WD - 1, HALF_HT)
-                            color = Color.WHITE
-                            val x = monitorMetrics.center(string, COL_WD - 1)
-                            drawString(string, (COL_WD * i) + x, MH - 1)
-                        }
-
-                        if (state.busy) {
-                            Color.RED
-                            font = busyFont
-                            drawString("B", busyTextLocation.first, busyTextLocation.second)
-                        } else {
-                            color = Color.BLACK
-                            fillRect(busyTextLocation.first, 0, 10, busyTextLocation.second)
-                        }
-                    }
-                    screen.display(image)
+                if (currentMenuItem != lastMenuItem) {
+                    lastMenuItem = currentMenuItem
+                    showMenuItem(lastMenuItem)
+                    lastStateReceived.set(null)
                 }
+
+                // show last recorded status
+                if (lastMenuItem == Menu.MANUAL) showLastStatus()
+                KobotSleep.millis(10)
             }
         }
     }
 
-    private fun drawHeaders() {
-        // write column headers
-        screen.clear()
+    private val menuIcons = listOf("<--", "oOo", "-->", "xXx")
+    private val menuColors = listOf(Color.BLUE, Color.GREEN, Color.CYAN, Color.RED)
+    private fun showMenuItem(menuItem: Menu) {
         with(screenGraphics) {
-            font = monitorFont.deriveFont(Font.BOLD)
+            clearImage()
+            color = Color.WHITE
+            font = monitorFont
+            val text = menuItem.label
+            val x = monitorMetrics.center(text, MW)
+            drawString(text, x, monitorLineHight)
 
-            for (i in 0 until 4) {
-                color = Color.GRAY
-                fillRect(i * COL_WD, 0, COL_WD - 1, HALF_HT)
-                color = Color.BLACK
-                val x = monitorMetrics.center(headers[i], COL_WD - 1)
-                drawString(headers[i], (COL_WD * i) + x, monitorMetrics.ascent)
+            menuIcons.forEachIndexed { index, item ->
+                color = menuColors[index]
+                val x = monitorMetrics.center(item, COL_WD - 1)
+                drawString(item, (COL_WD * index) + x, MH - 1)
             }
+        }
+        screen.display(image)
+    }
+
+    private fun Graphics2D.clearImage() {
+        color = Color.BLACK
+        fillRect(0, 0, MW, MH)
+    }
+
+    private fun showLastStatus() {
+        // show last recorded status
+        lastStateReceived.get()?.let { state ->
+            with(screenGraphics) {
+                clearImage()
+
+                font = monitorFont
+                // position headers
+                for (i in 0 until 4) {
+                    color = Color.GRAY
+                    fillRect(i * COL_WD, 0, COL_WD - 1, HALF_HT)
+                    color = Color.BLACK
+                    val x = monitorMetrics.center(headers[i], COL_WD - 1)
+                    drawString(headers[i], (COL_WD * i) + x, monitorMetrics.ascent)
+                }
+
+                state.position.let { arm ->
+                    listOf(arm.waist, arm.extender, arm.elbow, arm.gripper)
+                }.map {
+                    it.angle.toInt().toString()
+                }.forEachIndexed { i, string ->
+                    color = Color.WHITE
+                    val x = monitorMetrics.center(string, COL_WD - 1)
+                    drawString(string, (COL_WD * i) + x, MH - 1)
+                }
+
+                if (state.busy) {
+                    Color.RED
+                    font = busyFont
+                    drawString("B", busyTextLocation.first, busyTextLocation.second)
+                }
+            }
+            screen.display(image)
         }
     }
 

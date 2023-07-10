@@ -16,57 +16,49 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.arm.ArmMonitor
-import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.Keyboard.currentButtons
+import crackers.kobots.app.arm.*
 import crackers.kobots.app.arm.TheArm.homeAction
-import crackers.kobots.app.arm.pickAndMove
-import crackers.kobots.app.arm.sayHi
+import crackers.kobots.app.bus.ActionSequence
 import crackers.kobots.app.bus.SequenceRequest
 import crackers.kobots.app.bus.publishToTopic
 import crackers.kobots.app.bus.sequence
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.devices.io.NeoKey
+import org.tinylog.Logger
 import java.awt.Color
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.exitProcess
 
-private val keyboard by lazy {
-    NeoKey().apply {
-        brightness = 0.1f
-    }
+
+private val _menuIndex = AtomicInteger(0)
+val currentMenuItem: Menu
+    get() = Menu.values()[_menuIndex.get()]
+
+private val _manualMode = AtomicBoolean(false)
+val manualMode: Boolean
+    get() = _manualMode.get()
+
+
+enum class Menu(val label: String, val action: () -> Unit) {
+    HOME("Home", { publishSequence(homeSequence) }),
+    PICK("Pick Up Drops", {
+        publishSequence(pickAndMove)
+        _menuIndex.incrementAndGet()
+    }),
+    RETURN_DROPS("Return to Sender", { publishSequence(returnTheThing) }),
+    SAY_HI("Say Hi", { publishSequence(sayHi) }),
+    MANUAL("Manual", { _manualMode.set(true) }),
+
 }
 
-private val NO_BUTTONS = listOf(false, false, false, false)
-private var lastButtonValues = NO_BUTTONS
-private lateinit var currentButtons: List<Boolean>
-
-// because we're looking for "presses", only return values when a value transitions _to_ true
-private fun buttonCheck(manualMode: Boolean): Boolean {
-    currentButtons = keyboard.read().let { read ->
-        // "auto repeat" for manual mode
-        if (manualMode && (read[1] || read[2])) {
-            keyboard.pixels[1] = if (read[1]) Color.RED else Color.GREEN
-            keyboard.pixels[2] = if (read[2]) Color.RED else Color.GREEN
-            listOf(false, read[1], read[2], false)
-        } else {
-            if (read == lastButtonValues) {
-                keyboard.pixels.fill(Color.GREEN)
-                NO_BUTTONS
-            } else {
-                lastButtonValues = read
-                read.also {
-                    it.forEachIndexed { index, b -> keyboard.pixels[index] = if (b) Color.RED else Color.GREEN }
-                }
-            }
-        }
-    }
-    return currentButtons.isEmpty() || !currentButtons[3] || manualMode
+private fun publishSequence(sequence: ActionSequence) {
+    publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sequence))
 }
+
 
 private const val WAIT_LOOP = 10L
-
-// TODO temporary while testing
-const val REMOTE_PI = "diozero.remote.hostname"
-const val BRAINZ = "brainz.local"
 
 /**
  * Run this.
@@ -77,27 +69,37 @@ fun main() {
     SensorSuite.start()
     ArmMonitor.start()
 
-    // emergency stop
-//    joinTopic(SensorSuite.ALARM_TOPIC, KobotsSubscriber {
-//        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-//        runFlag.set(false)
-//    })
-
     crickitHat.use { hat ->
         TheArm.start()
 
         // main loop!!!!!
-        var manualMode = false
-        while (buttonCheck(manualMode)) {
+        while (Keyboard.buttonCheck()) {
             try {
                 executeWithMinTime(WAIT_LOOP) {
                     // figure out if we're doing anything
-                    if (currentButtons.any { it }) {
-                        manualMode = if (manualMode) manualMode() else demoMode()
-                    } else if (manualMode) joyRide()
+                    if (manualMode) joyRide()
+                    else if (currentButtons.any { it }) {
+                        // we are, so do it
+                        when {
+                            currentButtons[0] -> {
+                                _menuIndex.set(_menuIndex.decrementAndGet().let {
+                                    if (it < 0) Menu.values().size - 1 else it
+                                })
+                            }
+
+                            currentButtons[1] -> {
+                                currentMenuItem.action()
+                            }
+
+                            currentButtons[2] -> {
+                                val i = _menuIndex.incrementAndGet() % Menu.values().size
+                                _menuIndex.set(i)
+                            }
+                        }
+                    }
                 }
             } catch (e: Exception) {
-                println("Exception: $e")
+                Logger.error("Exception", e)
             }
         }
         runFlag.set(false)
@@ -106,31 +108,13 @@ fun main() {
     SensorSuite.close()
     ArmMonitor.stop()
     executor.shutdownNow()
-    keyboard.close()
+    Keyboard.close()
     exitProcess(0)
 }
 
-private fun demoMode(): Boolean {
-    when {
-        currentButtons[0] -> publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(pickAndMove))
-        currentButtons[1] -> return true
-        currentButtons[2] -> publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sayHi))
-    }
-    return false
-}
 
 val homeSequence = sequence {
     this + homeAction
-}
-private fun manualMode(): Boolean {
-    when {
-//        // bail
-        currentButtons[3] -> {
-            publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(homeSequence))
-            return false
-        }
-    }
-    return true
 }
 
 private val gamepad by lazy { GamepadQT() }
@@ -156,6 +140,49 @@ private fun joyRide() {
         if (gamepad.xButton) gripper.rotateTo(gripper.current() - 1)
         if (gamepad.bButton) gripper.rotateTo(gripper.current() + 1)
 
+        if (gamepad.startButton) _manualMode.set(false)
+
         updateCurrentState()
     }
+}
+
+object Keyboard {
+    private val keyboard = NeoKey().apply {
+        brightness = 0.1f
+    }
+
+    private val BUTTON_COLORS = listOf(Color.BLUE, Color.GREEN, Color.CYAN, Color.RED)
+
+    private val NO_BUTTONS = listOf(false, false, false, false)
+    private var lastButtonValues = NO_BUTTONS
+    lateinit var currentButtons: List<Boolean>
+
+    // because we're looking for "presses", only return values when a value transitions _to_ true
+    fun buttonCheck(): Boolean {
+        currentButtons = try {
+            keyboard.read().let { read ->
+                // "auto repeat" for manual mode
+                if (read == lastButtonValues) {
+                    BUTTON_COLORS.forEachIndexed { index, color -> keyboard.pixels[index] = color }
+                    NO_BUTTONS
+                } else {
+                    lastButtonValues = read
+                    read.also {
+                        it.forEachIndexed { index, b ->
+                            keyboard.pixels[index] = if (b) Color.YELLOW else BUTTON_COLORS[index]
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Logger.error("Error reading keyboard", e)
+            NO_BUTTONS
+        }
+        return currentButtons.isEmpty() || !currentButtons[3]
+    }
+
+    fun close() {
+        keyboard.close()
+    }
+
 }

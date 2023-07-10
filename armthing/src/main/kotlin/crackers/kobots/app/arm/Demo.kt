@@ -20,6 +20,7 @@ import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
 import crackers.kobots.app.arm.TheArm.ELBOW_UP
 import crackers.kobots.app.arm.TheArm.EXTENDER_OUT
 import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
+import crackers.kobots.app.arm.TheArm.WAIST_HOME
 import crackers.kobots.app.arm.TheArm.elbow
 import crackers.kobots.app.arm.TheArm.extender
 import crackers.kobots.app.arm.TheArm.gripper
@@ -33,15 +34,17 @@ import crackers.kobots.app.bus.sequence
  */
 
 
+private val EXTENDER_MIDMOVE = 90f
+private val EXTENDER_DROP = 135f
+private val ELBOW_MIDMOVE = 90f
+private val GRIPPER_GRAB = 55f
+private val WAIST_HALFWAY = 45f
+private val WAIST_ALLTHEWAY = 90f
+
 /**
  * Pick up something from the starting point and deliver it to the exit point.
  */
 val pickAndMove by lazy {
-    val EXTENDER_MIDMOVE = 90f
-    val ELBOW_MIDMOVE = 90f
-    val GRIPPER_GRAB = 55f
-    val WAIST_HALFWAY = 45f
-    val WAIST_ALLTHEWAY = 90f
     sequence {
         this + homeAction
 
@@ -74,7 +77,42 @@ val pickAndMove by lazy {
             elbow.rotate { angle = ELBOW_MIDMOVE }
         }
         action {
-            extender.rotate { angle = 135f }
+            extender.rotate { angle = EXTENDER_DROP }
+            elbow.rotate { angle = ELBOW_DOWN }
+        }
+        action {
+            gripper.rotate { angle = GRIPPER_OPEN }
+        }
+        action {
+            elbow.rotate { angle = ELBOW_MIDMOVE }
+        }
+        this + homeAction
+    }
+}
+
+val returnTheThing by lazy {
+    sequence {
+        this + homeAction
+        action {
+            waist.rotate { angle = WAIST_ALLTHEWAY }
+            extender.rotate { angle = EXTENDER_DROP }
+            elbow.rotate { angle = ELBOW_MIDMOVE }
+            gripper.rotate { angle = GRIPPER_OPEN }
+        }
+        action {
+            elbow.rotate { angle = ELBOW_DOWN }
+        }
+        action {
+            gripper.rotate { angle = GRIPPER_GRAB }
+        }
+        action {
+            elbow.rotate { angle = ELBOW_MIDMOVE }
+        }
+        action {
+            waist.rotate { angle = WAIST_HOME }
+            extender.rotate { angle = EXTENDER_OUT }
+        }
+        action {
             elbow.rotate { angle = ELBOW_DOWN }
         }
         action {
