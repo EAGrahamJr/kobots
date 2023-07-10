@@ -24,6 +24,7 @@ import crackers.kobots.app.executeWithMinTime
 import crackers.kobots.app.executor
 import crackers.kobots.app.parts.RotatorServo
 import crackers.kobots.app.parts.RotatorStepper
+import crackers.kobots.app.parts.ServoLinearActuator
 import crackers.kobots.app.runFlag
 import crackers.kobots.devices.at
 import crackers.kobots.utilities.KobotSleep
@@ -47,11 +48,6 @@ object TheArm {
     const val STATE_TOPIC = "TheArm.State"
     const val REQUEST_TOPIC = "TheArm.Request"
 
-    // build 2 gear ratio = 1.4:1
-    private const val EXTENDER_DELTA = 1f
-    const val EXTENDER_IN = 180f // straight up
-    const val EXTENDER_OUT = 0f // all the way out
-
     private const val ELBOW_DELTA = 1f
     const val ELBOW_UP = 0f
     const val ELBOW_DOWN = 180f
@@ -67,7 +63,7 @@ object TheArm {
 
     private val HOME_POSITION = ArmPosition(
         JointPosition(WAIST_HOME),
-        JointPosition(EXTENDER_IN),
+        JointPosition(0f),
         JointPosition(GRIPPER_CLOSE),
         JointPosition(ELBOW_UP)
     )
@@ -87,9 +83,9 @@ object TheArm {
 
     val extender by lazy {
         val servo3 = crickitHat.servo(1, ServoTrim.TOWERPRO_SG90).apply {
-            this at EXTENDER_IN
+            this at 180f
         }
-        RotatorServo(servo3, EXTENDER_IN, EXTENDER_OUT, EXTENDER_DELTA)
+        ServoLinearActuator(servo3, 180f, 0f)
     }
 
     val elbow by lazy {
@@ -108,7 +104,7 @@ object TheArm {
      */
     val homeAction = ActionBuilder().apply {
         waist.rotate { angle = WAIST_HOME }
-        extender.rotate { angle = EXTENDER_IN }
+        extender.extend { distance = 0 }
         elbow.rotate { angle = ELBOW_UP }
         gripper.rotate { angle = GRIPPER_CLOSE }
     }
@@ -193,7 +189,7 @@ object TheArm {
         state = ArmState(
             ArmPosition(
                 JointPosition(waist.current()),
-                JointPosition(extender.current()),
+                JointPosition(extender.current().toFloat()),
                 JointPosition(gripper.current()),
                 JointPosition(elbow.current())
             ),

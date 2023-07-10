@@ -42,6 +42,14 @@ class RotationMovementBuilder(rotator: Rotator) : MovementBuilder(rotator as Act
     }
 }
 
+class LinearMovementBuilder(linearActuator: LinearActuator) : MovementBuilder(linearActuator as Actuator<Movement>) {
+    var distance: Int = 0
+
+    override fun makeMovement(): Movement {
+        return LinearMovement(distance, relative, stopCheck)
+    }
+}
+
 enum class ActionSpeed {
     VERY_SLOW, SLOW, NORMAL, FAST, VERY_FAST
 }
@@ -69,6 +77,10 @@ class ActionBuilder {
             angle = -Float.MAX_VALUE
             stopCheck = backwardCheck
         }
+    }
+
+    infix fun LinearActuator.extend(init: LinearMovementBuilder.() -> Unit) {
+        steps += LinearMovementBuilder(this).apply(init)
     }
 
     fun build(): Pair<Action, ActionSpeed> {

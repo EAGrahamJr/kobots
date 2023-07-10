@@ -135,8 +135,8 @@ private fun joyRide() {
         if (gpZeroX - xAxis < -45f) waist.rotateTo(waist.current() - 1)
         if (gpZeroY - yAxis > 45f) elbow.rotateTo(elbow.current() - 1)
         if (gpZeroY - yAxis < -45f) elbow.rotateTo(elbow.current() + 1)
-        if (gamepad.aButton) extender.rotateTo(extender.current() - 2)
-        if (gamepad.yButton) extender.rotateTo(extender.current() + 2)
+        if (gamepad.aButton) extender.extendTo(extender.current() - 1)
+        if (gamepad.yButton) extender.extendTo(extender.current() + 1)
         if (gamepad.xButton) gripper.rotateTo(gripper.current() - 1)
         if (gamepad.bButton) gripper.rotateTo(gripper.current() + 1)
 
