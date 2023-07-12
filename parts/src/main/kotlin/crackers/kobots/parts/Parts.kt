@@ -68,22 +68,24 @@ class Action(movements: List<Pair<Actuator<Movement>, Movement>>) {
 
 /**
  * Describes where to go as a rotational angle. A [stopCheck] function may also be supplied to terminate movement
- * **prior** to reaching the desired [angle]. If the [relative] flag is set, the [angle] is relative to the current
- * position. An `Actuator` may or may not be limited in its range of motion, so the [angle] should be tailored to fit.
+ * **prior** to reaching the desired [angle]. An `Actuator` may or may not be limited in its range of motion, so the
+ * [angle] should be tailored to fit.
  */
 open class RotationMovement(
     val angle: Float,
-    val relative: Boolean = false,
     override val stopCheck: () -> Boolean = { false }
 ) : Movement
 
 /**
  * Describes where to go as a [percentage] of "in/out", where "in" is 0 and 100 is "out". A [stopCheck] function may
- * also be supplied to terminate movement **prior** to reaching the desired setting. If the [relative] flag is set, the
- * [percentage] is relative to the current position, but cannot exceed the limits of the actuator.
+ * also be supplied to terminate movement **prior** to reaching the desired setting.
  */
 open class LinearMovement(
     val percentage: Int,
-    val relative: Boolean = false,
     override val stopCheck: () -> Boolean = { false }
-) : Movement
+) : Movement {
+
+    init {
+        require(percentage in 0..100) { "percentage must be between 0 and 100" }
+    }
+}

@@ -33,14 +33,29 @@ import kotlin.math.roundToInt
  */
 interface Rotator : Actuator<RotationMovement> {
     override fun move(movement: RotationMovement): Boolean {
-        val target = if (movement.relative) current() + movement.angle else movement.angle
-        return rotateTo(target)
+        return rotateTo(movement.angle)
     }
 
     /**
      * Take a "step" towards this destination. Returns `true` if the target has been reached.
      */
     fun rotateTo(angle: Float): Boolean
+
+    operator fun plusAssign(delta: Float) {
+        rotateTo(current() + delta)
+    }
+
+    operator fun minusAssign(delta: Float) {
+        rotateTo(current() - delta)
+    }
+
+    operator fun unaryMinus() {
+        rotateTo(current() - 1)
+    }
+
+    operator fun unaryPlus() {
+        rotateTo(current() + 1)
+    }
 
     /**
      * Current location.

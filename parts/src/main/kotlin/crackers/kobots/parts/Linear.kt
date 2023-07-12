@@ -29,12 +29,27 @@ import kotlin.math.roundToInt
  */
 abstract class LinearActuator : Actuator<LinearMovement> {
     override fun move(movement: LinearMovement): Boolean {
-        val target = if (movement.relative) current() + movement.percentage else movement.percentage
-        return extendTo(max(0, min(100, target)))
+        return extendTo(max(0, min(100, movement.percentage)))
     }
 
     abstract fun extendTo(percentage: Int): Boolean
     abstract fun current(): Int
+
+    operator fun unaryPlus() {
+        extendTo(current() + 1)
+    }
+
+    operator fun plusAssign(detla: Int) {
+        extendTo(current() + detla)
+    }
+
+    operator fun unaryMinus() {
+        extendTo(current() - 1)
+    }
+
+    operator fun minusAssign(detla: Int) {
+        extendTo(current() - detla)
+    }
 }
 
 /**

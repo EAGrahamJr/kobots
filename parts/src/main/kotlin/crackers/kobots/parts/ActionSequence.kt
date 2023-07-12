@@ -22,7 +22,6 @@ package crackers.kobots.parts
  * Base parts for all movements.
  */
 abstract class MovementBuilder(protected var actuator: Actuator<Movement>? = null) {
-    var relative: Boolean = false
     var stopCheck: () -> Boolean = { false }
 
     fun build(): Pair<Actuator<Movement>, Movement> {
@@ -36,7 +35,7 @@ class RotationMovementBuilder(rotator: Rotator) : MovementBuilder(rotator as Act
     var angle: Float = 0f
 
     override fun makeMovement(): Movement {
-        return RotationMovement(angle, relative, stopCheck)
+        return RotationMovement(angle, stopCheck)
     }
 }
 
@@ -44,7 +43,7 @@ class LinearMovementBuilder(linearActuator: LinearActuator) : MovementBuilder(li
     var distance: Int = 0
 
     override fun makeMovement(): Movement {
-        return LinearMovement(distance, relative, stopCheck)
+        return LinearMovement(distance, stopCheck)
     }
 }
 
