@@ -18,31 +18,24 @@ package crackers.kobots.app.arm
 
 import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
-import crackers.kobots.app.bus.*
+import crackers.kobots.app.SequenceExecutor
+import crackers.kobots.app.bus.KobotsAction
+import crackers.kobots.app.bus.KobotsSubscriber
+import crackers.kobots.app.bus.joinTopic
+import crackers.kobots.app.bus.publishToTopic
 import crackers.kobots.app.crickitHat
-import crackers.kobots.app.executeWithMinTime
-import crackers.kobots.app.executor
-import crackers.kobots.app.runFlag
 import crackers.kobots.devices.at
-import crackers.kobots.parts.*
-import crackers.kobots.utilities.KobotSleep
-import org.tinylog.Logger
+import crackers.kobots.parts.ActionBuilder
+import crackers.kobots.parts.RotatorServo
+import crackers.kobots.parts.RotatorStepper
+import crackers.kobots.parts.ServoLinearActuator
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
-
-private fun ActionSpeed.toMillis(): Long {
-    return when (this) {
-        ActionSpeed.SLOW -> 50
-        ActionSpeed.NORMAL -> 15
-        ActionSpeed.FAST -> 7
-        else -> 15
-    }
-}
 
 /**
  * V5 iteration of a controlled "arm-like" structure.
  */
-object TheArm {
+object TheArm : SequenceExecutor() {
     const val STATE_TOPIC = "TheArm.State"
     const val REQUEST_TOPIC = "TheArm.Request"
 
@@ -128,60 +121,24 @@ object TheArm {
         )
     }
 
-    fun stop() {
-        if (moveInProgress.get()) stopImmediately.set(true)
-        while (stopImmediately.get()) KobotSleep.millis(5)
-        waist.release()
+    override fun stop() {
+        super.stop()
+        postExecution()
     }
 
-    // do stuff =======================================================================================================
-    private val moveInProgress = AtomicBoolean(false)
-    private val stopImmediately = AtomicBoolean(false)
-
-    private fun canRun() = runFlag.get() && !stopImmediately.get()
-
-    private fun handleRequest(request: KobotsAction) {
-        when (request) {
-            is EmergencyStop -> stopImmediately.set(true)
-            is SequenceRequest -> executeSequence(request)
-            else -> {}
-        }
-    }
-
-    private fun executeSequence(request: SequenceRequest) {
-        // claim it for ourselves and then use that for loop control
-        if (!moveInProgress.compareAndSet(false, true)) return
+    override fun preExecution() {
         state = ArmState(state.position, true)
         atHome.set(false) // any request is treated as being "not home" but the GO_HOME will reset this
+    }
 
-        executor.submit {
-            try {
-                request.sequence.build().forEach { action ->
-                    if (!canRun()) return@forEach
-                    var running = true
-                    while (running) {
-                        executeWithMinTime(action.speed.toMillis()) {
-                            running = action.action.step()
-                        }
-                        updateCurrentState()
-                    }
-                }
-            } catch (e: Exception) {
-                Logger.error("Error executing sequence", e)
-            }
-            waist.release()
-
-            // done
-            moveInProgress.compareAndSet(true, false)
-            updateCurrentState()
-            stopImmediately.compareAndSet(true, false)
-        }
+    override fun postExecution() {
+        waist.release()
     }
 
     /**
      * Updates the state of the arm, which in turn publishes to the event topic.
      */
-    fun updateCurrentState() {
+    override fun updateCurrentState() {
         state = ArmState(
             ArmPosition(
                 JointPosition(waist.current()),
@@ -189,7 +146,7 @@ object TheArm {
                 JointPosition(gripper.current()),
                 JointPosition(elbow.current())
             ),
-            moveInProgress.get()
+            moveInProgress
         )
     }
 }

@@ -17,11 +17,18 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.Keyboard.currentButtons
-import crackers.kobots.app.arm.*
+import crackers.kobots.app.arm.ArmMonitor
+import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.homeAction
+import crackers.kobots.app.arm.TheArm.waist
+import crackers.kobots.app.arm.sayHi
 import crackers.kobots.app.bus.EnviroHandler
 import crackers.kobots.app.bus.SequenceRequest
 import crackers.kobots.app.bus.publishToTopic
+import crackers.kobots.app.roto.Rotomatic
+import crackers.kobots.app.roto.Rotomatic.mainRoto
+import crackers.kobots.app.roto.getDrops
+import crackers.kobots.app.roto.storeDrops
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.devices.io.NeoKey
 import crackers.kobots.parts.ActionSequence
@@ -39,13 +46,27 @@ private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
 
+private var isEyeDrops = false
+
 enum class Menu(val label: String, val action: () -> Unit) {
     HOME("Home", { publishSequence(homeSequence) }),
-    PICK("Pick Up Drops", {
-        publishSequence(pickAndMove)
+
+    //    PICK("Pick Up Drops", {
+//        publishSequence(pickAndMove)
+//        _menuIndex.incrementAndGet()
+//    }),
+//    RETURN_DROPS("Return to Sender", { publishSequence(returnTheThing) }),
+    GET_DROPS("Rotomatic: Eye Drops", {
+        publishToTopic(Rotomatic.REQUEST_TOPIC, SequenceRequest(getDrops))
+        isEyeDrops = true
         _menuIndex.incrementAndGet()
     }),
-    RETURN_DROPS("Return to Sender", { publishSequence(returnTheThing) }),
+    STORE_DROPS("Rotomatic: Store Drops", {
+        if (isEyeDrops) {
+            publishToTopic(Rotomatic.REQUEST_TOPIC, SequenceRequest(storeDrops))
+            isEyeDrops = false
+        }
+    }),
     SAY_HI("Say Hi", { publishSequence(sayHi) }),
     MANUAL("Manual", { _manualMode.set(true) })
 }
@@ -67,6 +88,7 @@ fun main() {
 
     crickitHat.use { hat ->
         TheArm.start()
+        Rotomatic.start()
         EnviroHandler.startHandler()
 
         // main loop!!!!!
@@ -124,6 +146,8 @@ private val gamepad by lazy { GamepadQT() }
 private var gpZeroX: Float = 0f
 private var gpZeroY: Float = 0f
 
+private var whichStepper = waist
+
 private fun joyRide() {
     // do not let this interrupt anything else
     with(TheArm) {
@@ -134,15 +158,25 @@ private fun joyRide() {
         val yAxis = gamepad.yAxis
         if (gpZeroY == 0f) gpZeroY = yAxis
 
-        if (gpZeroX - xAxis > 45f) waist.rotateTo(waist.current() + 1)
-        if (gpZeroX - xAxis < -45f) waist.rotateTo(waist.current() - 1)
-        if (gpZeroY - yAxis > 45f) elbow.rotateTo(elbow.current() - 1)
-        if (gpZeroY - yAxis < -45f) elbow.rotateTo(elbow.current() + 1)
-        if (gamepad.aButton) extender.extendTo(extender.current() - 1)
-        if (gamepad.yButton) extender.extendTo(extender.current() + 1)
-        if (gamepad.xButton) gripper.rotateTo(gripper.current() - 1)
-        if (gamepad.bButton) gripper.rotateTo(gripper.current() + 1)
+        val stepperDelta = if (whichStepper == waist) 1f else 5f
 
+        if (gpZeroX - xAxis > 45f) whichStepper += stepperDelta
+        if (gpZeroX - xAxis < -45f) whichStepper -= stepperDelta
+        if (gpZeroY - yAxis > 45f) -elbow
+        if (gpZeroY - yAxis < -45f) +elbow
+        if (gamepad.aButton) +extender
+        if (gamepad.yButton) -extender
+        if (gamepad.xButton) -gripper
+        if (gamepad.bButton) +gripper
+        if (gamepad.selectButton) {
+            whichStepper = if (whichStepper == waist) {
+                Logger.warn("Switching to mainRoto", null)
+                mainRoto
+            } else {
+                Logger.warn("Switching to waist", null)
+                waist
+            }
+        }
         if (gamepad.startButton) _manualMode.set(false)
 
         updateCurrentState()
