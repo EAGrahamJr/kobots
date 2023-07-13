@@ -37,13 +37,8 @@ object TheArm : SequenceExecutor() {
     const val REQUEST_TOPIC = "TheArm.Request"
 
     private const val ELBOW_DELTA = 1f
-    const val ELBOW_UP = 0f
-    const val ELBOW_DOWN = 180f
-
-    // traverse gears
-    const val GRIPPER_OPEN = 0f
-    const val GRIPPER_CLOSE = 65f
-//    val GRIPPER_HOME = JointMovement(GRIPPER_CLOSE)
+    const val ELBOW_UP = 90f
+    const val ELBOW_DOWN = -10f
 
     private const val WAIST_DELTA = 1f
     const val WAIST_HOME = 0f
@@ -70,35 +65,46 @@ object TheArm : SequenceExecutor() {
     private val HOME_POSITION = ArmPosition(
         JointPosition(WAIST_HOME),
         JointPosition(0f),
-        JointPosition(GRIPPER_CLOSE),
+        JointPosition(0f),
         JointPosition(ELBOW_UP)
     )
 
     // hardware! =====================================================================================================
+    const val GRIPPER_OPEN = 0
+    const val GRIPPER_CLOSED = 100
+
     val gripper by lazy {
+        // traverse gears
+        val _OPEN = 0f
+        val _CLOSE = 65f
+
         val servo4 = crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
-            this at GRIPPER_CLOSE
+            this at _CLOSE
         }
 
-        fun open(): Boolean {
-            servo4 at GRIPPER_OPEN
-            return true
-        }
-        RotatorServo(servo4, GRIPPER_CLOSE, GRIPPER_OPEN)
+        // 0% == CLOSE, 100% == OPEN
+        ServoLinearActuator(servo4, _OPEN, _CLOSE)
     }
 
+    const val EXTENDER_HOME = 0
+    const val EXTENDER_FULL = 100
+
     val extender by lazy {
+        val _IN = 180f
+        val _OUT = 0f
         val servo3 = crickitHat.servo(1, ServoTrim.TOWERPRO_SG90).apply {
-            this at 180f
+            this at _IN
         }
-        ServoLinearActuator(servo3, 180f, 0f)
+        ServoLinearActuator(servo3, _IN, _OUT)
     }
 
     val elbow by lazy {
         val servo2 = crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
-            this at ELBOW_UP
+            this at 0f
         }
-        RotatorServo(servo2, ELBOW_UP, ELBOW_DOWN, ELBOW_DELTA)
+        val physicalRange = IntRange(ELBOW_DOWN.toInt(), ELBOW_UP.toInt())
+        val servoRange = IntRange(180, 0)
+        RotatorServo(servo2, physicalRange, servoRange)
     }
 
     val waist by lazy {
@@ -109,10 +115,10 @@ object TheArm : SequenceExecutor() {
      * Home the arm.
      */
     val homeAction = ActionBuilder().apply {
-        waist.rotate { angle = WAIST_HOME }
-        extender.extend { distance = 0 }
-        elbow.rotate { angle = ELBOW_UP }
-        gripper.rotate { angle = GRIPPER_CLOSE }
+        waist rotate WAIST_HOME
+        extender goTo EXTENDER_HOME
+        elbow rotate ELBOW_UP
+        gripper goTo GRIPPER_CLOSED
     }
 
     // manage the state of this construct =============================================================================
@@ -158,7 +164,7 @@ object TheArm : SequenceExecutor() {
             ArmPosition(
                 JointPosition(waist.current()),
                 JointPosition(extender.current().toFloat()),
-                JointPosition(gripper.current()),
+                JointPosition(gripper.current().toFloat()),
                 JointPosition(elbow.current())
             ),
             moveInProgress

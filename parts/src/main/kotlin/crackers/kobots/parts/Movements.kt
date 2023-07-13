@@ -89,3 +89,12 @@ open class LinearMovement(
         require(percentage in 0..100) { "percentage must be between 0 and 100" }
     }
 }
+
+/**
+ * Simple "in/out" or "open/close" movement. A [stopCheck] function may also be supplied to terminate movement **prior**
+ * to attempting movement.
+ */
+open class InOutMovement(
+    val moveIn: Boolean,
+    override val stopCheck: () -> Boolean = { false }
+) : Movement

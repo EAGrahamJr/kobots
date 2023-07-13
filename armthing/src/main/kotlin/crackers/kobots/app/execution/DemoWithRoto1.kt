@@ -16,18 +16,6 @@
 
 package crackers.kobots.app.execution
 
-import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
-import crackers.kobots.app.arm.TheArm.ELBOW_UP
-import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
-import crackers.kobots.app.arm.TheArm.elbow
-import crackers.kobots.app.arm.TheArm.extender
-import crackers.kobots.app.arm.TheArm.gripper
-import crackers.kobots.app.arm.TheArm.homeAction
-import crackers.kobots.app.arm.TheArm.mainRoto
-import crackers.kobots.app.arm.TheArm.waist
-import crackers.kobots.parts.ActionSpeed
-import crackers.kobots.parts.sequence
-
 private val ELBOW_TRAVEL = 90f
 
 private val LANDING_WAIST = 90f
@@ -37,7 +25,7 @@ private val DROPS_ROTO = 90f
 private val DROPS_GRAB = 55f
 private val DROPS_EXTENDER = 80
 private val DROPS_ELBOW = 160f
-
+/*
 val getDrops by lazy {
     sequence {
         name = "Get Drops"
@@ -117,3 +105,4 @@ val storeDrops by lazy {
         this + homeAction
     }
 }
+*/

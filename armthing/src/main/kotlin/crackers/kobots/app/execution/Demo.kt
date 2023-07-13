@@ -17,6 +17,8 @@
 package crackers.kobots.app.execution
 
 import crackers.kobots.app.arm.TheArm.ELBOW_UP
+import crackers.kobots.app.arm.TheArm.EXTENDER_FULL
+import crackers.kobots.app.arm.TheArm.EXTENDER_HOME
 import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
 import crackers.kobots.app.arm.TheArm.WAIST_HOME
 import crackers.kobots.app.arm.TheArm.elbow
@@ -33,9 +35,9 @@ import kotlin.math.roundToInt
  */
 
 private const val LOAD_EXTENDER = 65
-private const val ELBOW_FLAT = 170f
-private const val LOAD_GRIPPER = 60f
-private const val TRAVEL_ELBOW = 90f
+private const val LOAD_GRIPPER = 90
+private const val ELBOW_FLAT = -5f
+private const val TRAVEL_ELBOW = 45f
 private const val MIDPOINT_WAIST = 45f
 private const val DROP_WAIST = 90f
 private const val DROP_EXTENDER = 50
@@ -49,37 +51,27 @@ val pickAndMove by lazy {
         this + homeAction
 
         action {
-            elbow.rotate { angle = ELBOW_FLAT }
-            gripper.rotate { angle = GRIPPER_OPEN }
+            elbow rotate ELBOW_FLAT
+            gripper goTo GRIPPER_OPEN
+        }
+        action { extender goTo LOAD_EXTENDER }
+        action { gripper goTo LOAD_GRIPPER }
+        action { elbow rotate TRAVEL_ELBOW }
+        action {
+            waist rotate MIDPOINT_WAIST
+            extender goTo EXTENDER_HOME
+            elbow rotate ELBOW_UP
         }
         action {
-            extender.extend { distance = LOAD_EXTENDER }
+            waist rotate DROP_WAIST
+            elbow rotate TRAVEL_ELBOW
         }
         action {
-            gripper.rotate { angle = LOAD_GRIPPER }
+            extender goTo DROP_EXTENDER
+            elbow rotate ELBOW_FLAT
         }
-        action {
-            elbow.rotate { angle = TRAVEL_ELBOW }
-        }
-        action {
-            waist.rotate { angle = MIDPOINT_WAIST }
-            extender.extend { distance = 0 }
-            elbow.rotate { angle = ELBOW_UP }
-        }
-        action {
-            waist.rotate { angle = DROP_WAIST }
-            elbow.rotate { angle = TRAVEL_ELBOW }
-        }
-        action {
-            extender.extend { distance = DROP_EXTENDER }
-            elbow.rotate { angle = ELBOW_FLAT }
-        }
-        action {
-            gripper.rotate { angle = GRIPPER_OPEN }
-        }
-        action {
-            elbow.rotate { angle = TRAVEL_ELBOW }
-        }
+        action { gripper goTo GRIPPER_OPEN }
+        action { elbow rotate TRAVEL_ELBOW }
         this + homeAction
     }
 }
@@ -92,34 +84,22 @@ val returnTheThing by lazy {
         name = "Return the Thing"
         this + homeAction
         action {
-            waist.rotate { angle = DROP_WAIST }
-            extender.extend { distance = (DROP_EXTENDER * .75).roundToInt() }
-            elbow.rotate { angle = ELBOW_FLAT }
-            gripper.rotate { angle = GRIPPER_OPEN }
+            waist rotate DROP_WAIST
+            extender goTo (DROP_EXTENDER * .75).roundToInt()
+            elbow rotate ELBOW_FLAT
+            gripper goTo GRIPPER_OPEN
             requestedSpeed = ActionSpeed.FAST
         }
+        action { extender goTo DROP_EXTENDER }
+        action { gripper goTo LOAD_GRIPPER }
+        action { elbow rotate TRAVEL_ELBOW }
         action {
-            extender.extend { distance = DROP_EXTENDER }
+            waist rotate WAIST_HOME
+            extender goTo DROP_EXTENDER
         }
-        action {
-            gripper.rotate { angle = LOAD_GRIPPER }
-        }
-        action {
-            elbow.rotate { angle = TRAVEL_ELBOW }
-        }
-        action {
-            waist.rotate { angle = WAIST_HOME }
-            extender.extend { distance = DROP_EXTENDER }
-        }
-        action {
-            elbow.rotate { angle = ELBOW_FLAT }
-        }
-        action {
-            gripper.rotate { angle = GRIPPER_OPEN }
-        }
-        action {
-            elbow.rotate { angle = TRAVEL_ELBOW }
-        }
+        action { elbow rotate ELBOW_FLAT }
+        action { gripper goTo GRIPPER_OPEN }
+        action { elbow rotate TRAVEL_ELBOW }
         this + homeAction
     }
 }
@@ -132,20 +112,19 @@ val sayHi by lazy {
         name = "Say Hi"
         this + homeAction
         action {
-            elbow.rotate { angle = 45f }
-            extender.extend { distance = 100 }
-            gripper.rotate { angle = GRIPPER_OPEN }
-            waist.rotate { angle = 90f }
-            requestedSpeed = ActionSpeed.FAST
+            elbow rotate 45f
+            extender goTo EXTENDER_FULL
+            gripper goTo GRIPPER_OPEN
+            waist rotate 90f
         }
         (1..4).forEach {
             action {
-                waist.rotate { angle = 105f }
-                requestedSpeed = ActionSpeed.SLOW
+                elbow rotate 80f
+                requestedSpeed = ActionSpeed.FAST
             }
             action {
-                waist.rotate { angle = 75f }
-                requestedSpeed = ActionSpeed.SLOW
+                elbow rotate 30f
+                requestedSpeed = ActionSpeed.FAST
             }
         }
         this + homeAction

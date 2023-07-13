@@ -117,7 +117,7 @@ fun main() {
                     }
                 }
             } catch (e: Exception) {
-                Logger.error("Exception", e)
+                Logger.error(e, "Exception")
             }
         }
         runFlag.set(false)
@@ -154,8 +154,8 @@ private fun joyRide() {
 
         if (gpZeroX - xAxis > 45f) whichStepper += stepperDelta
         if (gpZeroX - xAxis < -45f) whichStepper -= stepperDelta
-        if (gpZeroY - yAxis > 45f) -elbow
-        if (gpZeroY - yAxis < -45f) +elbow
+        if (gpZeroY - yAxis > 45f) +elbow
+        if (gpZeroY - yAxis < -45f) -elbow
         if (gamepad.aButton) +extender
         if (gamepad.yButton) -extender
         if (gamepad.xButton) -gripper
@@ -204,7 +204,7 @@ object Keyboard {
                 }
             }
         } catch (e: Exception) {
-            Logger.error("Error reading keyboard", e)
+            Logger.error(e, "Error reading keyboard")
             NO_BUTTONS
         }
         return currentButtons.isEmpty() || !currentButtons[3]

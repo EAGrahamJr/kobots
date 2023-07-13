@@ -39,22 +39,24 @@ abstract class LinearActuator : Actuator<LinearMovement> {
         extendTo(current() + 1)
     }
 
-    operator fun plusAssign(detla: Int) {
-        extendTo(current() + detla)
+    operator fun plusAssign(delta: Int) {
+        extendTo(current() + delta)
     }
 
     operator fun unaryMinus() {
         extendTo(current() - 1)
     }
 
-    operator fun minusAssign(detla: Int) {
-        extendTo(current() - detla)
+    operator fun minusAssign(delta: Int) {
+        extendTo(current() - delta)
     }
 }
 
 /**
  * A linear actuator that uses a servo to extend and retract. Due to rounding errors and whatever gearing is applied,
  * the "step" size is basically however far the servo moves the actuator in one degree of rotation.
+ *
+ * TODO add a delta to manage the rate of change
  */
 class ServoLinearActuator(
     val theServo: ServoDevice,
@@ -65,6 +67,8 @@ class ServoLinearActuator(
     private val whichWay = if (maximumDegrees > homeDegrees) 1f else -1f
 
     override fun extendTo(percentage: Int): Boolean {
+        if (percentage < 0 || percentage > 100) return true
+
         val delta = percentage - current()
         if (delta != 0) {
             val currentAngle = theServo.angle
@@ -75,11 +79,23 @@ class ServoLinearActuator(
                 theServo.angle = currentAngle - whichWay
             }
         }
-        return percentage - current() == 0
+        return abs(percentage - current()) <= 1
     }
 
     override fun current(): Int {
         val degrees = theServo.angle
         return (abs(degrees - homeDegrees) * 100 / servoSwingDegrees).roundToInt()
     }
+}
+
+/**
+ * This actuator is essentially a "binary" type, where it can be either in or out (open or closed). Typically this
+ * would be powered by something like a solenoid.
+ */
+abstract class InOutActuator : Actuator<InOutMovement> {
+    override fun move(movement: InOutMovement): Boolean {
+        return inOrOut(movement.moveIn)
+    }
+
+    abstract fun inOrOut(moveIn: Boolean): Boolean
 }

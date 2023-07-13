@@ -62,6 +62,12 @@ class ActionBuilder {
         steps += RotationMovementBuilder(this).apply(init)
     }
 
+    infix fun Rotator.rotate(angle: Float) {
+        steps += RotationMovementBuilder(this).apply {
+            this.angle = angle
+        }
+    }
+
     infix fun Rotator.forwardUntil(forwardCheck: () -> Boolean) {
         steps += RotationMovementBuilder(this).apply {
             angle = Float.MAX_VALUE
@@ -78,6 +84,12 @@ class ActionBuilder {
 
     infix fun LinearActuator.extend(init: LinearMovementBuilder.() -> Unit) {
         steps += LinearMovementBuilder(this).apply(init)
+    }
+
+    infix fun LinearActuator.goTo(position: Int) {
+        steps += LinearMovementBuilder(this).apply {
+            distance = position
+        }
     }
 
     fun build(): Pair<Action, ActionSpeed> {

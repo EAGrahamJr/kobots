@@ -97,7 +97,7 @@ abstract class SequenceExecutor {
             // done
             _moving.set(false)
             updateCurrentState()
-            _stop.set(false)    // clera emergency stop flag
+            _stop.set(false) // clera emergency stop flag
         }
     }
 

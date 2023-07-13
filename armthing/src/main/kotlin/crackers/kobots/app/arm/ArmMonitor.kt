@@ -85,14 +85,20 @@ object ArmMonitor {
             var lastMenuItem: Menu? = null
 
             while (runFlag.get()) {
-                if (currentMenuItem != lastMenuItem) {
-                    lastMenuItem = currentMenuItem
-                    showMenuItem(lastMenuItem)
-                    lastStateReceived.set(null)
-                }
+                // if the arm is busy, show its status
+                if (lastStateReceived.get()?.busy == true) {
+                    showLastStatus()
+                    lastMenuItem = null
+                } else {
+                    if (currentMenuItem != lastMenuItem) {
+                        lastMenuItem = currentMenuItem
+                        showMenuItem(lastMenuItem)
+                        lastStateReceived.set(null)
+                    }
 
-                // show last recorded status
-                if (lastMenuItem == Menu.MANUAL) showLastStatus()
+                    // show last recorded status
+                    if (lastMenuItem == Menu.MANUAL) showLastStatus()
+                }
                 KobotSleep.millis(10)
             }
         }

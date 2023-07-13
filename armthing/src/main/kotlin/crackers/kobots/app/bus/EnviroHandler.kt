@@ -17,7 +17,7 @@
 package crackers.kobots.app.bus
 
 import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.execution.getDrops
+import crackers.kobots.app.execution.pickAndMove
 import org.eclipse.paho.client.mqttv3.*
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.json.JSONObject
@@ -54,7 +54,7 @@ object EnviroHandler {
             try {
                 val payload = JSONObject(String(msg.payload))
                 if (payload.has("lamp")) {
-                    if (LocalTime.now().hour == 22) publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(getDrops))
+                    if (LocalTime.now().hour == 22) publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(pickAndMove))
                 }
             } catch (t: Throwable) {
                 Logger.error("That didn't work", t)

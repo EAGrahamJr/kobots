@@ -19,6 +19,7 @@ package crackers.kobots.parts
 import com.diozero.api.ServoDevice
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.matchers.shouldBe
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
@@ -61,47 +62,67 @@ class RotatorTest : FunSpec(
         }
 
         /**
-         * Test a rotatable servo motor: the servo starts at 42 degrees and the home position is 105 with the maximum
-         * at 3 degrees. The rotatable has a delta of 1 degree and the target is 90 degrees.
+         * Test a rotatable with a servo motor. The physical range is 0 to 90 degrees and the servo has a range of 0 to 180.
+         * Assume the servo angle is at 43 degrees and the target is 87 physical degrees.
          */
         test("rotatable with servo") {
-            val rotatable = RotatorServo(mockServo, 105f, 3f, 1f)
-            var currentServoAngle = 42f
-            every { mockServo.angle } answers { currentServoAngle }
-            every { mockServo.angle = any() } answers { currentServoAngle = arg(0) }
+            var currentAngle = 43f
+            every { mockServo.angle } answers { currentAngle }
+            every { mockServo.setAngle(any()) } answers {
+                currentAngle = args[0] as Float
+            }
+            val rotatable = RotatorServo(mockServo, IntRange(0, 90), IntRange(0, 180))
 
-            while (!rotatable.rotateTo(90f)) {
+            while (!rotatable.rotateTo(87f)) {
                 // just count things
             }
-            verify(atLeast = 90 - 42) {
-                mockServo.angle = any()
+            verify(exactly = 131) {
+                mockServo.setAngle(any())
             }
+            currentAngle shouldBe 174f
         }
 
         /**
-         * Test attempting to move a rotator servo to an angle greater than the maximum the servo supports. The
-         * servo home position is 0 degrees and the maximum is 90 degrees. The rotatable has a delta of 1 degree and
-         * the target is 100 degrees.
+         * Test a rotatable with a servo motor. The physical range is -10 to 90 degrees and the servo has a range of
+         * 180 to 0. Assume the servo angle is at 162 degrees and the target is 45 physical degrees.
          */
-        test("rotatable with servo - beyond maximum") {
-            val rotatable = RotatorServo(mockServo, 0f, 90f, 1f)
-            var currentServoAngle = 0f
-            every { mockServo.angle } answers { currentServoAngle }
-            every { mockServo.angle = any() } answers { currentServoAngle = arg(0) }
+        test("rotatable with servo reversed") {
+            var currentAngle = 162f
+            every { mockServo.angle } answers { currentAngle }
+            every { mockServo.setAngle(any()) } answers {
+                currentAngle = args[0] as Float
+            }
+            val rotatable = RotatorServo(mockServo, IntRange(-10, 90), IntRange(180, 0))
 
-            while (!rotatable.rotateTo(100f)) {
+            while (!rotatable.rotateTo(45f)) {
                 // just count things
             }
-            // one less because we hit maximum already
-            verify(atLeast = 89) {
-                mockServo.angle = any()
+            verify(exactly = 81) {
+                mockServo.setAngle(any())
             }
+            currentAngle shouldBe 81f
         }
+
         /**
-         * TODO test servo with arc defined
+         * Test a rotatable with a servo motor. The physical range is 0 to 90 and the servo has a range of 0 to 180.
+         * The delta is 5 degrees. The servo is currently at an angle of 60 degrees and the target is 32 degrees.
+         * Verify the servo does not move.
          */
-        /**
-         * TODO test stepper with arc defined and negative direction
-         */
+        test("rotatable with servo delta") {
+            var currentAngle = 60f
+            every { mockServo.angle } answers { currentAngle }
+            every { mockServo.setAngle(any()) } answers {
+                currentAngle = args[0] as Float
+            }
+            val rotatable = RotatorServo(mockServo, IntRange(0, 90), IntRange(0, 180), 5)
+
+            while (!rotatable.rotateTo(32f)) {
+                // just count things
+            }
+            verify(exactly = 0) {
+                mockServo.setAngle(any())
+            }
+            currentAngle shouldBe 60f
+        }
     }
 )
