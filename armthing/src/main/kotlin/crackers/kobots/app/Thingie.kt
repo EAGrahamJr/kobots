@@ -21,14 +21,12 @@ import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.arm.TheArm.waist
-import crackers.kobots.app.arm.sayHi
 import crackers.kobots.app.bus.EnviroHandler
 import crackers.kobots.app.bus.SequenceRequest
 import crackers.kobots.app.bus.publishToTopic
-import crackers.kobots.app.roto.Rotomatic
-import crackers.kobots.app.roto.Rotomatic.mainRoto
-import crackers.kobots.app.roto.getDrops
-import crackers.kobots.app.roto.storeDrops
+import crackers.kobots.app.execution.pickAndMove
+import crackers.kobots.app.execution.returnTheThing
+import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.devices.io.NeoKey
 import crackers.kobots.parts.ActionSequence
@@ -46,27 +44,22 @@ private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
 
-private var isEyeDrops = false
+private var hasPickedUpThing = false
 
 enum class Menu(val label: String, val action: () -> Unit) {
     HOME("Home", { publishSequence(homeSequence) }),
 
-    //    PICK("Pick Up Drops", {
-//        publishSequence(pickAndMove)
-//        _menuIndex.incrementAndGet()
-//    }),
-//    RETURN_DROPS("Return to Sender", { publishSequence(returnTheThing) }),
-    GET_DROPS("Rotomatic: Eye Drops", {
-        publishToTopic(Rotomatic.REQUEST_TOPIC, SequenceRequest(getDrops))
-        isEyeDrops = true
+    PICK("Pick Up #1", {
+        publishSequence(pickAndMove)
+        hasPickedUpThing = true
         _menuIndex.incrementAndGet()
     }),
-    STORE_DROPS("Rotomatic: Store Drops", {
-        if (isEyeDrops) {
-            publishToTopic(Rotomatic.REQUEST_TOPIC, SequenceRequest(storeDrops))
-            isEyeDrops = false
+    RETURN_DROPS("Return to Sender", {
+        if (hasPickedUpThing) {
+            publishSequence(returnTheThing)
         }
     }),
+
     SAY_HI("Say Hi", { publishSequence(sayHi) }),
     MANUAL("Manual", { _manualMode.set(true) })
 }
@@ -75,7 +68,7 @@ private fun publishSequence(sequence: ActionSequence) {
     publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sequence))
 }
 
-private const val WAIT_LOOP = 10L
+private const val WAIT_LOOP = 50L
 
 /**
  * Run this.
@@ -88,7 +81,6 @@ fun main() {
 
     crickitHat.use { hat ->
         TheArm.start()
-        Rotomatic.start()
         EnviroHandler.startHandler()
 
         // main loop!!!!!
@@ -168,15 +160,15 @@ private fun joyRide() {
         if (gamepad.yButton) -extender
         if (gamepad.xButton) -gripper
         if (gamepad.bButton) +gripper
-        if (gamepad.selectButton) {
-            whichStepper = if (whichStepper == waist) {
-                Logger.warn("Switching to mainRoto", null)
-                mainRoto
-            } else {
-                Logger.warn("Switching to waist", null)
-                waist
-            }
-        }
+//        if (gamepad.selectButton) {
+//            whichStepper = if (whichStepper == waist) {
+//                Logger.warn("Switching to mainRoto", null)
+//                mainRoto
+//            } else {
+//                Logger.warn("Switching to waist", null)
+//                waist
+//            }
+//        }
         if (gamepad.startButton) _manualMode.set(false)
 
         updateCurrentState()

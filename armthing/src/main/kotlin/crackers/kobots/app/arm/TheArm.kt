@@ -25,10 +25,7 @@ import crackers.kobots.app.bus.joinTopic
 import crackers.kobots.app.bus.publishToTopic
 import crackers.kobots.app.crickitHat
 import crackers.kobots.devices.at
-import crackers.kobots.parts.ActionBuilder
-import crackers.kobots.parts.RotatorServo
-import crackers.kobots.parts.RotatorStepper
-import crackers.kobots.parts.ServoLinearActuator
+import crackers.kobots.parts.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -51,6 +48,24 @@ object TheArm : SequenceExecutor() {
     private const val WAIST_DELTA = 1f
     const val WAIST_HOME = 0f
     const val WAIST_MAX = 180f
+
+    // not part of the arm, but used in coordination with it
+    // TODO physical implementation left something to be desired
+//    val mainRoto by lazy {
+//        val stepper = BasicStepperMotor(2048, crickitHat.unipolarStepperPort())
+//        RotatorStepper(stepper)
+//    }
+    val mainRoto = object : Rotator {
+        private var angle = 0f
+        override fun rotateTo(angle: Float): Boolean {
+            this.angle = angle
+            return true
+        }
+
+        override fun current(): Float {
+            return angle
+        }
+    }
 
     private val HOME_POSITION = ArmPosition(
         JointPosition(WAIST_HOME),

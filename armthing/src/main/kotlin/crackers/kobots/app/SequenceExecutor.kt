@@ -72,7 +72,10 @@ abstract class SequenceExecutor {
      */
     protected fun executeSequence(request: SequenceRequest) {
         // claim it for ourselves and then use that for loop control
-        if (!_moving.compareAndSet(false, true)) return
+        if (!_moving.compareAndSet(false, true)) {
+            Logger.warn("Sequence already running - rejected {}", request.sequence.name)
+            return
+        }
         preExecution()
         executor.submit {
             try {

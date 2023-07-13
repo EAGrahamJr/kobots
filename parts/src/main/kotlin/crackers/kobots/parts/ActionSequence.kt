@@ -100,6 +100,8 @@ class ExecutableAction internal constructor(private val builder: ActionBuilder) 
 class ActionSequence {
     private val steps = mutableListOf<ActionBuilder>()
 
+    var name: String = "default"
+
     /**
      * Add an action to the sequence.
      */

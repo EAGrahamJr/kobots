@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.roto
+package crackers.kobots.app.execution
 
 import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
 import crackers.kobots.app.arm.TheArm.ELBOW_UP
@@ -23,23 +23,24 @@ import crackers.kobots.app.arm.TheArm.elbow
 import crackers.kobots.app.arm.TheArm.extender
 import crackers.kobots.app.arm.TheArm.gripper
 import crackers.kobots.app.arm.TheArm.homeAction
+import crackers.kobots.app.arm.TheArm.mainRoto
 import crackers.kobots.app.arm.TheArm.waist
-import crackers.kobots.app.roto.Rotomatic.mainRoto
 import crackers.kobots.parts.ActionSpeed
 import crackers.kobots.parts.sequence
 
-val ELBOW_TRAVEL = 90f
+private val ELBOW_TRAVEL = 90f
 
-val LANDING_WAIST = 90f
-val LANDING_EXTENDER = 50
+private val LANDING_WAIST = 90f
+private val LANDING_EXTENDER = 50
 
-val DROPS_ROTO = 90f
-val DROPS_GRAB = 55f
-val DROPS_EXTENDER = 80
-val DROPS_ELBOW = 160f
+private val DROPS_ROTO = 90f
+private val DROPS_GRAB = 55f
+private val DROPS_EXTENDER = 80
+private val DROPS_ELBOW = 160f
 
 val getDrops by lazy {
     sequence {
+        name = "Get Drops"
         action {
             mainRoto.rotate { angle = DROPS_ROTO }
             requestedSpeed = ActionSpeed.FAST
@@ -78,6 +79,7 @@ val getDrops by lazy {
 
 val storeDrops by lazy {
     sequence {
+        name = "Store Drops"
         action {
             waist.rotate { angle = LANDING_WAIST }
             elbow.rotate { angle = ELBOW_TRAVEL }
