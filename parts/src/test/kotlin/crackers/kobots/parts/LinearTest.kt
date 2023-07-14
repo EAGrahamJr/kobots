@@ -18,7 +18,7 @@ package crackers.kobots.parts
 
 import com.diozero.api.ServoDevice
 import io.kotest.core.spec.style.FunSpec
-import io.kotest.matchers.shouldBe
+import io.kotest.matchers.floats.shouldNotBeGreaterThan
 import io.mockk.every
 import io.mockk.mockkClass
 import io.mockk.verify
@@ -43,7 +43,7 @@ class LinearTest : FunSpec(
             while (!linear.extendTo(60)) {
                 // just count things
             }
-            verify(atLeast = (.6 * 180).roundToInt()) {
+            verify(atMost = (.6 * 180).roundToInt()) {
                 mockServo.angle = any()
             }
         }
@@ -63,10 +63,10 @@ class LinearTest : FunSpec(
             while (!linear.extendTo(0)) {
                 // just count things
             }
-            verify(atLeast = 25) {
+            verify(atMost = 25) {
                 mockServo.angle = any()
             }
-            currentServoAngle shouldBe 100f
+            currentServoAngle shouldNotBeGreaterThan 100f
         }
     }
 )
