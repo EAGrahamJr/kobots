@@ -18,13 +18,11 @@ package crackers.kobots.app
 
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.bus.KobotsEvent
-import crackers.kobots.app.bus.SequenceRequest
 import crackers.kobots.app.bus.allStop
 import crackers.kobots.app.bus.publishToTopic
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.parts.ActionSequence
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.abs
@@ -89,16 +87,13 @@ object SensorSuite : AutoCloseable {
         val l = lumens.toDouble()
         val p = previousLumenus.toDouble()
         val diff = abs((ln(l) - ln(p)) / ln(l))
-        if (diff > .1)
+        if (diff > .1) {
             when {
-                l > 300 && previousLumenus < 300 -> publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sayHi))
-                l > 5 && previousLumenus < 5 -> publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(excuseMe))
+                l > 300 && previousLumenus < 300 -> TheArm.request(sayHi)
+                l > 5 && previousLumenus < 5 -> TheArm.request(excuseMe)
             }
+        }
         return l
-    }
-
-    private fun publishArm(sequence: ActionSequence) {
-        publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sequence))
     }
 
     override fun close() {

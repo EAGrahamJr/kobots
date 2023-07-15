@@ -22,21 +22,21 @@ import kotlin.random.Random
  * A generic rotoator that can be used for testing.
  */
 open class MockRotator : Rotator {
-    var angle: Float = 0f
+    var angle: Int = 0
     var stopCheckResult = false
 
-    override fun rotateTo(angle: Float): Boolean {
+    override fun rotateTo(angle: Int): Boolean {
         var doneYet = stopCheckResult || this.angle == angle
         if (doneYet) return true
 
         if (angle > this.angle) {
-            this.angle += 1f
-        } else if (angle < this.angle) this.angle -= 1f
+            this.angle += 1
+        } else if (angle < this.angle) this.angle -= 1
         doneYet = this.angle == angle
         return doneYet
     }
 
-    override fun current(): Float = angle
+    override fun current(): Int = angle
 }
 
 fun runAndGetCount(block: () -> Boolean): Int {
@@ -45,4 +45,4 @@ fun runAndGetCount(block: () -> Boolean): Int {
     return count
 }
 
-fun randomServoAngle() = Random.nextInt(180).toFloat()
+fun randomServoAngle() = Random.nextInt(180)

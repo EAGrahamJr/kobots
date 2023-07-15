@@ -78,18 +78,21 @@ object ArmMonitor {
 //                if (message is ManualModeEvent) drawHeaders(message.index)
             }
         )
-        joinTopic(SensorSuite.LUMEN_TOPIC, KobotsSubscriber { message ->
-            if (message is SensorSuite.LumensData) {
-                with(screenGraphics) {
-                    color = Color.BLACK
-                    fillRect(105, 0, 28, monitorLineHight)
-                    // show lumens in upper right corner
-                    color = Color.YELLOW
-                    drawString(SensorSuite.lumens.toString(), 105, monitorLineHight)
+        joinTopic(
+            SensorSuite.LUMEN_TOPIC,
+            KobotsSubscriber { message ->
+                if (message is SensorSuite.LumensData) {
+                    with(screenGraphics) {
+                        color = Color.BLACK
+                        fillRect(105, 0, 28, monitorLineHight)
+                        // show lumens in upper right corner
+                        color = Color.YELLOW
+                        drawString(SensorSuite.lumens.toString(), 105, monitorLineHight)
+                    }
+                    imageChanged.set(true)
                 }
-                imageChanged.set(true)
             }
-        })
+        )
 
         future = executor.submit {
             var lastMenuItem: Menu? = null

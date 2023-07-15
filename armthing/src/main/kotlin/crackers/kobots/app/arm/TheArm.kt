@@ -19,10 +19,7 @@ package crackers.kobots.app.arm
 import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.SequenceExecutor
-import crackers.kobots.app.bus.KobotsAction
-import crackers.kobots.app.bus.KobotsSubscriber
-import crackers.kobots.app.bus.joinTopic
-import crackers.kobots.app.bus.publishToTopic
+import crackers.kobots.app.bus.*
 import crackers.kobots.app.crickitHat
 import crackers.kobots.devices.at
 import crackers.kobots.parts.*
@@ -35,6 +32,10 @@ import java.util.concurrent.atomic.AtomicReference
 object TheArm : SequenceExecutor() {
     const val STATE_TOPIC = "TheArm.State"
     const val REQUEST_TOPIC = "TheArm.Request"
+
+    fun request(sequence: ActionSequence) {
+        publishToTopic(REQUEST_TOPIC, SequenceRequest(sequence))
+    }
 
     private const val ELBOW_DELTA = 1f
     const val ELBOW_UP = 90

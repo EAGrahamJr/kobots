@@ -22,15 +22,12 @@ import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.arm.TheArm.waist
 import crackers.kobots.app.bus.EnviroHandler
-import crackers.kobots.app.bus.SequenceRequest
-import crackers.kobots.app.bus.publishToTopic
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.pickAndMove
 import crackers.kobots.app.execution.returnTheThing
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.devices.io.NeoKey
-import crackers.kobots.parts.ActionSequence
 import org.tinylog.Logger
 import java.awt.Color
 import java.util.concurrent.atomic.AtomicBoolean
@@ -48,28 +45,24 @@ val manualMode: Boolean
 private var hasPickedUpThing = false
 
 enum class Menu(val label: String, val action: () -> Unit) {
-    HOME("Home", { publishSequence(homeSequence) }),
+    HOME("Home", { TheArm.request(homeSequence) }),
 
     PICK("Pick Up #1", {
-        publishSequence(pickAndMove)
+        TheArm.request(pickAndMove)
         hasPickedUpThing = true
         _menuIndex.incrementAndGet()
     }),
     RETURN_DROPS("Return to Sender", {
         if (hasPickedUpThing) {
-            publishSequence(returnTheThing)
+            TheArm.request(returnTheThing)
             hasPickedUpThing = false
             _menuIndex.incrementAndGet()
         }
     }),
 
-    SAY_HI("Say Hi", { publishSequence(sayHi) }),
-    EXCUSE_ME("Excuse Me", { publishSequence(excuseMe) }),
+    SAY_HI("Say Hi", { TheArm.request(sayHi) }),
+    EXCUSE_ME("Excuse Me", { TheArm.request(excuseMe) }),
     MANUAL("Manual", { _manualMode.set(true) })
-}
-
-private fun publishSequence(sequence: ActionSequence) {
-    publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sequence))
 }
 
 private const val WAIT_LOOP = 50L

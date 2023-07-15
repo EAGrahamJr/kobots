@@ -25,7 +25,6 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
 import io.mockk.mockkClass
 import io.mockk.verify
-import kotlin.math.roundToInt
 
 /**
  * Testing the rotator classes.
@@ -53,10 +52,10 @@ class RotatorTest : FunSpec(
             every { mockStepper.step(any()) } answers { }
             val rotatable = RotatorStepper(mockStepper)
 
-            while (!rotatable.rotateTo(83f)) {
+            while (!rotatable.rotateTo(83)) {
                 // just count things
             }
-            verify(atLeast = (74f * 200 / 360).roundToInt()) {
+            verify(exactly = (83f * 200 / 360).toInt()) {
                 mockStepper.step(StepperMotorInterface.Direction.FORWARD)
             }
         }
@@ -73,7 +72,7 @@ class RotatorTest : FunSpec(
             }
             val rotatable = RotatorServo(mockServo, IntRange(0, 90), IntRange(0, 180))
 
-            while (!rotatable.rotateTo(87f)) {
+            while (!rotatable.rotateTo(87)) {
                 // just count things
             }
             verify(exactly = 131) {
@@ -94,7 +93,7 @@ class RotatorTest : FunSpec(
             }
             val rotatable = RotatorServo(mockServo, IntRange(-10, 90), IntRange(180, 0))
 
-            while (!rotatable.rotateTo(45f)) {
+            while (!rotatable.rotateTo(45)) {
                 // just count things
             }
             verify(exactly = 81) {
@@ -116,7 +115,7 @@ class RotatorTest : FunSpec(
             }
             val rotatable = RotatorServo(mockServo, IntRange(0, 90), IntRange(0, 180), 5)
 
-            while (!rotatable.rotateTo(32f)) {
+            while (!rotatable.rotateTo(32)) {
                 // just count things
             }
             verify(exactly = 0) {

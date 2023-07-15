@@ -30,7 +30,7 @@ class ActionSequenceTest : FunSpec(
             val testSequence = sequence {
                 action {
                     rotator.rotate {
-                        angle = 90f
+                        angle = 90
                     }
                 }
             }
@@ -40,7 +40,7 @@ class ActionSequenceTest : FunSpec(
 
             runAndGetCount(action::step) shouldBe 89
             action.step() shouldBe false
-            rotator.current() shouldBe 90f
+            rotator.current() shouldBe 90
         }
 
         /**
@@ -58,7 +58,7 @@ class ActionSequenceTest : FunSpec(
                 }
                 action {
                     rotator.rotate {
-                        angle = 0f
+                        angle = 0
                     }
                 }
             }
@@ -88,7 +88,7 @@ class ActionSequenceTest : FunSpec(
             val rotator = MockRotator()
             val testSequence = sequence {
                 action {
-                    rotator.forwardUntil { rotator.current() >= 23f }
+                    rotator.forwardUntil { rotator.current() >= 23 }
                 }
             }
 
@@ -108,9 +108,9 @@ class ActionSequenceTest : FunSpec(
             val testSequence = sequence {
                 action {
                     rotator1.rotate {
-                        angle = 45f
+                        angle = 45
                     }
-                    rotator2.backwardUntil { rotator1.current() > 15f }
+                    rotator2.backwardUntil { rotator1.current() > 15 }
                 }
             }
 
@@ -168,7 +168,7 @@ class ActionSequenceTest : FunSpec(
         test("multiple actions") {
             val rotator = MockRotator()
             val angles = listOf(randomServoAngle(), randomServoAngle())
-            var secondStartsAt: Float? = null
+            var secondStartsAt: Int? = null
 
             val testSequence = sequence {
                 action {
@@ -197,7 +197,7 @@ class ActionSequenceTest : FunSpec(
 
             // the count should bhe the number of steps to get to the first angle (minus 1) plus the number of steps to
             // get to the second angle from the first (minus 1)
-            count shouldBe (angles[0] + abs(angles[1] - angles[0])).toInt() - 2
+            count shouldBe (angles[0] + abs(angles[1] - angles[0])) - 2
         }
 
         /**
@@ -213,14 +213,14 @@ class ActionSequenceTest : FunSpec(
                 randomServoAngle(),
                 randomServoAngle()
             )
-            val stoppedAt = mutableListOf<Float>()
+            val stoppedAt = mutableListOf<Int>()
 
             var angleIndex = -1 // the external influence on the sequence
 
             val testSequence = sequence {
                 action {
                     rotator.forwardUntil {
-                        rotator.current().let { current: Float ->
+                        rotator.current().let { current ->
                             (current == angles[angleIndex]).also { hasStopped ->
                                 if (hasStopped) stoppedAt += current
                             }
@@ -228,7 +228,7 @@ class ActionSequenceTest : FunSpec(
                     }
                 }
                 action {
-                    rotator.rotate { angle = 0f }
+                    rotator.rotate { angle = 0 }
                 }
             }
 
