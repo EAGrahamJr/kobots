@@ -21,14 +21,14 @@ import com.diozero.devices.sandpit.motor.BasicStepperController.StepStyle
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import com.diozero.util.SleepUtil
-import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import crackers.kobots.devices.expander.CRICKITHat
 import java.time.Duration
 
 /**
  * Both blocks. Note that direction may not be as expected due to wiring change.
  */
 class CRICKITSteppers {
-    val crickit by lazy { CRICKITHatDeviceFactory() }
+    val crickit by lazy { CRICKITHat() }
 
     val uniStep by lazy { BasicStepperMotor(512, crickit.unipolarStepperPort()) }
     val biStep by lazy { BasicStepperMotor(200, crickit.motorStepperPort()) }

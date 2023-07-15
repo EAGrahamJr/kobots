@@ -37,13 +37,13 @@ interface Rotator : Actuator<RotationMovement> {
     /**
      * Take a "step" towards this destination. Returns `true` if the target has been reached.
      */
-    fun rotateTo(angle: Float): Boolean
+    fun rotateTo(angle: Int): Boolean
 
-    operator fun plusAssign(delta: Float) {
+    operator fun plusAssign(delta: Int) {
         rotateTo(current() + delta)
     }
 
-    operator fun minusAssign(delta: Float) {
+    operator fun minusAssign(delta: Int) {
         rotateTo(current() - delta)
     }
 
@@ -58,7 +58,7 @@ interface Rotator : Actuator<RotationMovement> {
     /**
      * Current location.
      */
-    fun current(): Float
+    fun current(): Int
 
     fun Float.almostEquals(another: Float, wibble: Float): Boolean = abs(this - another) < wibble
 }
@@ -85,10 +85,10 @@ class RotatorStepper(
     internal val currentLocation: Int
         get() = _stepsLocation
 
-    override fun current(): Float = 360 * currentLocation / maxSteps
+    override fun current(): Int = (360 * currentLocation / maxSteps).roundToInt()
 
-    override fun rotateTo(angle: Float): Boolean {
-        val destinationSteps = (maxSteps * angle / 360).roundToInt()
+    override fun rotateTo(angle: Int): Boolean {
+        val destinationSteps = (maxSteps * angle / 360).toInt()
         if (destinationSteps == currentLocation) return true
 
         // move towards the destination
@@ -148,23 +148,23 @@ class RotatorServo(
     private fun IntRange.length(): Int = last - first
 
     // translate an angle in the physical range to a servo angle
-    fun translate(angle: Float): Float {
-        val physical = angle - physicalRange.first
+    fun translate(angle: Int): Float {
+        val physical = (angle - physicalRange.first).toFloat()
         val servo = physical * servoRange.length() / physicalRange.length()
         return servo + servoRange.first
     }
 
     // report the current angle, translated to the physical range
-    override fun current(): Float = theServo.angle.let {
+    override fun current(): Int = theServo.angle.let {
         val servo = it - servoRange.first
         val physical = servo * physicalRange.length() / servoRange.length()
         physical + physicalRange.first
-    }
+    }.roundToInt()
 
     /**
      * Figure out if we need to move or not (and how much)
      */
-    override fun rotateTo(angle: Float): Boolean {
+    override fun rotateTo(angle: Int): Boolean {
         // angle must be in the physical range
 //        require(angle.roundToInt() in physicalRange) { "Angle '$angle' is not in physical range '$physicalRange'." }
 

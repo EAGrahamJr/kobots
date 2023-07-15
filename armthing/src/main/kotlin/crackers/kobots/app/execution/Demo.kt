@@ -19,6 +19,7 @@ package crackers.kobots.app.execution
 import crackers.kobots.app.arm.TheArm.ELBOW_UP
 import crackers.kobots.app.arm.TheArm.EXTENDER_FULL
 import crackers.kobots.app.arm.TheArm.EXTENDER_HOME
+import crackers.kobots.app.arm.TheArm.GRIPPER_CLOSED
 import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
 import crackers.kobots.app.arm.TheArm.WAIST_HOME
 import crackers.kobots.app.arm.TheArm.elbow
@@ -36,10 +37,10 @@ import kotlin.math.roundToInt
 
 private const val LOAD_EXTENDER = 65
 private const val LOAD_GRIPPER = 90
-private const val ELBOW_FLAT = -5f
-private const val TRAVEL_ELBOW = 45f
-private const val MIDPOINT_WAIST = 45f
-private const val DROP_WAIST = 90f
+private const val ELBOW_FLAT = -5
+private const val TRAVEL_ELBOW = 45
+private const val MIDPOINT_WAIST = 45
+private const val DROP_WAIST = 90
 private const val DROP_EXTENDER = 50
 
 /**
@@ -112,18 +113,40 @@ val sayHi by lazy {
         name = "Say Hi"
         this + homeAction
         action {
-            elbow rotate 45f
+            elbow rotate 45
             extender goTo EXTENDER_FULL
             gripper goTo GRIPPER_OPEN
-            waist rotate 90f
+            waist rotate 90
         }
         (1..4).forEach {
             action {
-                elbow rotate 80f
+                elbow rotate 80
                 requestedSpeed = ActionSpeed.FAST
             }
             action {
-                elbow rotate 30f
+                elbow rotate 30
+                requestedSpeed = ActionSpeed.FAST
+            }
+        }
+        this + homeAction
+    }
+}
+
+val excuseMe by lazy {
+    sequence {
+        name = "Excuse Me"
+        this + homeAction
+        action {
+            waist rotate 90
+            elbow rotate 45
+        }
+        (1..5).forEach {
+            action {
+                gripper goTo GRIPPER_OPEN
+                requestedSpeed = ActionSpeed.FAST
+            }
+            action {
+                gripper goTo GRIPPER_CLOSED
                 requestedSpeed = ActionSpeed.FAST
             }
         }

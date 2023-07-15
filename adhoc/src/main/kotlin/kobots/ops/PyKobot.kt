@@ -20,7 +20,7 @@ import base.REMOTE_PI
 import com.diozero.api.DigitalInputDevice
 import com.diozero.api.ServoDevice
 import com.diozero.util.SleepUtil
-import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import crackers.kobots.devices.expander.CRICKITHat
 import java.lang.Thread.sleep
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 class PyKobot {
     fun execute() {
-        CRICKITHatDeviceFactory().use { factory ->
+        CRICKITHat().use { factory ->
             val stopButton = factory.touchDigitalIn(4)
             val upButton = factory.touchDigitalIn(1)
             val downButton = factory.touchDigitalIn(2)

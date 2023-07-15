@@ -37,11 +37,11 @@ object TheArm : SequenceExecutor() {
     const val REQUEST_TOPIC = "TheArm.Request"
 
     private const val ELBOW_DELTA = 1f
-    const val ELBOW_UP = 90f
-    const val ELBOW_DOWN = -10f
+    const val ELBOW_UP = 90
+    const val ELBOW_DOWN = -10
 
     private const val WAIST_DELTA = 1f
-    const val WAIST_HOME = 0f
+    const val WAIST_HOME = 0
     const val WAIST_MAX = 180f
 
     // not part of the arm, but used in coordination with it
@@ -51,21 +51,21 @@ object TheArm : SequenceExecutor() {
 //        RotatorStepper(stepper)
 //    }
     val mainRoto = object : Rotator {
-        private var angle = 0f
-        override fun rotateTo(angle: Float): Boolean {
+        private var angle = 0
+        override fun rotateTo(angle: Int): Boolean {
             this.angle = angle
             return true
         }
 
-        override fun current(): Float {
+        override fun current(): Int {
             return angle
         }
     }
 
     private val HOME_POSITION = ArmPosition(
         JointPosition(WAIST_HOME),
-        JointPosition(0f),
-        JointPosition(0f),
+        JointPosition(0),
+        JointPosition(0),
         JointPosition(ELBOW_UP)
     )
 
@@ -163,8 +163,8 @@ object TheArm : SequenceExecutor() {
         state = ArmState(
             ArmPosition(
                 JointPosition(waist.current()),
-                JointPosition(extender.current().toFloat()),
-                JointPosition(gripper.current().toFloat()),
+                JointPosition(extender.current()),
+                JointPosition(gripper.current()),
                 JointPosition(elbow.current())
             ),
             moveInProgress

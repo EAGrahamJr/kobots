@@ -24,6 +24,7 @@ import crackers.kobots.app.arm.TheArm.waist
 import crackers.kobots.app.bus.EnviroHandler
 import crackers.kobots.app.bus.SequenceRequest
 import crackers.kobots.app.bus.publishToTopic
+import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.pickAndMove
 import crackers.kobots.app.execution.returnTheThing
 import crackers.kobots.app.execution.sayHi
@@ -57,10 +58,13 @@ enum class Menu(val label: String, val action: () -> Unit) {
     RETURN_DROPS("Return to Sender", {
         if (hasPickedUpThing) {
             publishSequence(returnTheThing)
+            hasPickedUpThing = false
+            _menuIndex.incrementAndGet()
         }
     }),
 
     SAY_HI("Say Hi", { publishSequence(sayHi) }),
+    EXCUSE_ME("Excuse Me", { publishSequence(excuseMe) }),
     MANUAL("Manual", { _manualMode.set(true) })
 }
 
@@ -150,7 +154,7 @@ private fun joyRide() {
         val yAxis = gamepad.yAxis
         if (gpZeroY == 0f) gpZeroY = yAxis
 
-        val stepperDelta = if (whichStepper == waist) 1f else 5f
+        val stepperDelta = if (whichStepper == waist) 1 else 5
 
         if (gpZeroX - xAxis > 45f) whichStepper += stepperDelta
         if (gpZeroX - xAxis < -45f) whichStepper -= stepperDelta

@@ -19,12 +19,9 @@ package crackers.kobots.app.arm
 import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
-import crackers.kobots.app.Menu
+import crackers.kobots.app.*
 import crackers.kobots.app.bus.KobotsSubscriber
 import crackers.kobots.app.bus.joinTopic
-import crackers.kobots.app.currentMenuItem
-import crackers.kobots.app.executor
-import crackers.kobots.app.runFlag
 import crackers.kobots.utilities.KobotSleep
 import crackers.kobots.utilities.center
 import java.awt.Color
@@ -69,6 +66,7 @@ object ArmMonitor {
     }
 
     private val lastStateReceived = AtomicReference<ArmState>()
+    private val imageChanged = AtomicReference<Boolean>(false)
     private lateinit var future: Future<*>
     private val headers = listOf("WST", "XTN", "ELB", "GRP")
 
@@ -80,6 +78,18 @@ object ArmMonitor {
 //                if (message is ManualModeEvent) drawHeaders(message.index)
             }
         )
+        joinTopic(SensorSuite.LUMEN_TOPIC, KobotsSubscriber { message ->
+            if (message is SensorSuite.LumensData) {
+                with(screenGraphics) {
+                    color = Color.BLACK
+                    fillRect(105, 0, 28, monitorLineHight)
+                    // show lumens in upper right corner
+                    color = Color.YELLOW
+                    drawString(SensorSuite.lumens.toString(), 105, monitorLineHight)
+                }
+                imageChanged.set(true)
+            }
+        })
 
         future = executor.submit {
             var lastMenuItem: Menu? = null
@@ -99,12 +109,13 @@ object ArmMonitor {
                     // show last recorded status
                     if (lastMenuItem == Menu.MANUAL) showLastStatus()
                 }
+                if (imageChanged.getAndSet(false)) screen.display(image)
                 KobotSleep.millis(10)
             }
         }
     }
 
-    private val menuIcons = listOf("<--", "oOo", "-->", "xXx")
+    private val menuIcons = listOf("\u25C1", "\u25A1", "\u25B7", "\u2718")
     private val menuColors = listOf(Color.BLUE, Color.GREEN, Color.CYAN, Color.RED)
     private fun showMenuItem(menuItem: Menu) {
         with(screenGraphics) {
@@ -115,13 +126,14 @@ object ArmMonitor {
             var x = monitorMetrics.center(text, MAX_WD)
             drawString(text, x, monitorLineHight)
 
+            font = monitorFont.deriveFont(16)
             menuIcons.forEachIndexed { index, item ->
                 color = menuColors[index]
                 x = monitorMetrics.center(item, COL_WD - 1)
                 drawString(item, (COL_WD * index) + x, MAX_HT - 1)
             }
         }
-        screen.display(image)
+        imageChanged.set(true)
     }
 
     private fun Graphics2D.clearImage() {
@@ -161,7 +173,7 @@ object ArmMonitor {
                     drawString("B", busyTextLocation.first, busyTextLocation.second)
                 }
             }
-            screen.display(image)
+            imageChanged.set(true)
         }
     }
 

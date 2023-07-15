@@ -18,7 +18,7 @@ package device.examples
 
 import com.diozero.sbc.LocalSystemInfo
 import com.diozero.util.SleepUtil
-import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.devices.lighting.NeoPixel
 import crackers.kobots.devices.lighting.PimoroniLEDShim
 import crackers.kobots.utilities.colorInterval
@@ -147,7 +147,7 @@ const val R4_YELLOW = 27
 const val R4_BLACK = 4
 
 // use these a lot
-val hat by lazy { CRICKITHatDeviceFactory() }
+val hat by lazy { CRICKITHat() }
 private val stopButton by lazy { hat.touchDigitalIn(4) }
 
 private val running = AtomicBoolean(true)

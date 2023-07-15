@@ -43,7 +43,7 @@ import kotlin.io.path.nameWithoutExtension
  */
 
 fun main() {
-    listOf("bed", "lightbulb", "printer", "restaurant").forEach {
+    listOf("fan").forEach {
         val name = "/$it.png"
         val originalPath = Paths.get(object {}::class.java.getResource(name)!!.toURI())
         val cloneFile = originalPath.nameWithoutExtension + "2.png"

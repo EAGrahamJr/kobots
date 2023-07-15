@@ -32,7 +32,7 @@ abstract class MovementBuilder(protected var actuator: Actuator<Movement>? = nul
 }
 
 class RotationMovementBuilder(rotator: Rotator) : MovementBuilder(rotator as Actuator<Movement>) {
-    var angle: Float = 0f
+    var angle: Int = 0
 
     override fun makeMovement(): Movement {
         return RotationMovement(angle, stopCheck)
@@ -62,7 +62,7 @@ class ActionBuilder {
         steps += RotationMovementBuilder(this).apply(init)
     }
 
-    infix fun Rotator.rotate(angle: Float) {
+    infix fun Rotator.rotate(angle: Int) {
         steps += RotationMovementBuilder(this).apply {
             this.angle = angle
         }
@@ -70,14 +70,14 @@ class ActionBuilder {
 
     infix fun Rotator.forwardUntil(forwardCheck: () -> Boolean) {
         steps += RotationMovementBuilder(this).apply {
-            angle = Float.MAX_VALUE
+            angle = Int.MAX_VALUE
             stopCheck = forwardCheck
         }
     }
 
     infix fun Rotator.backwardUntil(backwardCheck: () -> Boolean) {
         steps += RotationMovementBuilder(this).apply {
-            angle = -Float.MAX_VALUE
+            angle = -Int.MAX_VALUE
             stopCheck = backwardCheck
         }
     }

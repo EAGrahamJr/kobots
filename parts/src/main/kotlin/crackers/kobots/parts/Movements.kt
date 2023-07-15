@@ -72,7 +72,7 @@ class Action(movements: List<Pair<Actuator<Movement>, Movement>>) {
  * [angle] should be tailored to fit.
  */
 open class RotationMovement(
-    val angle: Float,
+    val angle: Int,
     override val stopCheck: () -> Boolean = { false }
 ) : Movement
 

@@ -23,7 +23,7 @@ import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SSD1306.DEFAULT_I2C_ADDRESS
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
 import com.diozero.sbc.LocalSystemInfo
-import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.devices.sensors.VCNL4040
 import java.awt.Color
 import java.awt.Font
@@ -65,7 +65,7 @@ private val executor = Executors.newScheduledThreadPool(3)
 
 fun danseMacbre() {
 //    System.setProperty(REMOTE_PI, MARVIN)
-    CRICKITHatDeviceFactory().use { crickit ->
+    CRICKITHat().use { crickit ->
         val button = crickit.touchDigitalIn(4)
         val servos: List<ServoWrapper> = listOf(
             ServoWrapper(crickit.servo(4, ServoTrim.TOWERPRO_SG90)),

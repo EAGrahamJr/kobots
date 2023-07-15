@@ -19,7 +19,7 @@ package device.examples.adafruit
 import base.MARVIN
 import base.REMOTE_PI
 import com.diozero.util.SleepUtil.sleepSeconds
-import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.PURPLE
 import crackers.kobots.utilities.colorIntervalFromHSB
@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicLong
 class CRICKITHatNeoPixels : AutoCloseable {
     val running: AtomicBoolean = AtomicBoolean(true)
 
-    val crickit by lazy { CRICKITHatDeviceFactory() }
+    val crickit by lazy { CRICKITHat() }
     val strand by lazy { crickit.neoPixel(30) }
     val stopIt by lazy {
         crickit.touchDigitalIn(4).apply {

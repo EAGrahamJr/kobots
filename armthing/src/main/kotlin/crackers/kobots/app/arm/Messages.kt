@@ -22,7 +22,7 @@ import crackers.kobots.app.bus.KobotsEvent
  * Describes the basic data for an arm joint location.
  * TODO add in radii to try to calculate endpoint coordintes of things
  */
-data class JointPosition(val angle: Float, val radius: Float = 0f)
+data class JointPosition(val angle: Int, val radius: Float = 0f)
 
 /**
  * Describes a location for the arm.

@@ -18,7 +18,7 @@ package device.examples
 
 import com.diozero.api.RuntimeIOException
 import com.diozero.util.SleepUtil
-import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import crackers.kobots.devices.expander.CRICKITHat
 import kobots.ops.createEventBus
 import kobots.ops.stopTheBus
 import org.slf4j.LoggerFactory
@@ -33,7 +33,7 @@ abstract class RunManagerForFlows : AutoCloseable {
     val logger = LoggerFactory.getLogger(this::class.java.simpleName)
 
     // manage application run state
-    val crickit by lazy { CRICKITHatDeviceFactory() }
+    val crickit by lazy { CRICKITHat() }
 
     val shutdownBus = createEventBus<Boolean>(name = "Shutdown")
     val running = AtomicBoolean(true).also { run ->

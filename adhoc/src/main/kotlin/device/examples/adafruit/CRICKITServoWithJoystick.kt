@@ -19,7 +19,7 @@ package device.examples.adafruit
 import base.REMOTE_PI
 import com.diozero.api.ServoTrim
 import crackers.kobots.devices.at
-import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.devices.set
 import kobots.ops.createEventBus
 import kobots.ops.registerCPUTempConsumer
@@ -38,7 +38,7 @@ fun main() {
     val yAxisBus = createEventBus<Float>()
     val running = AtomicBoolean(true)
 
-    CRICKITHatDeviceFactory().use {
+    CRICKITHat().use {
         val servo = it.servo(2, ServoTrim.TOWERPRO_SG90)
         val xAxis = it.signalAnalogIn(6)
         val yAxis = it.signalAnalogIn(7)

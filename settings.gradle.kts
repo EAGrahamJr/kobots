@@ -1,3 +1,2 @@
 rootProject.name = "kobots"
-include("armthing")
-include("parts")
+include("armthing", "parts", "adhoc")

@@ -22,7 +22,7 @@ import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import com.diozero.sbc.LocalSystemInfo
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.display.SSD1327
-import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.utilities.PURPLE
 import crackers.kobots.utilities.PointerGauge
 import java.awt.Color
@@ -43,7 +43,7 @@ class MovingAndDisplaying {
     }
 
     private val hat by lazy {
-        CRICKITHatDeviceFactory()
+        CRICKITHat()
     }
 
     private val neo by lazy {

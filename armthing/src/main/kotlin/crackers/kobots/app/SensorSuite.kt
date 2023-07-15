@@ -21,10 +21,14 @@ import crackers.kobots.app.bus.KobotsEvent
 import crackers.kobots.app.bus.SequenceRequest
 import crackers.kobots.app.bus.allStop
 import crackers.kobots.app.bus.publishToTopic
+import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.sensors.VCNL4040
+import crackers.kobots.parts.ActionSequence
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.abs
+import kotlin.math.ln
 
 /**
  * Simple proximity sensor with events and state.
@@ -32,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger
 object SensorSuite : AutoCloseable {
     const val CLOSE_ENOUGH = 15 // this is **approximately**  25mm
     const val ALARM_TOPIC = "Prox.TooClose"
+    const val LUMEN_TOPIC = "Prox.Lumens"
 
     private lateinit var future: Future<*>
 
@@ -57,6 +62,7 @@ object SensorSuite : AutoCloseable {
         get() = proximity > CLOSE_ENOUGH
 
     class ProximityAlert : KobotsEvent
+    class LumensData(val lumens: Int) : KobotsEvent
 
     private val ohCrap = ProximityAlert()
     private var previousLumenus: Int = 0
@@ -69,11 +75,30 @@ object SensorSuite : AutoCloseable {
                 publishToTopic(TheArm.REQUEST_TOPIC, allStop)
                 publishToTopic(ALARM_TOPIC, ohCrap)
             }
-            lumens.also { l ->
-                if (l > 100 && previousLumenus < 100) publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sayHi))
-                previousLumenus = l
+            lumens.also { lumens ->
+                if (abs(lumens - previousLumenus) > 2) {
+                    publishToTopic(LUMEN_TOPIC, LumensData(lumens))
+                    lumeAlerts(lumens)
+                    previousLumenus = lumens
+                }
             }
         }
+    }
+
+    private fun lumeAlerts(lumens: Int): Double {
+        val l = lumens.toDouble()
+        val p = previousLumenus.toDouble()
+        val diff = abs((ln(l) - ln(p)) / ln(l))
+        if (diff > .1)
+            when {
+                l > 300 && previousLumenus < 300 -> publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sayHi))
+                l > 5 && previousLumenus < 5 -> publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(excuseMe))
+            }
+        return l
+    }
+
+    private fun publishArm(sequence: ActionSequence) {
+        publishToTopic(TheArm.REQUEST_TOPIC, SequenceRequest(sequence))
     }
 
     override fun close() {

@@ -20,7 +20,7 @@ import base.MARVIN
 import base.REMOTE_PI
 import com.diozero.util.SleepUtil
 import crackers.kobots.devices.at
-import crackers.kobots.devices.expander.CRICKITHatDeviceFactory
+import crackers.kobots.devices.expander.CRICKITHat
 import java.time.Duration
 
 /**
@@ -28,7 +28,7 @@ import java.time.Duration
  */
 class ServoMadness {
     val factory by lazy {
-        CRICKITHatDeviceFactory()
+        CRICKITHat()
     }
 
     // joystick
