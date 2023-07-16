@@ -17,7 +17,6 @@
 package crackers.kobots.app.arm
 
 import com.diozero.api.ServoTrim
-import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.SequenceExecutor
 import crackers.kobots.app.bus.*
 import crackers.kobots.app.crickitHat
@@ -79,12 +78,12 @@ object TheArm : SequenceExecutor() {
         val _OPEN = 0f
         val _CLOSE = 65f
 
-        val servo4 = crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
+        val servo = crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
             this at _CLOSE
         }
 
         // 0% == CLOSE, 100% == OPEN
-        ServoLinearActuator(servo4, _OPEN, _CLOSE)
+        ServoLinearActuator(servo, _OPEN, _CLOSE)
     }
 
     const val EXTENDER_HOME = 0
@@ -93,10 +92,10 @@ object TheArm : SequenceExecutor() {
     val extender by lazy {
         val _IN = 180f
         val _OUT = 0f
-        val servo3 = crickitHat.servo(1, ServoTrim.TOWERPRO_SG90).apply {
+        val servo = crickitHat.servo(1, ServoTrim.TOWERPRO_SG90).apply {
             this at _IN
         }
-        ServoLinearActuator(servo3, _IN, _OUT)
+        ServoLinearActuator(servo, _IN, _OUT)
     }
 
     val elbow by lazy {
@@ -109,7 +108,15 @@ object TheArm : SequenceExecutor() {
     }
 
     val waist by lazy {
-        RotatorStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 2.33f, true)
+        val _HOME = 180
+        val _MAX = 0
+//        RotatorStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 2.33f, true)
+        val servoRange = IntRange(_HOME, _MAX)
+        val physicalRange = IntRange(0, (180 / 1.4).toInt())
+        val servo = crickitHat.servo(4, ServoTrim.TOWERPRO_SG90).apply {
+            this at _HOME.toFloat()
+        }
+        RotatorServo(servo, physicalRange, servoRange)
     }
 
     /**
@@ -154,7 +161,7 @@ object TheArm : SequenceExecutor() {
     }
 
     override fun postExecution() {
-        waist.release()
+//        waist.release()
     }
 
     /**

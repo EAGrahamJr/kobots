@@ -29,7 +29,6 @@ import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.arm.TheArm.waist
 import crackers.kobots.parts.ActionSpeed
 import crackers.kobots.parts.sequence
-import kotlin.math.roundToInt
 
 /*
  * Demonstration type sequences for V3, and V4.
@@ -37,23 +36,28 @@ import kotlin.math.roundToInt
 
 private const val LOAD_EXTENDER = 65
 private const val LOAD_GRIPPER = 90
-private const val ELBOW_FLAT = -5
+private const val ELBOW_FOR_DROPS = -5
 private const val TRAVEL_ELBOW = 45
 private const val MIDPOINT_WAIST = 45
-private const val DROP_WAIST = 90
-private const val DROP_EXTENDER = 50
+private const val TARGET_WAIST = 90
+private const val TARGET_EXTENDER = 30
+
+fun Int.retract() = (this * .66).toInt()
+
+var hasPickedUpEyeDrops = false
 
 /**
  * Pick up something from the starting point and deliver it to the exit point.
  */
 val pickAndMove by lazy {
     sequence {
-        name = "Pick and Move"
+        name = "Pick up drops"
         this + homeAction
 
         action {
-            elbow rotate ELBOW_FLAT
+            elbow rotate ELBOW_FOR_DROPS
             gripper goTo GRIPPER_OPEN
+            extender goTo TARGET_EXTENDER.retract()
         }
         action { extender goTo LOAD_EXTENDER }
         action { gripper goTo LOAD_GRIPPER }
@@ -64,15 +68,24 @@ val pickAndMove by lazy {
             elbow rotate ELBOW_UP
         }
         action {
-            waist rotate DROP_WAIST
+            waist rotate TARGET_WAIST
             elbow rotate TRAVEL_ELBOW
         }
         action {
-            extender goTo DROP_EXTENDER
-            elbow rotate ELBOW_FLAT
+            extender goTo TARGET_EXTENDER
+            elbow rotate ELBOW_FOR_DROPS
         }
         action { gripper goTo GRIPPER_OPEN }
-        action { elbow rotate TRAVEL_ELBOW }
+        action {
+            extender goTo TARGET_EXTENDER.retract()
+            elbow rotate {
+                angle = TRAVEL_ELBOW
+                stopCheck = {
+                    hasPickedUpEyeDrops = true
+                    false
+                }
+            }
+        }
         this + homeAction
     }
 }
@@ -82,25 +95,42 @@ val pickAndMove by lazy {
  */
 val returnTheThing by lazy {
     sequence {
-        name = "Return the Thing"
+        name = "Return the drops"
         this + homeAction
         action {
-            waist rotate DROP_WAIST
-            extender goTo (DROP_EXTENDER * .75).roundToInt()
-            elbow rotate ELBOW_FLAT
+            waist rotate TARGET_WAIST
+            extender goTo TARGET_EXTENDER.retract()
+            elbow rotate TRAVEL_ELBOW
             gripper goTo GRIPPER_OPEN
-            requestedSpeed = ActionSpeed.FAST
+//            requestedSpeed = ActionSpeed.FAST
         }
-        action { extender goTo DROP_EXTENDER }
+        action {
+            elbow rotate ELBOW_FOR_DROPS
+        }
+        action {
+            extender goTo TARGET_EXTENDER
+        }
         action { gripper goTo LOAD_GRIPPER }
         action { elbow rotate TRAVEL_ELBOW }
         action {
             waist rotate WAIST_HOME
-            extender goTo DROP_EXTENDER
+            extender goTo LOAD_EXTENDER.retract()
         }
-        action { elbow rotate ELBOW_FLAT }
+        action {
+            elbow rotate ELBOW_FOR_DROPS
+            extender goTo LOAD_EXTENDER
+        }
         action { gripper goTo GRIPPER_OPEN }
-        action { elbow rotate TRAVEL_ELBOW }
+        action {
+            elbow rotate {
+                angle = TRAVEL_ELBOW
+                stopCheck = {
+                    hasPickedUpEyeDrops = false
+                    false
+                }
+            }
+            extender goTo LOAD_EXTENDER.retract()
+        }
         this + homeAction
     }
 }

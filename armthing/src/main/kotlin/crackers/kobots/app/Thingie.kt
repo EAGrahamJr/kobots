@@ -20,7 +20,6 @@ import crackers.kobots.app.Keyboard.currentButtons
 import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.homeAction
-import crackers.kobots.app.arm.TheArm.waist
 import crackers.kobots.app.bus.EnviroHandler
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.pickAndMove
@@ -42,20 +41,16 @@ private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
 
-private var hasPickedUpThing = false
-
 enum class Menu(val label: String, val action: () -> Unit) {
     HOME("Home", { TheArm.request(homeSequence) }),
 
     PICK("Pick Up #1", {
         TheArm.request(pickAndMove)
-        hasPickedUpThing = true
         _menuIndex.incrementAndGet()
     }),
     RETURN_DROPS("Return to Sender", {
-        if (hasPickedUpThing) {
+        if (crackers.kobots.app.execution.hasPickedUpEyeDrops) {
             TheArm.request(returnTheThing)
-            hasPickedUpThing = false
             _menuIndex.incrementAndGet()
         }
     }),
@@ -135,8 +130,6 @@ private val gamepad by lazy { GamepadQT() }
 private var gpZeroX: Float = 0f
 private var gpZeroY: Float = 0f
 
-private var whichStepper = waist
-
 private fun joyRide() {
     // do not let this interrupt anything else
     with(TheArm) {
@@ -147,10 +140,8 @@ private fun joyRide() {
         val yAxis = gamepad.yAxis
         if (gpZeroY == 0f) gpZeroY = yAxis
 
-        val stepperDelta = if (whichStepper == waist) 1 else 5
-
-        if (gpZeroX - xAxis > 45f) whichStepper += stepperDelta
-        if (gpZeroX - xAxis < -45f) whichStepper -= stepperDelta
+        if (gpZeroX - xAxis > 45f) waist += 2
+        if (gpZeroX - xAxis < -45f) waist -= 2
         if (gpZeroY - yAxis > 45f) +elbow
         if (gpZeroY - yAxis < -45f) -elbow
         if (gamepad.aButton) +extender
