@@ -125,6 +125,10 @@ class ActionSequence {
         steps += ab
     }
 
+    operator fun plusAssign(otherSequence: ActionSequence) {
+        steps += otherSequence.steps
+    }
+
     /**
      * Build the sequence of actions.
      */

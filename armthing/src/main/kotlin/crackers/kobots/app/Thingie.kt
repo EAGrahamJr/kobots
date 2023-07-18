@@ -21,9 +21,11 @@ import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.bus.EnviroHandler
+import crackers.kobots.app.execution.EyeDropDemo.hasPickedUpEyeDrops
+import crackers.kobots.app.execution.EyeDropDemo.pickAndMove
+import crackers.kobots.app.execution.EyeDropDemo.returnTheThing
+import crackers.kobots.app.execution.OtherDropDemo
 import crackers.kobots.app.execution.excuseMe
-import crackers.kobots.app.execution.pickAndMove
-import crackers.kobots.app.execution.returnTheThing
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.devices.io.NeoKey
@@ -49,13 +51,15 @@ enum class Menu(val label: String, val action: () -> Unit) {
         _menuIndex.incrementAndGet()
     }),
     RETURN_DROPS("Return to Sender", {
-        if (crackers.kobots.app.execution.hasPickedUpEyeDrops) {
+        if (hasPickedUpEyeDrops) {
             TheArm.request(returnTheThing)
             _menuIndex.incrementAndGet()
         }
     }),
 
     SAY_HI("Say Hi", { TheArm.request(sayHi) }),
+    OPICK("Pick Up #2", { TheArm.request(OtherDropDemo.pickupItem()) }),
+    ODROP("Return #2", { TheArm.request(OtherDropDemo.returnItem()) }),
     EXCUSE_ME("Excuse Me", { TheArm.request(excuseMe) }),
     MANUAL("Manual", { _manualMode.set(true) })
 }
