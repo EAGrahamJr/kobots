@@ -10,6 +10,9 @@ dependencies {
     implementation("org.json:json:20230227")
     // getting silly
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
+    // more HA craziness
+    implementation("crackers.automation:hassk:0.0.1")
+    implementation("com.typesafe:config:1.4.2")
 }
 
 project.ext.set("jar.name", "kobots-app")

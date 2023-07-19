@@ -21,10 +21,7 @@ import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.bus.EnviroHandler
-import crackers.kobots.app.execution.EyeDropDemo.hasPickedUpEyeDrops
-import crackers.kobots.app.execution.EyeDropDemo.pickAndMove
-import crackers.kobots.app.execution.EyeDropDemo.returnTheThing
-import crackers.kobots.app.execution.OtherDropDemo
+import crackers.kobots.app.execution.EyeDropDemo
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.io.GamepadQT
@@ -34,6 +31,7 @@ import java.awt.Color
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.exitProcess
+import crackers.kobots.app.arm.TheArm.request as armRequest
 
 private val _menuIndex = AtomicInteger(0)
 val currentMenuItem: Menu
@@ -44,23 +42,19 @@ val manualMode: Boolean
     get() = _manualMode.get()
 
 enum class Menu(val label: String, val action: () -> Unit) {
-    HOME("Home", { TheArm.request(homeSequence) }),
+    HOME("Home", { armRequest(homeSequence) }),
 
-    PICK("Pick Up #1", {
-        TheArm.request(pickAndMove)
+    PICK("Pick Up Drops", {
+        armRequest(EyeDropDemo.pickupItem())
         _menuIndex.incrementAndGet()
     }),
     RETURN_DROPS("Return to Sender", {
-        if (hasPickedUpEyeDrops) {
-            TheArm.request(returnTheThing)
-            _menuIndex.incrementAndGet()
-        }
+        armRequest(EyeDropDemo.returnItem())
+        _menuIndex.incrementAndGet()
     }),
 
-    SAY_HI("Say Hi", { TheArm.request(sayHi) }),
-    OPICK("Pick Up #2", { TheArm.request(OtherDropDemo.pickupItem()) }),
-    ODROP("Return #2", { TheArm.request(OtherDropDemo.returnItem()) }),
-    EXCUSE_ME("Excuse Me", { TheArm.request(excuseMe) }),
+    SAY_HI("Say Hi", { armRequest(sayHi) }),
+    EXCUSE_ME("Excuse Me", { armRequest(excuseMe) }),
     MANUAL("Manual", { _manualMode.set(true) })
 }
 
@@ -72,11 +66,16 @@ private const val WAIT_LOOP = 50L
 fun main() {
 //    System.setProperty(REMOTE_PI, BRAINZ)
 
+    // these do not require the CRICKIT
     SensorSuite.start()
     ArmMonitor.start()
 
-    crickitHat.use { hat ->
+    crickitHat.use {
+        // start all the things that require the CRICKIT
+        VeryDumbThermometer.start()
         TheArm.start()
+
+        // start auto-triggered stuff
         EnviroHandler.startHandler()
 
         // main loop!!!!!
@@ -118,6 +117,7 @@ fun main() {
         }
         runFlag.set(false)
         TheArm.stop()
+        VeryDumbThermometer.stop()
     }
     SensorSuite.close()
     ArmMonitor.stop()

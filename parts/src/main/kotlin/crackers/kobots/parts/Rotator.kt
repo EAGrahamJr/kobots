@@ -79,7 +79,7 @@ class RotatorStepper(
 
     fun release() = theStepper.release()
 
-    private val maxSteps = theStepper.stepsPerRotation * gearRatio
+    private val maxSteps = theStepper.stepsPerRotation / gearRatio
 
     private var _stepsLocation: Int = 0
     internal val currentLocation: Int

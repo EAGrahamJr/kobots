@@ -55,7 +55,24 @@ class RotatorTest : FunSpec(
             while (!rotatable.rotateTo(83)) {
                 // just count things
             }
-            verify(exactly = (83f * 200 / 360).toInt()) {
+            verify(exactly = 46) {
+                mockStepper.step(StepperMotorInterface.Direction.FORWARD)
+            }
+        }
+
+        /**
+         * Test a stepper rotator with a gear ratio of 1:1.11 and the motor has 200 steps per rotation. The rotator is
+         * to be moved 90 degrees in a forward direction. The stepper is currently at 0 degrees.
+         */
+        test("rotatable with stepper and gear ratio") {
+            every { mockStepper.stepsPerRotation } answers { 200 }
+            every { mockStepper.step(any()) } answers { }
+            val rotatable = RotatorStepper(mockStepper, 1.11f)
+
+            while (!rotatable.rotateTo(90)) {
+                // just count things
+            }
+            verify(exactly = 45) {
                 mockStepper.step(StepperMotorInterface.Direction.FORWARD)
             }
         }

@@ -16,7 +16,16 @@
 
 package crackers.kobots.app.execution
 
-import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.arm.TheArm.EXTENDER_HOME
+import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
+import crackers.kobots.app.arm.TheArm.elbow
+import crackers.kobots.app.arm.TheArm.extender
+import crackers.kobots.app.arm.TheArm.gripper
+import crackers.kobots.app.arm.TheArm.homeAction
+import crackers.kobots.app.arm.TheArm.waist
+import crackers.kobots.parts.ActionBuilder
+import crackers.kobots.parts.ActionSequence
+import crackers.kobots.parts.sequence
 
 /**
  * Abstract class that will use two defined locations: a pickup location and a target location. There are two sequences
@@ -37,74 +46,62 @@ abstract class PickAndMove {
     protected abstract val targetExtender: Int
     protected abstract val targetWaist: Int
 
-    private fun pickUpItem() = crackers.kobots.parts.sequence {
-        // pick it up
-        action { TheArm.gripper goTo gripperGrab }
-        action { TheArm.elbow rotate transportElbow }
-        // retract the extender to home to avoid hitting anything
-        action { TheArm.extender goTo TheArm.EXTENDER_HOME }
+    class MovePosition(val name: String, val waist: Int, val elbow: Int, val extender: Int)
+
+    private val pickupPosition by lazy {
+        MovePosition(pickupSequenceName, pickupWaist, pickupElbow, pickupExtender)
+    }
+    private val targetPosition: MovePosition by lazy {
+        MovePosition(targetSequenceName, targetWaist, targetElbow, targetExtender)
     }
 
-    private fun putDownItem() = crackers.kobots.parts.sequence {
-        // open the gripper
-        action { TheArm.gripper goTo TheArm.GRIPPER_OPEN }
-        // get out of the way
-        action {
-            TheArm.elbow rotate transportElbow
-            TheArm.extender goTo TheArm.EXTENDER_HOME
+    private val getOutOfTheWay by lazy {
+        ActionBuilder().apply {
+            elbow rotate transportElbow
+            extender goTo EXTENDER_HOME
         }
     }
 
-    fun pickupItem() = crackers.kobots.parts.sequence {
-        name = pickupSequenceName
-        this + TheArm.homeAction
-
-        // rotate to the pickup waist position and open the gripper
-        action {
-            TheArm.waist rotate pickupWaist
-            TheArm.gripper goTo TheArm.GRIPPER_OPEN
-        }
-        // move into pickup position
-        action {
-            TheArm.extender goTo pickupExtender.retract()
-            TheArm.elbow rotate pickupElbow
-        }
-        action { TheArm.extender goTo pickupExtender }
-        this += pickUpItem()
-
-        // turn the waist to the target position
-        action { TheArm.waist rotate targetWaist }
-        // move to the target position
-        action { TheArm.extender goTo targetExtender }
-        action { TheArm.elbow rotate targetElbow }
-
-        this += putDownItem()
-
-        this + TheArm.homeAction
+    private fun pickUpItem() = sequence {
+        // pick it up and get back
+        action { gripper goTo gripperGrab }
+        plus(getOutOfTheWay)
     }
 
-    fun returnItem() = crackers.kobots.parts.sequence {
-        name = targetSequenceName
-        this + TheArm.homeAction
+    private fun putDownItem() = sequence {
+        // open the gripper and get out of the way
+        action { gripper goTo GRIPPER_OPEN }
+        this + getOutOfTheWay
+    }
+
+    fun pickupItem(): ActionSequence = moveAThing(pickupPosition, targetPosition)
+
+    fun returnItem(): ActionSequence = moveAThing(targetPosition, pickupPosition)
+
+    private fun moveAThing(startPosition: MovePosition, endPosition: MovePosition) = sequence {
+        name = startPosition.name
+        this + homeAction
 
         action {
-            TheArm.waist rotate targetWaist
-            TheArm.gripper goTo TheArm.GRIPPER_OPEN
+            waist rotate startPosition.waist
+            gripper goTo GRIPPER_OPEN
         }
         action {
-            TheArm.extender goTo targetExtender.retract()
-            TheArm.elbow rotate targetElbow
+            elbow rotate startPosition.elbow
+            extender goTo startPosition.extender / 2
         }
-        action { TheArm.extender goTo targetExtender }
+        action { extender goTo startPosition.extender }
 
         this += pickUpItem()
 
-        action { TheArm.waist rotate pickupWaist }
-        action { TheArm.extender goTo pickupExtender }
-        action { TheArm.elbow rotate pickupElbow }
+        action { waist rotate endPosition.waist }
+        action {
+            extender goTo endPosition.extender
+            elbow rotate endPosition.elbow
+        }
 
         this += putDownItem()
 
-        this + TheArm.homeAction
+        this + homeAction
     }
 }
