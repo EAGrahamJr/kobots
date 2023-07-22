@@ -51,11 +51,11 @@ object VeryDumbThermometer {
      * the stepper to reflect that temperature.
      */
     fun start() {
-        val name = HAssKClient.Sensor("trisensor_air_temperature").entityId
+        val sensor = HAssKClient.Sensor("trisensor_air_temperature")
 
         var okayImHot = false
         val runThis = {
-            val temp = hasskClient.getState(name).state.toFloat().also {
+            val temp = with(hasskClient) { sensor.state() }.state.toFloat().also {
                 okayImHot = if (it > 80f) {
                     if (!okayImHot) TheArm.request(excuseMe)
                     true

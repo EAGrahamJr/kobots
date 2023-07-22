@@ -30,6 +30,8 @@ import java.awt.FontMetrics
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -66,7 +68,8 @@ object ArmMonitor {
     }
 
     private val lastStateReceived = AtomicReference<ArmState>()
-    private val imageChanged = AtomicReference<Boolean>(false)
+    private val lastLumensRecieved = AtomicInteger(0)
+    private val imageChanged = AtomicBoolean(false)
     private lateinit var future: Future<*>
     private val headers = listOf("WST", "XTN", "ELB", "GRP")
 
@@ -82,14 +85,10 @@ object ArmMonitor {
             SensorSuite.LUMEN_TOPIC,
             KobotsSubscriber { message ->
                 if (message is SensorSuite.LumensData) {
-                    with(screenGraphics) {
-                        color = Color.BLACK
-                        fillRect(105, 0, 28, monitorLineHight)
-                        // show lumens in upper right corner
-                        color = Color.YELLOW
-                        drawString(SensorSuite.lumens.toString(), 105, monitorLineHight)
+                    val lumens = message.lumens
+                    if (lastLumensRecieved.compareAndExchange(lumens, lumens) != lumens) {
+                        imageChanged.set(true)
                     }
-                    imageChanged.set(true)
                 }
             }
         )
@@ -112,30 +111,38 @@ object ArmMonitor {
                     // show last recorded status
                     if (lastMenuItem == Menu.MANUAL) showLastStatus()
                 }
+                if (SensorSuite.lumens > 0) displayLumens()
                 if (imageChanged.getAndSet(false)) screen.display(image)
                 KobotSleep.millis(10)
             }
         }
     }
 
+    private fun displayLumens() = with(screenGraphics) {
+        color = Color.BLACK
+        fillRect(105, 0, 28, monitorLineHight)
+        // show lumens in upper right corner
+        color = Color.YELLOW
+        drawString(lastLumensRecieved.get().toString(), 105, monitorLineHight)
+    }
+
     private val menuIcons = listOf("\u25C1", "\u25A1", "\u25B7", "\u2718")
     private val menuColors = listOf(Color.BLUE, Color.GREEN, Color.CYAN, Color.RED)
-    private fun showMenuItem(menuItem: Menu) {
-        with(screenGraphics) {
-            clearImage()
-            color = Color.WHITE
-            font = monitorFont
-            val text = menuItem.label
-            var x = monitorMetrics.center(text, MAX_WD)
-            drawString(text, x, monitorLineHight)
+    private fun showMenuItem(menuItem: Menu) = with(screenGraphics) {
+        clearImage()
+        color = Color.WHITE
+        font = monitorFont
+        val text = menuItem.label
+        var x = monitorMetrics.center(text, MAX_WD)
+        drawString(text, x, monitorLineHight)
 
-            font = monitorFont.deriveFont(16)
-            menuIcons.forEachIndexed { index, item ->
-                color = menuColors[index]
-                x = monitorMetrics.center(item, COL_WD - 1)
-                drawString(item, (COL_WD * index) + x, MAX_HT - 1)
-            }
+        font = monitorFont.deriveFont(16)
+        menuIcons.forEachIndexed { index, item ->
+            color = menuColors[index]
+            x = monitorMetrics.center(item, COL_WD - 1)
+            drawString(item, (COL_WD * index) + x, MAX_HT - 1)
         }
+
         imageChanged.set(true)
     }
 
@@ -144,40 +151,34 @@ object ArmMonitor {
         fillRect(0, 0, MAX_WD, MAX_HT)
     }
 
-    private fun showLastStatus() {
+    private fun showLastStatus() = with(screenGraphics) {
         // show last recorded status
         lastStateReceived.get()?.let { state ->
-            with(screenGraphics) {
-                clearImage()
 
-                font = monitorFont
-                // position headers
-                for (i in 0 until 4) {
-                    color = Color.GRAY
-                    fillRect(i * COL_WD, 0, COL_WD - 1, HALF_HT)
-                    color = Color.BLACK
-                    val x = monitorMetrics.center(headers[i], COL_WD - 1)
-                    drawString(headers[i], (COL_WD * i) + x, monitorMetrics.ascent)
-                }
+            clearImage()
 
-                state.position.let { arm ->
-                    listOf(arm.waist, arm.extender, arm.elbow, arm.gripper)
-                }.map {
-                    it.angle.toInt().toString()
-                }.forEachIndexed { i, string ->
-                    color = Color.WHITE
-                    val x = monitorMetrics.center(string, COL_WD - 1)
-                    drawString(string, (COL_WD * i) + x, MAX_HT - 1)
-                }
-
-                if (state.busy) {
-                    Color.RED
-                    font = busyFont
-                    drawString("B", busyTextLocation.first, busyTextLocation.second)
-                }
+            font = monitorFont
+            // position headers
+            for (i in 0 until 4) {
+                color = Color.GRAY
+                fillRect(i * COL_WD, 0, COL_WD - 1, HALF_HT)
+                color = Color.BLACK
+                val x = monitorMetrics.center(headers[i], COL_WD - 1)
+                drawString(headers[i], (COL_WD * i) + x, monitorMetrics.ascent)
             }
-            imageChanged.set(true)
+
+            state.position.let { arm ->
+                listOf(arm.waist, arm.extender, arm.elbow, arm.gripper)
+            }.map {
+                it.angle.toInt().toString()
+            }.forEachIndexed { i, string ->
+                color = Color.WHITE
+                val x = monitorMetrics.center(string, COL_WD - 1)
+                drawString(string, (COL_WD * i) + x, MAX_HT - 1)
+            }
         }
+        imageChanged.set(true)
+
     }
 
     fun stop() {
