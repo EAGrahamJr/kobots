@@ -17,14 +17,11 @@
 package crackers.kobots.app
 
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
-import com.typesafe.config.ConfigFactory
-import crackers.hassk.HAssKClient
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.parts.RotatorStepper
 import crackers.kobots.utilities.KobotSleep
-import java.util.concurrent.Executors
-import java.util.concurrent.Future
+import org.tinylog.Logger
 
 /**
  * This is very silly - it's a stepper motor that rotates to reflect the temperature in the room. Each degree of
@@ -36,41 +33,36 @@ object VeryDumbThermometer {
         RotatorStepper(stepper, gearRatio = 1.11f, reversed = true)
     }
 
-    internal val hasskClient = with(ConfigFactory.load()) {
-        HAssKClient(getString("ha.token"), getString("ha.server"), getInt("ha.port"))
-    }
+    private const val DEGREES_TO_ANGLES = 18f // this comes out to 5 degree temp change == 90 degree stepper change
+    private const val TEMP_OFFSET = 75f   // median temperature
 
-    private val DEGREES_TO_ANGLES = 18f // this comes out to 5 degree temp change == 90 degree stepper change
-    private val TEMP_OFFSET = 75f   // median temperature
-
-    private val executor = Executors.newSingleThreadScheduledExecutor()
-    private lateinit var myFuture: Future<*>
+    private var okayImHot = false
 
     /**
-     * Start a scheduled execution that runs every minute, retrieves the temperature from the HassK client, and sets
-     * the stepper to reflect that temperature.
+     * Allow for setting from external events.
+     */
+    fun setTemperature(temp: Float) {
+        Logger.warn("Setting temp: {}", temp)
+        handle(temp)
+    }
+
+    /**
+     * Placeholder for old-style start.
      */
     fun start() {
-        val sensor = HAssKClient.Sensor("trisensor_air_temperature")
+    }
 
-        var okayImHot = false
-        val runThis = {
-            val temp = with(hasskClient) { sensor.state() }.state.toFloat().also {
-                okayImHot = if (it > 80f) {
-                    if (!okayImHot) TheArm.request(excuseMe)
-                    true
-                } else false
-            }
+    private fun handle(temp: Float) {
+        okayImHot = if (temp > 80f) {
+            if (!okayImHot) TheArm.request(excuseMe)
+            true
+        } else false
 
-            val angle = ((temp - TEMP_OFFSET) * DEGREES_TO_ANGLES).toInt()
-            justGo(angle)
-        }
-        myFuture = executor.scheduleAtFixedRate(runThis, 0, 15, java.util.concurrent.TimeUnit.SECONDS)
+        val angle = ((temp - TEMP_OFFSET) * DEGREES_TO_ANGLES).toInt()
+        justGo(angle)
     }
 
     fun stop() {
-        myFuture.cancel(true)
-        executor.shutdownNow()
         justGo(0)
     }
 

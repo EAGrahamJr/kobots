@@ -21,7 +21,10 @@ import crackers.kobots.app.SequenceExecutor
 import crackers.kobots.app.bus.*
 import crackers.kobots.app.crickitHat
 import crackers.kobots.devices.at
-import crackers.kobots.parts.*
+import crackers.kobots.parts.ActionBuilder
+import crackers.kobots.parts.ActionSequence
+import crackers.kobots.parts.RotatorServo
+import crackers.kobots.parts.ServoLinearActuator
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -36,42 +39,26 @@ object TheArm : SequenceExecutor() {
         publishToTopic(REQUEST_TOPIC, SequenceRequest(sequence))
     }
 
-    private const val ELBOW_DELTA = 1f
     const val ELBOW_UP = 90
     const val ELBOW_DOWN = -10
 
-    private const val WAIST_DELTA = 1f
     const val WAIST_HOME = 0
-    const val WAIST_MAX = 180f
+    const val WAIST_MAX = 110
 
-    // not part of the arm, but used in coordination with it
-    // TODO physical implementation left something to be desired
-//    val mainRoto by lazy {
-//        val stepper = BasicStepperMotor(2048, crickitHat.unipolarStepperPort())
-//        RotatorStepper(stepper)
-//    }
-    val mainRoto = object : Rotator {
-        private var angle = 0
-        override fun rotateTo(angle: Int): Boolean {
-            this.angle = angle
-            return true
-        }
+    const val EXTENDER_HOME = 0
+    const val EXTENDER_FULL = 100
 
-        override fun current(): Int {
-            return angle
-        }
-    }
+    const val GRIPPER_OPEN = 0
+    const val GRIPPER_CLOSED = 100
 
     private val HOME_POSITION = ArmPosition(
         JointPosition(WAIST_HOME),
-        JointPosition(0),
-        JointPosition(0),
+        JointPosition(EXTENDER_HOME),
+        JointPosition(GRIPPER_CLOSED),
         JointPosition(ELBOW_UP)
     )
 
     // hardware! =====================================================================================================
-    const val GRIPPER_OPEN = 0
-    const val GRIPPER_CLOSED = 100
 
     val gripper by lazy {
         // traverse gears
@@ -86,9 +73,6 @@ object TheArm : SequenceExecutor() {
         ServoLinearActuator(servo, _OPEN, _CLOSE)
     }
 
-    const val EXTENDER_HOME = 0
-    const val EXTENDER_FULL = 100
-
     val extender by lazy {
         val _IN = 180f
         val _OUT = 0f
@@ -102,7 +86,7 @@ object TheArm : SequenceExecutor() {
         val servo2 = crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
             this at 0f
         }
-        val physicalRange = IntRange(ELBOW_DOWN.toInt(), ELBOW_UP.toInt())
+        val physicalRange = IntRange(ELBOW_DOWN, ELBOW_UP)
         val servoRange = IntRange(180, 0)
         RotatorServo(servo2, physicalRange, servoRange)
     }
@@ -110,9 +94,9 @@ object TheArm : SequenceExecutor() {
     val waist by lazy {
         val _HOME = 180
         val _MAX = 0
-//        RotatorStepper(BasicStepperMotor(200, crickitHat.motorStepperPort()), 2.33f, true)
+
         val servoRange = IntRange(_HOME, _MAX)
-        val physicalRange = IntRange(0, (180 / 1.4).toInt())
+        val physicalRange = IntRange(0, 128) // gear ratio 1.4:1
         val servo = crickitHat.servo(4, ServoTrim.TOWERPRO_SG90).apply {
             this at _HOME.toFloat()
         }

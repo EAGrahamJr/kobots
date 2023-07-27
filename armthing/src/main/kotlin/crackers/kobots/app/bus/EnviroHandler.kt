@@ -16,8 +16,11 @@
 
 package crackers.kobots.app.bus
 
+import crackers.kobots.app.VeryDumbThermometer
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.EyeDropDemo
+import crackers.kobots.app.execution.goToSleep
+import crackers.kobots.app.execution.sayHi
 import org.eclipse.paho.client.mqttv3.*
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.json.JSONObject
@@ -36,29 +39,49 @@ object EnviroHandler {
             isCleanSession = false
             isAutomaticReconnect = true
         }
-        mqttClient.connect(options)
-        mqttClient.setCallback(object : MqttCallback {
-            override fun connectionLost(cause: Throwable?) {
-                mqttClient.connect(options)
-            }
+        with(mqttClient) {
+            connect(options)
+            setCallback(object : MqttCallback {
+                override fun connectionLost(cause: Throwable?) {
+                    Logger.error(cause, "Connection lost")
+                }
 
-            override fun messageArrived(topic: String?, message: MqttMessage?) {
-                // ignore
-            }
+                override fun messageArrived(topic: String?, message: MqttMessage?) {
+                    // ignore
+                }
 
-            override fun deliveryComplete(token: IMqttDeliveryToken?) {
-                // ignore
-            }
-        })
-        mqttClient.subscribe("homebody/bedroom/casey") { _, msg ->
-            try {
-                val payload = JSONObject(String(msg.payload))
+                override fun deliveryComplete(token: IMqttDeliveryToken?) {
+                    // ignore
+                }
+            })
+            handle("homebody/bedroom/casey") { payload ->
                 if (payload.has("lamp")) {
                     if (LocalTime.now().hour == 22) TheArm.request(EyeDropDemo.pickupItem())
                 }
-            } catch (t: Throwable) {
-                Logger.error("That didn't work", t)
+            }
+            handle("homebody/office/paper") { payload ->
+                if (payload.has("lamp")) {
+                    if (payload.getString("lamp") == "on") TheArm.request(sayHi) else TheArm.request(goToSleep)
+                }
+            }
+            handle("zwave/nodeID_14/49/0/Air_temperature") { payload ->
+                if (payload.has("value")) {
+                    val temp = payload.getDouble("value")
+                    VeryDumbThermometer.setTemperature(temp.toFloat())
+                }
             }
         }
+
+        // zwave/nodeID_14/48/0/Motion
     }
+
+    private fun MqttClient.handle(topic: String, handler: (JSONObject) -> Unit) =
+        subscribe(topic) { _, msg ->
+            try {
+                val payload = JSONObject(String(msg.payload))
+                handler(payload)
+            } catch (t: Throwable) {
+                Logger.error(t, "That didn't work")
+            }
+        }
 }

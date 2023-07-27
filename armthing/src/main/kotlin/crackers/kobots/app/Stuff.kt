@@ -17,6 +17,8 @@
 package crackers.kobots.app
 
 import com.diozero.util.SleepUtil
+import com.typesafe.config.ConfigFactory
+import crackers.hassk.HAssKClient
 import crackers.kobots.devices.expander.CRICKITHat
 import java.time.Duration
 import java.util.concurrent.Executors
@@ -50,4 +52,13 @@ internal fun <R> executeWithMinTime(millis: Long, block: () -> R): R {
  */
 internal fun checkRun(ms: Long, block: () -> Unit): Future<*> = executor.submit {
     while (runFlag.get()) executeWithMinTime(ms) { block() }
+}
+
+/**
+ * HomeAssistant client
+ */
+internal val hasskClient by lazy {
+    with(ConfigFactory.load()) {
+        HAssKClient(getString("ha.token"), getString("ha.server"), getInt("ha.port"))
+    }
 }

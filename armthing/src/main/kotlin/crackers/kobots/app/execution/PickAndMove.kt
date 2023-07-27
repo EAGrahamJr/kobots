@@ -21,7 +21,6 @@ import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
 import crackers.kobots.app.arm.TheArm.elbow
 import crackers.kobots.app.arm.TheArm.extender
 import crackers.kobots.app.arm.TheArm.gripper
-import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.arm.TheArm.waist
 import crackers.kobots.parts.ActionBuilder
 import crackers.kobots.parts.ActionSequence
@@ -80,7 +79,7 @@ abstract class PickAndMove {
 
     private fun moveAThing(startPosition: MovePosition, endPosition: MovePosition) = sequence {
         name = startPosition.name
-        this + homeAction
+        this + getOutOfTheWay
 
         action {
             waist rotate startPosition.waist
@@ -103,6 +102,6 @@ abstract class PickAndMove {
 
         this += putDownItem()
 
-        this + homeAction
+        this + getOutOfTheWay
     }
 }

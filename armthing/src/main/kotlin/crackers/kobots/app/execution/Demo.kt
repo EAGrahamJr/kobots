@@ -16,9 +16,11 @@
 
 package crackers.kobots.app.execution
 
+import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
 import crackers.kobots.app.arm.TheArm.EXTENDER_FULL
 import crackers.kobots.app.arm.TheArm.GRIPPER_CLOSED
 import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
+import crackers.kobots.app.arm.TheArm.WAIST_MAX
 import crackers.kobots.app.arm.TheArm.elbow
 import crackers.kobots.app.arm.TheArm.extender
 import crackers.kobots.app.arm.TheArm.gripper
@@ -27,15 +29,12 @@ import crackers.kobots.app.arm.TheArm.waist
 import crackers.kobots.parts.ActionSpeed
 import crackers.kobots.parts.sequence
 
-fun Int.retract() = (this * .66).toInt()
-
 /**
  * Wave hello kinda.
  */
 val sayHi by lazy {
     sequence {
         name = "Say Hi"
-        this + homeAction
         action {
             elbow rotate 45
             extender goTo EXTENDER_FULL
@@ -75,5 +74,19 @@ val excuseMe by lazy {
             }
         }
         this + homeAction
+    }
+}
+
+val goToSleep by lazy {
+    sequence {
+        name = "Go To Sleep"
+        this + homeAction
+        action {
+            waist rotate WAIST_MAX
+        }
+        action {
+            requestedSpeed = ActionSpeed.SLOW
+            elbow rotate ELBOW_DOWN
+        }
     }
 }
