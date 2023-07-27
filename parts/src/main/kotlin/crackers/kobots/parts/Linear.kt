@@ -89,7 +89,7 @@ class ServoLinearActuator(
 }
 
 /**
- * This actuator is essentially a "binary" type, where it can be either in or out (open or closed). Typically this
+ * This actuator is essentially a "binary" type, where it can be either in or out (open or closed). Typically, this
  * would be powered by something like a solenoid.
  */
 abstract class InOutActuator : Actuator<InOutMovement> {

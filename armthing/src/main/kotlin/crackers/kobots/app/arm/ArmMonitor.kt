@@ -111,19 +111,19 @@ object ArmMonitor {
                     // show last recorded status
                     if (lastMenuItem == Menu.MANUAL) showLastStatus()
                 }
-                if (SensorSuite.lumens > 0) displayLumens()
+                if (SensorSuite.lumens > 0) displayLumens(SensorSuite.lumens)
                 if (imageChanged.getAndSet(false)) screen.display(image)
                 KobotSleep.millis(10)
             }
         }
     }
 
-    private fun displayLumens() = with(screenGraphics) {
+    private fun displayLumens(lumens: Int) = with(screenGraphics) {
         color = Color.BLACK
-        fillRect(105, 0, 28, monitorLineHight)
+        fillRect(100, 0, 28, monitorLineHight)
         // show lumens in upper right corner
         color = Color.YELLOW
-        drawString(lastLumensRecieved.get().toString(), 105, monitorLineHight)
+        drawString(lumens.toString(), 105, monitorLineHight)
     }
 
     private val menuIcons = listOf("\u25C1", "\u25A1", "\u25B7", "\u2718")

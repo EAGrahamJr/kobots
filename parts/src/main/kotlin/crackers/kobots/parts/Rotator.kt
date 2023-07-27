@@ -69,10 +69,14 @@ interface Rotator : Actuator<RotationMovement> {
  * on rounding errors in the calculation of the number of steps required to reach the destination.
  */
 class RotatorStepper(
-    val theStepper: StepperMotorInterface,
+    private val theStepper: StepperMotorInterface,
     gearRatio: Float = 1f,
     reversed: Boolean = false
 ) : Rotator {
+
+    init {
+        require(gearRatio > 0f) { "gearRatio '$gearRatio' must be greater than zero." }
+    }
 
     private val forwardDirection = if (reversed) BACKWARD else FORWARD
     private val backwardDirection = if (reversed) FORWARD else BACKWARD
@@ -80,40 +84,37 @@ class RotatorStepper(
     fun release() = theStepper.release()
 
     private val maxSteps = theStepper.stepsPerRotation / gearRatio
+    private var stepsLocation: Int = 0
 
-    private var _stepsLocation: Int = 0
-    internal val currentLocation: Int
-        get() = _stepsLocation
-
-    override fun current(): Int = (360 * currentLocation / maxSteps).roundToInt()
+    override fun current(): Int = (360 * stepsLocation / maxSteps).roundToInt()
 
     override fun rotateTo(angle: Int): Boolean {
         val destinationSteps = (maxSteps * angle / 360).toInt()
-        if (destinationSteps == currentLocation) return true
+        if (destinationSteps == stepsLocation) return true
 
         // move towards the destination
-        if (destinationSteps < currentLocation) {
-            _stepsLocation--
+        if (destinationSteps < stepsLocation) {
+            stepsLocation--
             theStepper.step(backwardDirection)
         } else {
-            _stepsLocation++
+            stepsLocation++
             theStepper.step(forwardDirection)
         }
         // are we there yet?
-        return destinationSteps == currentLocation
+        return destinationSteps == stepsLocation
     }
 }
 
 /**
  * Servo, with software limits to prevent over-rotation. Each "step" is controlled by the `deltaDegrees` parameter
- * (`null` means absolute movement, default 1 degreeper step). Stepper movement is done in "whole degrees" (int), so
+ * (`null` means absolute movement, default 1 degree per "step"). Servo movement is done in "whole degrees" (int), so
  * there may be some small rounding errors.
  *
- * The [physicalRange] is the range of the servo in degrees, and the [servoRange] is the range of the servo in degrees
- * that is usable. For example, a servo that can rotate 180 degrees, but is only used in a 90 degree range, would have
- * a [physicalRange] of `0..180` and a [servoRange] of `45..135`. This allows for gear ratios and other mechanical
- * limitations to be accounted for. **NOTE** that the [physicalRange] can be _inverted_ to the [servoRange] if the
- * servo is mounted "backwards" relative to the desired rotation.
+ * The [physicalRange] is the range of the servo _target_ in degrees, and the [servoRange] is the range of the servo
+ * itself, in degrees. For example, a servo that rotates its target 180 degrees, but only requires a 90 degree range,
+ * would have a [physicalRange] of `0..180` and a [servoRange] of `45..135`. This allows for gear ratios and other
+ * mechanical limitations to be accounted for. **NOTE** that the [physicalRange] can be _inverted_ to the [servoRange]
+ * if the servo is mounted "backwards" relative to the desired rotation.
  *
  * Note that the target **may** not be exact, due to rounding errors and if the [delta] is large. Example:
  * ```
@@ -125,12 +126,12 @@ class RotatorStepper(
  *
  */
 class RotatorServo(
-    val theServo: ServoDevice,
-    val physicalRange: IntRange,
-    val servoRange: IntRange,
+    private val theServo: ServoDevice,
+    private val physicalRange: IntRange,
+    private val servoRange: IntRange,
     deltaDegrees: Int? = 1
 ) : Rotator {
-    val delta: Float? = if (deltaDegrees == null) null else abs(deltaDegrees).toFloat()
+    private val delta: Float? = if (deltaDegrees == null) null else abs(deltaDegrees).toFloat()
 
     private val PRECISION = 0.1f
 
@@ -138,7 +139,7 @@ class RotatorServo(
     private val servoUpperLimit: Float
 
     init {
-        require(physicalRange.first < physicalRange.last) { "physical range must be increasing" }
+        require(physicalRange.first < physicalRange.last) { "physicalRange '$physicalRange' must be increasing" }
         with(servoRange) {
             servoLowerLimit = (if (first < last) first else last).toFloat()
             servoUpperLimit = (if (first < last) last else first).toFloat()
@@ -148,7 +149,7 @@ class RotatorServo(
     private fun IntRange.length(): Int = last - first
 
     // translate an angle in the physical range to a servo angle
-    fun translate(angle: Int): Float {
+    private fun translate(angle: Int): Float {
         val physical = (angle - physicalRange.first).toFloat()
         val servo = physical * servoRange.length() / physicalRange.length()
         return servo + servoRange.first
@@ -166,7 +167,7 @@ class RotatorServo(
      */
     override fun rotateTo(angle: Int): Boolean {
         // angle must be in the physical range
-//        require(angle.roundToInt() in physicalRange) { "Angle '$angle' is not in physical range '$physicalRange'." }
+        require(angle in physicalRange) { "Angle '$angle' is not in physical range '$physicalRange'." }
 
         val currentAngle = theServo.angle
         val targetAngle = translate(angle)
@@ -175,7 +176,7 @@ class RotatorServo(
         if (delta == null) {
             if (reachedTarget(currentAngle, targetAngle, PRECISION)) return true
 
-            // moveo to the target (trimmed) and we're done
+            // move to the target (trimmed) and we're done
             theServo at trimTargetAngle(targetAngle)
             return true
         }
@@ -183,7 +184,7 @@ class RotatorServo(
         // check to see if within the target
         if (targetAngle.almostEquals(currentAngle, delta)) return true
 
-        // apply the delta
+        // apply the delta and make sure it doesn't go out of range (technically it shouldn't)
         val nextAngle = trimTargetAngle(
             if (currentAngle > targetAngle) currentAngle - delta else currentAngle + delta
         )
@@ -194,14 +195,14 @@ class RotatorServo(
     }
 
     // determine if the servo is at the target angle or at either of the limits
-    fun reachedTarget(servoCurrent: Float, servoTarget: Float, delta: Float): Boolean {
+    private fun reachedTarget(servoCurrent: Float, servoTarget: Float, delta: Float): Boolean {
         return servoCurrent.almostEquals(servoTarget, delta) ||
             servoCurrent.almostEquals(servoLowerLimit, PRECISION) ||
             servoCurrent.almostEquals(servoUpperLimit, PRECISION)
     }
 
     // limit the target angle to the servo limits
-    fun trimTargetAngle(targetAngle: Float): Float {
+    private fun trimTargetAngle(targetAngle: Float): Float {
         return when {
             targetAngle < servoLowerLimit -> servoLowerLimit
             targetAngle > servoUpperLimit -> servoUpperLimit

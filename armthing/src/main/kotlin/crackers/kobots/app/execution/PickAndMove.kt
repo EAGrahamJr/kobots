@@ -97,8 +97,9 @@ abstract class PickAndMove {
         action { waist rotate endPosition.waist }
         action {
             extender goTo endPosition.extender
-            elbow rotate endPosition.elbow
+            elbow rotate endPosition.elbow / 2
         }
+        action { elbow rotate endPosition.elbow }
 
         this += putDownItem()
 
