@@ -112,7 +112,7 @@ object ArmMonitor {
                     // show last recorded status
                     if (lastMenuItem == Menu.MANUAL) showLastStatus()
                 }
-                if (SensorSuite.lumens > 0) displayLumens(SensorSuite.lumens)
+//                if (SensorSuite.lumens > 0) displayLumens(SensorSuite.lumens)
                 if (imageChanged.getAndSet(false)) screen.display(image)
                 KobotSleep.millis(10)
             }
