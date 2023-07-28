@@ -92,6 +92,7 @@ object ArmMonitor {
                 }
             }
         )
+        joinTopic(SLEEP_TOPIC, KobotsSubscriber { event -> if (event is SleepEvent) screen.setDisplayOn(!event.sleep) })
 
         future = executor.submit {
             var lastMenuItem: Menu? = null

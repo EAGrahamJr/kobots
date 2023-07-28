@@ -17,15 +17,18 @@
 package crackers.kobots.app.arm
 
 import com.diozero.api.ServoTrim
+import crackers.kobots.app.SLEEP_TOPIC
 import crackers.kobots.app.SequenceExecutor
+import crackers.kobots.app.SleepEvent
 import crackers.kobots.app.bus.*
 import crackers.kobots.app.crickitHat
+import crackers.kobots.app.execution.goToSleep
+import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.at
 import crackers.kobots.parts.ActionBuilder
 import crackers.kobots.parts.ActionSequence
 import crackers.kobots.parts.RotatorServo
 import crackers.kobots.parts.ServoLinearActuator
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -115,15 +118,15 @@ object TheArm : SequenceExecutor() {
 
     // manage the state of this construct =============================================================================
     private val _currentState = AtomicReference(ArmState(HOME_POSITION, false))
-    private val atHome = AtomicBoolean(true)
 
     var state: ArmState
         get() = _currentState.get()
         private set(s) {
             _currentState.set(s)
             publishToTopic(STATE_TOPIC, s)
-            atHome.set(s.position == HOME_POSITION)
         }
+    val home: Boolean
+        get() = state.position == HOME_POSITION
 
     fun start() {
         joinTopic(
@@ -132,6 +135,9 @@ object TheArm : SequenceExecutor() {
                 handleRequest(it)
             }
         )
+        joinTopic(SLEEP_TOPIC, KobotsSubscriber<SleepEvent> {
+            if (it.sleep) request(goToSleep) else request(sayHi)
+        })
     }
 
     override fun stop() {
@@ -141,7 +147,6 @@ object TheArm : SequenceExecutor() {
 
     override fun preExecution() {
         state = ArmState(state.position, true)
-        atHome.set(false) // any request is treated as being "not home" but the GO_HOME will reset this
     }
 
     override fun postExecution() {

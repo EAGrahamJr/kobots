@@ -97,6 +97,7 @@ object SensorSuite : AutoCloseable {
     }
 
     override fun close() {
+        if (!::future.isInitialized) return
         future.get()
         proximitySensor.close()
     }

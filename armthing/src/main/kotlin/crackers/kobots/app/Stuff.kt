@@ -19,7 +19,9 @@ package crackers.kobots.app
 import com.diozero.util.SleepUtil
 import com.typesafe.config.ConfigFactory
 import crackers.hassk.HAssKClient
+import crackers.kobots.app.bus.KobotsEvent
 import crackers.kobots.devices.expander.CRICKITHat
+import org.json.JSONObject
 import java.time.Duration
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -62,3 +64,15 @@ internal val hasskClient by lazy {
         HAssKClient(getString("ha.token"), getString("ha.server"), getInt("ha.port"))
     }
 }
+
+/**
+ * Generic topic and event for sleep/wake events.
+ */
+internal const val SLEEP_TOPIC = "System.Sleep"
+
+class SleepEvent(val sleep: Boolean) : KobotsEvent
+
+/**
+ * Extension function on a JSON object to get a on/off status as a boolean.
+ */
+internal fun JSONObject.onOff(key: String): Boolean = this.optString(key, "off") == "on"

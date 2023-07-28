@@ -16,11 +16,12 @@
 
 package crackers.kobots.app.bus
 
+import crackers.kobots.app.SLEEP_TOPIC
+import crackers.kobots.app.SleepEvent
 import crackers.kobots.app.VeryDumbThermometer
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.EyeDropDemo
-import crackers.kobots.app.execution.goToSleep
-import crackers.kobots.app.execution.sayHi
+import crackers.kobots.app.onOff
 import org.eclipse.paho.client.mqttv3.*
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.json.JSONObject
@@ -61,7 +62,8 @@ object EnviroHandler {
             }
             handle("homebody/office/paper") { payload ->
                 if (payload.has("lamp")) {
-                    if (payload.getString("lamp") == "on") TheArm.request(sayHi) else TheArm.request(goToSleep)
+                    if (payload.onOff("lamp")) publishToTopic(SLEEP_TOPIC, SleepEvent(false))
+                    else publishToTopic(SLEEP_TOPIC, SleepEvent(true))
                 }
             }
             handle("zwave/nodeID_14/49/0/Air_temperature") { payload ->

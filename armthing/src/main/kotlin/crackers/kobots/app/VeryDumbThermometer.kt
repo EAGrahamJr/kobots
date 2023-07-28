@@ -42,7 +42,7 @@ object VeryDumbThermometer {
      * Allow for setting from external events.
      */
     fun setTemperature(temp: Float) {
-        Logger.warn("Setting temp: {}", temp)
+        Logger.debug("Setting temp: {}", temp)
         handle(temp)
     }
 

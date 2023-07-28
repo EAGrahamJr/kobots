@@ -21,6 +21,8 @@ import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.bus.EnviroHandler
+import crackers.kobots.app.bus.KobotsSubscriber
+import crackers.kobots.app.bus.joinTopic
 import crackers.kobots.app.execution.EyeDropDemo
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.sayHi
@@ -67,7 +69,7 @@ fun main() {
 //    System.setProperty(REMOTE_PI, BRAINZ)
 
     // these do not require the CRICKIT
-    SensorSuite.start()
+//    SensorSuite.start()
     ArmMonitor.start()
 
     crickitHat.use {
@@ -152,15 +154,6 @@ private fun joyRide() {
         if (gamepad.yButton) -extender
         if (gamepad.xButton) -gripper
         if (gamepad.bButton) +gripper
-//        if (gamepad.selectButton) {
-//            whichStepper = if (whichStepper == waist) {
-//                Logger.warn("Switching to mainRoto", null)
-//                mainRoto
-//            } else {
-//                Logger.warn("Switching to waist", null)
-//                waist
-//            }
-//        }
         if (gamepad.startButton) _manualMode.set(false)
 
         updateCurrentState()
@@ -169,22 +162,34 @@ private fun joyRide() {
 
 object Keyboard {
     private val keyboard = NeoKey().apply {
-        brightness = 0.1f
+        brightness = 0.05f
     }
 
     private val BUTTON_COLORS = listOf(Color.BLUE, Color.GREEN, Color.CYAN, Color.RED)
 
     private val NO_BUTTONS = listOf(false, false, false, false)
     private var lastButtonValues = NO_BUTTONS
-    lateinit var currentButtons: List<Boolean>
+    private lateinit var _currentButtons: List<Boolean>
+    val currentButtons: List<Boolean>
+        get() = _currentButtons
+
+    init {
+        joinTopic(
+            SLEEP_TOPIC,
+            KobotsSubscriber { event ->
+                if (event is SleepEvent) keyboard.brightness = if (event.sleep) 0.01f else 0.05f
+            })
+    }
 
     // because we're looking for "presses", only return values when a value transitions _to_ true
     fun buttonCheck(): Boolean {
-        currentButtons = try {
+        _currentButtons = try {
             keyboard.read().let { read ->
-                // "auto repeat" for manual mode
+                // nothing changed, make sure buttons are the "right" color
                 if (read == lastButtonValues) {
-                    BUTTON_COLORS.forEachIndexed { index, color -> keyboard.pixels[index] = color }
+                    BUTTON_COLORS.forEachIndexed { index, color ->
+                        if (keyboard.color(index).color != color) keyboard.pixels[index] = color
+                    }
                     NO_BUTTONS
                 } else {
                     lastButtonValues = read
