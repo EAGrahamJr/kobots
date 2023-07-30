@@ -73,6 +73,10 @@ fun main() {
     ArmMonitor.start()
 
     crickitHat.use {
+        // run the fan
+        val fanMotor = it.motor(1)
+        fanMotor.value = 1.0f
+
         // start all the things that require the CRICKIT
         VeryDumbThermometer.start()
         TheArm.start()
@@ -120,6 +124,7 @@ fun main() {
         runFlag.set(false)
         TheArm.stop()
         VeryDumbThermometer.stop()
+        fanMotor.value = 0.0f
     }
     SensorSuite.close()
     ArmMonitor.stop()
