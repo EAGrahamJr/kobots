@@ -21,15 +21,17 @@ import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.bus.EnviroHandler
-import crackers.kobots.app.bus.KobotsSubscriber
-import crackers.kobots.app.bus.joinTopic
 import crackers.kobots.app.execution.EyeDropDemo
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.devices.io.NeoKey
+import crackers.kobots.execution.KobotsSubscriber
+import crackers.kobots.execution.executeWithMinTime
+import crackers.kobots.execution.joinTopic
 import org.tinylog.Logger
 import java.awt.Color
+import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.exitProcess
@@ -60,7 +62,7 @@ enum class Menu(val label: String, val action: () -> Unit) {
     MANUAL("Manual", { _manualMode.set(true) })
 }
 
-private const val WAIT_LOOP = 50L
+private val WAIT_LOOP = Duration.ofMillis(50)
 
 /**
  * Run this.
@@ -183,7 +185,8 @@ object Keyboard {
             SLEEP_TOPIC,
             KobotsSubscriber { event ->
                 if (event is SleepEvent) keyboard.brightness = if (event.sleep) 0.01f else 0.05f
-            })
+            }
+        )
     }
 
     // because we're looking for "presses", only return values when a value transitions _to_ true

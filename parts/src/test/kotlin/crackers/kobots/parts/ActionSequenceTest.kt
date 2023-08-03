@@ -204,7 +204,7 @@ class ActionSequenceTest : FunSpec(
          * Test running a  sequence  5 times; the sequence contains a single action where the mock rotator is
          * rotated to a random angle; each rotation is checked to ensure that the random angle is different each time
          */
-        test("repated with external influences") {
+        test("repeated with external influences") {
             val rotator = MockRotator()
             val angles = listOf(
                 randomServoAngle(),
@@ -241,10 +241,61 @@ class ActionSequenceTest : FunSpec(
                 val resetAction = resetDef.action
 
                 val count = runAndGetCount(randomAction::step) + runAndGetCount(resetAction::step)
-                count shouldBe abs(angles[i].toInt()) * 2 - 1 // -1 for the home move
+                count shouldBe abs(angles[i]) * 2 - 1 // -1 for the home move
                 rotator.current() shouldBe 0
                 stoppedAt[i] shouldBe angles[i]
             }
+        }
+
+        /**
+         * Test a sequence of a single action that uses the `execute` function to run a lambda that returns true the
+         * 5th time it is invoked. The action should take 5 steps to complete.
+         */
+        test("code execution as an action step") {
+            var counter = 0
+
+            val testSequence = sequence {
+                action {
+                    execute {
+                        if (counter == 5) {
+                            true
+                        } else {
+                            ++counter
+                            false
+                        }
+                    }
+                }
+            }
+
+            val actionDef = testSequence.build().first()
+            val action = actionDef.action
+
+            runAndGetCount(action::step) shouldBe 5
+        }
+
+        /**
+         * Test a sequence of one action with two `execute` functions, each of which increments a counter: one returns true
+         * when the counter is 5, the other returns true when the counter is 10. The action should take 10 steps to complete.
+         */
+        test("multiple code executions as action steps") {
+            var counter1 = 0
+            var counter2 = 0
+
+            val testSequence = sequence {
+                action {
+                    execute {
+                        ++counter1 > 5
+                    }
+                    execute {
+                        ++counter2 > 10
+                    }
+                }
+            }
+
+            val actionDef = testSequence.build().first()
+            val action = actionDef.action
+
+            runAndGetCount(action::step) shouldBe 10
         }
     }
 )

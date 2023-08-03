@@ -22,6 +22,7 @@ import crackers.kobots.app.VeryDumbThermometer
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.EyeDropDemo
 import crackers.kobots.app.onOff
+import crackers.kobots.execution.publishToTopic
 import org.eclipse.paho.client.mqttv3.*
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
 import org.json.JSONObject
@@ -62,8 +63,11 @@ object EnviroHandler {
             }
             handle("homebody/office/paper") { payload ->
                 if (payload.has("lamp")) {
-                    if (payload.onOff("lamp")) publishToTopic(SLEEP_TOPIC, SleepEvent(false))
-                    else publishToTopic(SLEEP_TOPIC, SleepEvent(true))
+                    if (payload.onOff("lamp")) {
+                        publishToTopic(SLEEP_TOPIC, SleepEvent(false))
+                    } else {
+                        publishToTopic(SLEEP_TOPIC, SleepEvent(true))
+                    }
                 }
             }
             handle("zwave/nodeID_14/49/0/Air_temperature") { payload ->

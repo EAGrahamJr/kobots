@@ -14,9 +14,10 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.bus
+package crackers.kobots.execution
 
 import org.slf4j.LoggerFactory
+import org.tinylog.Logger
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Flow
 import java.util.concurrent.SubmissionPublisher
@@ -49,7 +50,11 @@ private class KobotsSubscriberDecorator<T : KobotsMessage>(val listener: KobotsS
     }
 
     override fun onNext(item: T) {
-        listener.receive(item)
+        try {
+            listener.receive(item)
+        } catch (t: Throwable) {
+            Logger.error(t, "Error in bus")
+        }
         mySub.request(batchSize)
     }
 

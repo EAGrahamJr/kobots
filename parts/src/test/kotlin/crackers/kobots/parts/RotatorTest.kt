@@ -50,7 +50,7 @@ class RotatorTest : FunSpec(
         test("rotatable with stepper") {
             every { mockStepper.stepsPerRotation } answers { 200 }
             every { mockStepper.step(any()) } answers { }
-            val rotatable = RotatorStepper(mockStepper)
+            val rotatable = BasicStepperRotator(mockStepper)
 
             while (!rotatable.rotateTo(83)) {
                 // just count things
@@ -67,7 +67,7 @@ class RotatorTest : FunSpec(
         test("rotatable with stepper and gear ratio") {
             every { mockStepper.stepsPerRotation } answers { 200 }
             every { mockStepper.step(any()) } answers { }
-            val rotatable = RotatorStepper(mockStepper, 1.11f)
+            val rotatable = BasicStepperRotator(mockStepper, 1.11f)
 
             while (!rotatable.rotateTo(90)) {
                 // just count things
@@ -87,7 +87,7 @@ class RotatorTest : FunSpec(
             every { mockServo.setAngle(any()) } answers {
                 currentAngle = args[0] as Float
             }
-            val rotatable = RotatorServo(mockServo, IntRange(0, 90), IntRange(0, 180))
+            val rotatable = ServoRotator(mockServo, IntRange(0, 90), IntRange(0, 180))
 
             while (!rotatable.rotateTo(87)) {
                 // just count things
@@ -108,7 +108,7 @@ class RotatorTest : FunSpec(
             every { mockServo.setAngle(any()) } answers {
                 currentAngle = args[0] as Float
             }
-            val rotatable = RotatorServo(mockServo, IntRange(-10, 90), IntRange(180, 0))
+            val rotatable = ServoRotator(mockServo, IntRange(-10, 90), IntRange(180, 0))
 
             while (!rotatable.rotateTo(45)) {
                 // just count things
@@ -130,7 +130,7 @@ class RotatorTest : FunSpec(
             every { mockServo.setAngle(any()) } answers {
                 currentAngle = args[0] as Float
             }
-            val rotatable = RotatorServo(mockServo, IntRange(0, 90), IntRange(0, 180), 5)
+            val rotatable = ServoRotator(mockServo, IntRange(0, 90), IntRange(0, 180), 5)
 
             while (!rotatable.rotateTo(32)) {
                 // just count things

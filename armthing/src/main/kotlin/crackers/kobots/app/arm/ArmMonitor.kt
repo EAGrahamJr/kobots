@@ -20,8 +20,8 @@ import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
 import crackers.kobots.app.*
-import crackers.kobots.app.bus.KobotsSubscriber
-import crackers.kobots.app.bus.joinTopic
+import crackers.kobots.execution.KobotsSubscriber
+import crackers.kobots.execution.joinTopic
 import crackers.kobots.utilities.KobotSleep
 import crackers.kobots.utilities.center
 import java.awt.Color
@@ -179,7 +179,6 @@ object ArmMonitor {
             }
         }
         imageChanged.set(true)
-
     }
 
     fun stop() {

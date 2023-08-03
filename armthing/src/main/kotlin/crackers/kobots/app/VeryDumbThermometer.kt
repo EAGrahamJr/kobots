@@ -19,7 +19,7 @@ package crackers.kobots.app
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.excuseMe
-import crackers.kobots.parts.RotatorStepper
+import crackers.kobots.parts.BasicStepperRotator
 import crackers.kobots.utilities.KobotSleep
 import org.tinylog.Logger
 
@@ -30,11 +30,11 @@ import org.tinylog.Logger
 object VeryDumbThermometer {
     private val thermoStepper by lazy {
         val stepper = BasicStepperMotor(200, crickitHat.motorStepperPort())
-        RotatorStepper(stepper, gearRatio = 1.11f, reversed = true)
+        BasicStepperRotator(stepper, gearRatio = 1.11f, reversed = true)
     }
 
     private const val DEGREES_TO_ANGLES = 18f // this comes out to 5 degree temp change == 90 degree stepper change
-    private const val TEMP_OFFSET = 75f   // median temperature
+    private const val TEMP_OFFSET = 75f // median temperature
 
     private var okayImHot = false
 
@@ -56,7 +56,9 @@ object VeryDumbThermometer {
         okayImHot = if (temp > 80f) {
             if (!okayImHot) TheArm.request(excuseMe)
             true
-        } else false
+        } else {
+            false
+        }
 
         val angle = ((temp - TEMP_OFFSET) * DEGREES_TO_ANGLES).toInt()
         justGo(angle)

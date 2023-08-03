@@ -1,0 +1,32 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+interface KobotsMessage
+interface KobotsEvent
+interface KobotsAction {
+    +interruptable: Boolean
+}
+
+KobotsEvent <|-- KobotsMessage
+KobotsAction <|-- KobotsMessage
+
+interface KobotsSubscriber<M:KobotsMessage> {
+    +receive(msg: M): void
+}
+KobotsSubscriber <-- KobotsMessage
+
+metaclass EventBus {
+    +<M:KobotsMessage> joinTopic(topic:String, listener:KobotsSubscriber<M>, batchSize:Long = 1): void
+    +<M:KobotsMessage> leaveTopic(topic:String, listener:KobotsSubscriber<M>): void
+    +<M:KobotsMessage> publishToTopic(topic:String, vararg items:M): void
+    +<M:KobotsMessage> publishToTopic(topic:String, items:Collection<M>): void
+}
+
+EventBus <-- KobotsMessage
+EventBus <-- KobotsSubscriber
+
+class EmergencyStop {
+    +interruptable = false
+}
+EmergencyStop <|-- KobotsAction
+@enduml

@@ -68,7 +68,7 @@ interface Rotator : Actuator<RotationMovement> {
  * desired rotation. Each movement is executed as a single step of the motor. The accuracy of the movement is dependent
  * on rounding errors in the calculation of the number of steps required to reach the destination.
  */
-class RotatorStepper(
+class BasicStepperRotator(
     private val theStepper: StepperMotorInterface,
     gearRatio: Float = 1f,
     reversed: Boolean = false
@@ -125,7 +125,7 @@ class RotatorStepper(
  * This would indicate that the servo _might not_ move, as the target is within the delta given.
  *
  */
-class RotatorServo(
+class ServoRotator(
     private val theServo: ServoDevice,
     private val physicalRange: IntRange,
     private val servoRange: IntRange,

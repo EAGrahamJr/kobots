@@ -16,11 +16,10 @@
 
 package crackers.kobots.app
 
-import com.diozero.util.SleepUtil
 import com.typesafe.config.ConfigFactory
 import crackers.hassk.HAssKClient
-import crackers.kobots.app.bus.KobotsEvent
 import crackers.kobots.devices.expander.CRICKITHat
+import crackers.kobots.execution.executeWithMinTime
 import org.json.JSONObject
 import java.time.Duration
 import java.util.concurrent.Executors
@@ -36,24 +35,10 @@ internal val executor = Executors.newCachedThreadPool()
 internal val runFlag = AtomicBoolean(true)
 
 /**
- * Run a [block] and ensure it takes up **at least** [millis] time. This is basically to keep various parts from
- * overloading the various buses.
- */
-internal fun <R> executeWithMinTime(millis: Long, block: () -> R): R {
-    val startAt = System.currentTimeMillis()
-    val response = block()
-    val runtime = System.currentTimeMillis() - startAt
-    if (runtime < millis) {
-        SleepUtil.busySleep(Duration.ofMillis(millis - runtime).toNanos())
-    }
-    return response
-}
-
-/**
  * Run an execution loop until the run-flag says stop
  */
 internal fun checkRun(ms: Long, block: () -> Unit): Future<*> = executor.submit {
-    while (runFlag.get()) executeWithMinTime(ms) { block() }
+    while (runFlag.get()) executeWithMinTime(Duration.ofMillis(ms)) { block() }
 }
 
 /**
@@ -70,7 +55,7 @@ internal val hasskClient by lazy {
  */
 internal const val SLEEP_TOPIC = "System.Sleep"
 
-class SleepEvent(val sleep: Boolean) : KobotsEvent
+class SleepEvent(val sleep: Boolean) : crackers.kobots.execution.KobotsEvent
 
 /**
  * Extension function on a JSON object to get a on/off status as a boolean.

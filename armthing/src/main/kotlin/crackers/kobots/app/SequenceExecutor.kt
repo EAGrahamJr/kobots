@@ -16,16 +16,21 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.bus.EmergencyStop
-import crackers.kobots.app.bus.KobotsAction
-import crackers.kobots.app.bus.SequenceRequest
+import crackers.kobots.execution.EmergencyStop
+import crackers.kobots.execution.KobotsAction
+import crackers.kobots.execution.SequenceRequest
+import crackers.kobots.execution.executeWithMinTime
 import crackers.kobots.parts.ActionSpeed
 import crackers.kobots.utilities.KobotSleep
 import org.tinylog.Logger
+import java.time.Duration
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Handles running a sequence for a thing.
+ * Handles running a sequence for a thing. Every sequence is executed on a background thread that runs until
+ * completion or until the [stop] method is called or if an [EmergencyStop] is received. Only one sequence can be
+ * running at a time (see the [moveInProgress] flag).
  */
 abstract class SequenceExecutor {
     private fun ActionSpeed.toMillis(): Long {
@@ -37,7 +42,11 @@ abstract class SequenceExecutor {
         }
     }
 
-    // do stuff =======================================================================================================
+    private val seqExecutor = Executors.newSingleThreadExecutor()
+
+    /**
+     * Execution control "lock".
+     */
     private val _moving = AtomicBoolean(false)
     var moveInProgress: Boolean
         get() = _moving.get()
@@ -49,7 +58,7 @@ abstract class SequenceExecutor {
         private set(value) = _stop.set(value)
 
     /**
-     * Sets the stop flag and waits for it to clear.
+     * Sets the stop flag and blocks until the flag is cleared.
      */
     open fun stop() {
         if (moveInProgress) stopImmediately = true
@@ -58,6 +67,12 @@ abstract class SequenceExecutor {
 
     private fun canRun() = runFlag.get() && !stopImmediately
 
+    /**
+     * Handles a request. If the request is a sequence, it is executed on a background thread. If the request is an
+     * [EmergencyStop], the [stopImmediately] flag is set.
+     *
+     * This function is non-blocking.
+     */
     open fun handleRequest(request: KobotsAction) {
         when (request) {
             is EmergencyStop -> stopImmediately = true
@@ -76,14 +91,15 @@ abstract class SequenceExecutor {
             Logger.warn("Sequence already running - rejected {}", request.sequence.name)
             return
         }
-        preExecution()
-        executor.submit {
+        seqExecutor.submit {
+            preExecution()
             try {
                 request.sequence.build().forEach { action ->
                     if (!canRun()) return@forEach
                     var running = true
                     while (running) {
-                        executeWithMinTime(action.speed.toMillis()) {
+                        val maxPause = Duration.ofMillis(action.speed.toMillis())
+                        executeWithMinTime(maxPause) {
                             running = action.action.step()
                         }
                         updateCurrentState()
@@ -101,11 +117,18 @@ abstract class SequenceExecutor {
         }
     }
 
-    protected abstract fun preExecution()
-    protected abstract fun postExecution()
+    /**
+     * Optional callback for pre-execution.
+     */
+    open fun preExecution() {}
 
     /**
-     * Updates the state of the arm, which in turn publishes to the event topic.
+     * Optiional callback for post-execution.
      */
-    abstract fun updateCurrentState()
+    open fun postExecution() {}
+
+    /**
+     * Optionally updates the state of the executor.
+     */
+    open fun updateCurrentState() {}
 }

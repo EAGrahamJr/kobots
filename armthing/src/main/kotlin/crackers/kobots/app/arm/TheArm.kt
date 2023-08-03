@@ -20,15 +20,15 @@ import com.diozero.api.ServoTrim
 import crackers.kobots.app.SLEEP_TOPIC
 import crackers.kobots.app.SequenceExecutor
 import crackers.kobots.app.SleepEvent
-import crackers.kobots.app.bus.*
 import crackers.kobots.app.crickitHat
 import crackers.kobots.app.execution.goToSleep
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.at
+import crackers.kobots.execution.*
 import crackers.kobots.parts.ActionBuilder
 import crackers.kobots.parts.ActionSequence
-import crackers.kobots.parts.RotatorServo
 import crackers.kobots.parts.ServoLinearActuator
+import crackers.kobots.parts.ServoRotator
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -91,7 +91,7 @@ object TheArm : SequenceExecutor() {
         }
         val physicalRange = IntRange(ELBOW_DOWN, ELBOW_UP)
         val servoRange = IntRange(180, 0)
-        RotatorServo(servo2, physicalRange, servoRange)
+        ServoRotator(servo2, physicalRange, servoRange)
     }
 
     val waist by lazy {
@@ -103,7 +103,7 @@ object TheArm : SequenceExecutor() {
         val servo = crickitHat.servo(4, ServoTrim.TOWERPRO_SG90).apply {
             this at _HOME.toFloat()
         }
-        RotatorServo(servo, physicalRange, servoRange)
+        ServoRotator(servo, physicalRange, servoRange)
     }
 
     /**
@@ -135,9 +135,12 @@ object TheArm : SequenceExecutor() {
                 handleRequest(it)
             }
         )
-        joinTopic(SLEEP_TOPIC, KobotsSubscriber<SleepEvent> {
-            if (it.sleep) request(goToSleep) else request(sayHi)
-        })
+        joinTopic(
+            SLEEP_TOPIC,
+            KobotsSubscriber<SleepEvent> {
+                if (it.sleep) request(goToSleep) else request(sayHi)
+            }
+        )
     }
 
     override fun stop() {

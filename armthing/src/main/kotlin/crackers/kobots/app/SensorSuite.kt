@@ -17,12 +17,11 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.bus.KobotsEvent
-import crackers.kobots.app.bus.allStop
-import crackers.kobots.app.bus.publishToTopic
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.sensors.VCNL4040
+import crackers.kobots.execution.allStop
+import crackers.kobots.execution.publishToTopic
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.abs
@@ -59,8 +58,8 @@ object SensorSuite : AutoCloseable {
     val tooClose: Boolean
         get() = proximity > CLOSE_ENOUGH
 
-    class ProximityAlert : KobotsEvent
-    class LumensData(val lumens: Int) : KobotsEvent
+    class ProximityAlert : crackers.kobots.execution.KobotsEvent
+    class LumensData(val lumens: Int) : crackers.kobots.execution.KobotsEvent
 
     private val ohCrap = ProximityAlert()
     private var previousLumenus: Int = 0

@@ -28,4 +28,6 @@ else
 fi
 
 #echo $RUNTHIS
-sudo $JAVA -ea -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=*:5005 $RUNTHIS
+#DEBUG="-agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=*:5005"
+
+sudo $JAVA -ea $DEBUG $RUNTHIS

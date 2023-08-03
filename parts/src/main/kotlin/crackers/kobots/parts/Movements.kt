@@ -21,6 +21,9 @@ package crackers.kobots.parts
  * be checked _prior_ to any physical action.
  */
 interface Movement {
+    /**
+     * Returns `true` if the movement should be stopped.
+     */
     val stopCheck: () -> Boolean
 }
 
@@ -40,12 +43,10 @@ interface Actuator<M : Movement> {
  *
  * `Actions` are not re-runnable, nor are they thread-safe.
  */
-class Action(movements: List<Pair<Actuator<Movement>, Movement>>) {
+class Action(movements: Map<Actuator<Movement>, Movement>) {
 
     // make a copy of the [movements] list to avoid any external modification
-    private val _movements = mutableListOf<Pair<Actuator<Movement>, Movement>>().apply {
-        addAll(movements)
-    }
+    private val _movements = movements.toList()
     private val movementResults = BooleanArray(_movements.size) { false }
 
     /**

@@ -14,11 +14,22 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.bus
+package crackers.kobots.execution
 
-import crackers.kobots.parts.ActionSequence
+import com.diozero.util.SleepUtil
+import java.time.Duration
 
 /**
- * Request to execute a sequence of actions.
+ * Run a [block] and ensure it takes up **at least** [maxPause] time. This is basically to keep various parts from
+ * overloading the various buses.
  */
-class SequenceRequest(val sequence: ActionSequence, override val interruptable: Boolean = true) : KobotsAction
+fun <R> executeWithMinTime(maxPause: Duration, block: () -> R): R {
+    val millis = maxPause.toMillis()
+    val startAt = System.currentTimeMillis()
+    val response = block()
+    val runtime = System.currentTimeMillis() - startAt
+    if (runtime < millis) {
+        SleepUtil.busySleep(Duration.ofMillis(millis - runtime).toNanos())
+    }
+    return response
+}

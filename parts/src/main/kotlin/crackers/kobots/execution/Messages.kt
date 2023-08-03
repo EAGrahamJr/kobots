@@ -14,25 +14,11 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.arm
+package crackers.kobots.execution
+
+import crackers.kobots.parts.ActionSequence
 
 /**
- * Describes the basic data for an arm joint location.
- * TODO add in radii to try to calculate endpoint coordintes of things
+ * Request to execute a sequence of actions.
  */
-data class JointPosition(val angle: Int, val radius: Float = 0f)
-
-/**
- * Describes a location for the arm.
- */
-data class ArmPosition(
-    val waist: JointPosition,
-    val extender: JointPosition,
-    val gripper: JointPosition,
-    val elbow: JointPosition
-)
-
-/**
- * Current state
- */
-class ArmState(val position: ArmPosition, val busy: Boolean = false) : crackers.kobots.execution.KobotsEvent
+class SequenceRequest(val sequence: ActionSequence, override val interruptable: Boolean = true) : KobotsAction
