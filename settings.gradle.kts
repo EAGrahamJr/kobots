@@ -1,2 +1,2 @@
 rootProject.name = "kobots"
-include("armthing", "parts", "adhoc")
+include("armthing", "parts", "adhoc", "rotoMatic")

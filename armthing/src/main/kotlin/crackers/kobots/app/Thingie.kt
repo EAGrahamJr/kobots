@@ -16,21 +16,16 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.Keyboard.currentButtons
 import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.homeAction
-import crackers.kobots.app.bus.EnviroHandler
-import crackers.kobots.app.execution.EyeDropDemo
+import crackers.kobots.app.execution.PickWithRotomatic
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.io.GamepadQT
-import crackers.kobots.devices.io.NeoKey
-import crackers.kobots.execution.KobotsSubscriber
-import crackers.kobots.execution.executeWithMinTime
-import crackers.kobots.execution.joinTopic
+import crackers.kobots.execution.*
+import crackers.kobots.execution.NeoKeyBar.currentButtons
 import org.tinylog.Logger
-import java.awt.Color
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -49,11 +44,11 @@ enum class Menu(val label: String, val action: () -> Unit) {
     HOME("Home", { armRequest(homeSequence) }),
 
     PICK("Pick Up Drops", {
-        armRequest(EyeDropDemo.pickupItem())
+        armRequest(PickWithRotomatic.moveStandingObjectToTarget)
         _menuIndex.incrementAndGet()
     }),
     RETURN_DROPS("Return to Sender", {
-        armRequest(EyeDropDemo.returnItem())
+        armRequest(PickWithRotomatic.standingPickupAndReturn)
         _menuIndex.incrementAndGet()
     }),
 
@@ -85,38 +80,22 @@ fun main() {
 
         // start auto-triggered stuff
         EnviroHandler.startHandler()
+        joinTopic(
+            SLEEP_TOPIC,
+            KobotsSubscriber { event ->
+                if (event is SleepEvent) NeoKeyBar.brightness = if (event.sleep) 0.01f else 0.05f
+            }
+        )
 
         // main loop!!!!!
-        while (Keyboard.buttonCheck()) {
+        while (NeoKeyBar.buttonCheck()) {
             try {
                 executeWithMinTime(WAIT_LOOP) {
                     // figure out if we're doing anything
-                    if (manualMode) {
-                        joyRide()
-                    } else if (currentButtons.any { it }) {
-                        // we are, so do it
-                        when {
-                            // previous menu item
-                            currentButtons[0] -> {
-                                val next = _menuIndex.decrementAndGet().let {
-                                    if (it < 0) Menu.values().size - 1 else it
-                                }
-                                _menuIndex.set(next)
-                            }
-
-                            // next menu item
-                            currentButtons[2] -> {
-                                val next = _menuIndex.incrementAndGet() % Menu.values().size
-                                _menuIndex.set(next)
-                            }
-
-                            // do the thing
-                            currentButtons[1] -> currentMenuItem.action()
-
-                            else -> {
-                                // do nothing
-                            }
-                        }
+                    when {
+                        manualMode -> joyRide()
+                        gamepad.xButton -> publishToTopic(TheArm.REQUEST_TOPIC, allStop)
+                        currentButtons.any { it } -> buttonPresses()
                     }
                 }
             } catch (e: Exception) {
@@ -131,8 +110,33 @@ fun main() {
     SensorSuite.close()
     ArmMonitor.stop()
     executor.shutdownNow()
-    Keyboard.close()
+    NeoKeyBar.close()
     exitProcess(0)
+}
+
+private fun buttonPresses() {
+    when {
+        // previous menu item
+        currentButtons[0] -> {
+            val next = _menuIndex.decrementAndGet().let {
+                if (it < 0) Menu.values().size - 1 else it
+            }
+            _menuIndex.set(next)
+        }
+
+        // next menu item
+        currentButtons[2] -> {
+            val next = _menuIndex.incrementAndGet() % Menu.values().size
+            _menuIndex.set(next)
+        }
+
+        // do the thing
+        currentButtons[1] -> currentMenuItem.action()
+
+        else -> {
+            // do nothing
+        }
+    }
 }
 
 val homeSequence = crackers.kobots.parts.sequence {
@@ -164,58 +168,5 @@ private fun joyRide() {
         if (gamepad.startButton) _manualMode.set(false)
 
         updateCurrentState()
-    }
-}
-
-object Keyboard {
-    private val keyboard = NeoKey().apply {
-        brightness = 0.05f
-    }
-
-    private val BUTTON_COLORS = listOf(Color.BLUE, Color.GREEN, Color.CYAN, Color.RED)
-
-    private val NO_BUTTONS = listOf(false, false, false, false)
-    private var lastButtonValues = NO_BUTTONS
-    private lateinit var _currentButtons: List<Boolean>
-    val currentButtons: List<Boolean>
-        get() = _currentButtons
-
-    init {
-        joinTopic(
-            SLEEP_TOPIC,
-            KobotsSubscriber { event ->
-                if (event is SleepEvent) keyboard.brightness = if (event.sleep) 0.01f else 0.05f
-            }
-        )
-    }
-
-    // because we're looking for "presses", only return values when a value transitions _to_ true
-    fun buttonCheck(): Boolean {
-        _currentButtons = try {
-            keyboard.read().let { read ->
-                // nothing changed, make sure buttons are the "right" color
-                if (read == lastButtonValues) {
-                    BUTTON_COLORS.forEachIndexed { index, color ->
-                        if (keyboard.color(index).color != color) keyboard.pixels[index] = color
-                    }
-                    NO_BUTTONS
-                } else {
-                    lastButtonValues = read
-                    read.also {
-                        it.forEachIndexed { index, b ->
-                            keyboard.pixels[index] = if (b) Color.YELLOW else BUTTON_COLORS[index]
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Logger.error(e, "Error reading keyboard")
-            NO_BUTTONS
-        }
-        return currentButtons.isEmpty() || !currentButtons[3]
-    }
-
-    fun close() {
-        keyboard.close()
     }
 }

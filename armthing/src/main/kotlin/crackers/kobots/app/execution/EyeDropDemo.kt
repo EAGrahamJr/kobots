@@ -19,7 +19,8 @@ package crackers.kobots.app.execution
 /**
  * Reducto absurdium.
  *
- * Effectively a re-write of the previous demos, but using an abstract base class.
+ * Effectively a re-write of the previous demos, but using an abstract base class. Note this only works for
+ * non-Rotomatic targets.
  */
 object EyeDropDemo : PickAndMove() {
     override val pickupSequenceName = "Pick Up EyeDrops"

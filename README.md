@@ -8,7 +8,7 @@ This is a _learning_ experience for me, but it **might** produce something usefu
 
 ![Just Build](https://github.com/EAGrahamJr/kobots/actions/workflows/full-build.yaml/badge.svg) ![Kotlin](https://badgen.net/badge/Kotlin/1.8.22/purple)  ![Java](https://badgen.net/badge/Java/17/orange) ![Apache License](https://badgen.net/github/license/EAGrahamJr/kobots)
 
-### In Memorium: Illy 5/2006 - 2/24/2023
+## In Memorium: Illy 5/2006 - 2/24/2023
 
 Goodbye, my friend.
 
@@ -22,9 +22,9 @@ Today, it's stupid easy to "build" electronics on bread-boards, not to mention H
 
 So, yeah - I have a hobby now.
 
-## Libraries in Use
+## Usage on the Raspberry Pi
 
-- [diozero](https://www.diozero.com/) - a thorough and straight-forward implementation of GPIO interface, with a **wide** range of standard devices to boot.<sup>**2**</sup>
+This stuff is being done on Pi's because that's what I have. Plus they're at least multi-core and can run Java without too much problem.
 
 :bangbang: Make sure the `i2c` controller is enabled on the Raspberry Pi and that your user is in the appropriate _group_ to access said devices:
 
@@ -37,6 +37,11 @@ crw-rw---- 1 root i2c 89, 2 Nov 23 12:24 /dev/i2c-2
 :bangbang: **WARNING** The I2C "baudrate" should also be adjusted to 400K - the default value will **not** be sufficient to handle everything on the I2C bus :smiling_imp:
 
 This [pinout reference](https://pinout.xyz/) is also invaluable...
+
+## Libraries in Use
+
+- [diozero](https://www.diozero.com/) - a thorough and straight-forward implementation of GPIO interface, with a **wide** range of standard devices to boot.<sup>**2**</sup>
+- [kobots-devices](https://github.com/EAGrahamJr/kobots-devices) - extensions and new devices added onto `diozero`, but in **Kotlin**.
 
 # Building
 

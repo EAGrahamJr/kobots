@@ -14,14 +14,10 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.bus
+package crackers.kobots.app
 
-import crackers.kobots.app.SLEEP_TOPIC
-import crackers.kobots.app.SleepEvent
-import crackers.kobots.app.VeryDumbThermometer
 import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.execution.EyeDropDemo
-import crackers.kobots.app.onOff
+import crackers.kobots.app.execution.PickWithRotomatic
 import crackers.kobots.execution.publishToTopic
 import org.eclipse.paho.client.mqttv3.*
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
@@ -40,6 +36,8 @@ object EnviroHandler {
             connectionTimeout = 10
             isCleanSession = false
             isAutomaticReconnect = true
+            keepAliveInterval = 10
+            executorServiceTimeout
         }
         with(mqttClient) {
             connect(options)
@@ -58,19 +56,15 @@ object EnviroHandler {
             })
             handle("homebody/bedroom/casey") { payload ->
                 if (payload.has("lamp")) {
-                    if (LocalTime.now().hour == 22) TheArm.request(EyeDropDemo.pickupItem())
+                    if (LocalTime.now().hour == 22) TheArm.request(PickWithRotomatic.moveStandingObjectToTarget)
                 }
             }
             handle("homebody/office/paper") { payload ->
                 if (payload.has("lamp")) {
-                    if (payload.onOff("lamp")) {
-                        publishToTopic(SLEEP_TOPIC, SleepEvent(false))
-                    } else {
-                        publishToTopic(SLEEP_TOPIC, SleepEvent(true))
-                    }
+                    publishToTopic(SLEEP_TOPIC, SleepEvent(!payload.onOff("lamp")))
                 }
             }
-            handle("zwave/nodeID_14/49/0/Air_temperature") { payload ->
+            handle("zwave/Office/TriBaby/49/0/Air_temperature") { payload ->
                 if (payload.has("value")) {
                     val temp = payload.getDouble("value")
                     VeryDumbThermometer.setTemperature(temp.toFloat())
