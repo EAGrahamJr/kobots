@@ -18,7 +18,10 @@ package crackers.kobots.app
 
 import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim
+import crackers.kobots.devices.at
 import crackers.kobots.devices.io.GamepadQT
+import crackers.kobots.mqtt.KobotsMQTT
+import crackers.kobots.mqtt.KobotsMQTT.Companion.BROKER
 import crackers.kobots.parts.ServoRotator
 import crackers.kobots.utilities.KobotSleep
 import kotlin.system.exitProcess
@@ -33,43 +36,66 @@ private val hat by lazy {
 }
 
 val servo by lazy {
-    ServoDevice
-        // gpio style: need to use hardware GPIO
-        .Builder(18)
+    // gpio style: need to use hardware GPIO
+    val builder =
+//        ServoDevice.Builder(18)
         // hat style
-//         .Builder(15).setDeviceFactory(hat)
+        ServoDevice.Builder(0).setDeviceFactory(hat)
+
+    builder
         .setTrim(ServoTrim.TOWERPRO_SG90)
-        .build().apply { angle = 10.0f }
+        .build()
 }
 
 private val rotator by lazy {
-    ServoRotator(servo, (0..360), (10..180))
+    ServoRotator(servo, (0..180), (0..180), 2)
 }
 
-private val stopList = listOf(0, 61, 122, 184, 260)
+private val stopList = listOf(0, 60, 120, 180)
 private val gamepad by lazy { GamepadQT() }
 
 const val REMOTE_PI = "diozero.remote.hostname"
 const val PSYCHE = "psyche.local"
+const val TOPIC = "kobots/rotoMatic"
+var stopIndex = 0
 
 fun main() {
 //    System.setProperty(REMOTE_PI, PSYCHE)
 
-    // these do not require the CRICKIT
+    rotator.swing(stopList[stopIndex])
+
+    val mqttClient = KobotsMQTT("Rotomatic", BROKER).apply {
+        startAliveCheck()
+        subscribe(TOPIC) { payload ->
+            if (payload.equals("next", true)) {
+                rotator.next()
+            } else {
+                val whichOne = payload.toInt()
+                if (whichOne >= 0 && whichOne < stopList.size) {
+                    rotator.swing(stopList[whichOne])
+                    stopIndex = whichOne
+                }
+            }
+        }
+    }
+
     gamepad.use { pad ->
         var done = false
-        var stopIndex = 0
         while (!done) {
             pad.read().apply {
                 when {
-                    a -> {
-                        rotator.swing(stopList[stopIndex++ % stopList.size])
+                    a -> rotator.next()
+
+                    y -> rotator.prev()
+
+                    x -> {
+                        val fl = servo.angle + 2f
+                        servo at fl
                     }
 
                     b -> {
-                        stopIndex--
-                        if (stopIndex < 0) stopIndex = stopList.size - 1
-                        rotator.swing(stopList[stopIndex])
+                        val fl = servo.angle - 2f
+                        servo at fl
                     }
 
                     select -> println("Current angle ${rotator.current()}")
@@ -80,9 +106,22 @@ fun main() {
             KobotSleep.millis(50)
         }
     }
+    println("Rotomatic exit")
     exitProcess(0)
 }
 
+private fun ServoRotator.next() {
+    stopIndex = (stopIndex + 1) % stopList.size
+    rotator.swing(stopList[stopIndex])
+}
+
+private fun ServoRotator.prev() {
+    stopIndex--
+    if (stopIndex < 0) stopIndex = stopList.size - 1
+    rotator.swing(stopList[stopIndex])
+}
+
+@Synchronized
 private fun ServoRotator.swing(target: Int) {
     while (!rotateTo(target)) {
         KobotSleep.millis(50)

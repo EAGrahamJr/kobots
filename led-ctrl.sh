@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 #
 # Copyright 2022-2023 by E. A. Graham, Jr.
 #
@@ -15,18 +15,12 @@
 # permissions and limitations under the License.
 #
 
-[ "$1" = "-s" ] && SUSPEND="y" || SUSPEND="n"
-JAVA="/home/crackers/java"
-JAR="/home/crackers/rotomatic-app.jar"
-
-#if [ ! -z "$1" ]; then
-#  CLASS=$(unzip -l $JAR | grep $1 | awk '{print $4}' | sed s,/,.,g | sed s/\.class//g | cut -d '$' -f 1)
-#  echo "Running $CLASS"
-#  RUNTHIS="-cp $JAR $CLASS"
-#else
-#  RUNTHIS="-jar $JAR"
-#fi
-RUNTHIS="-jar $JAR"
-
-#echo $RUNTHIS
-sudo $JAVA -ea -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=*:5005 $RUNTHIS
+# red led
+# activity led
+if [ "$1" = "on" ]; then
+    sudo sh -c 'echo input > /sys/class/leds/PWR/trigger'
+    sudo sh -c 'echo mmc0 > /sys/class/leds/ACT/trigger'
+else
+    sudo sh -c 'echo 0 > /sys/class/leds/PWR/brightness'
+    sudo sh -c 'echo 0 > /sys/class/leds/ACT/brightness'
+fi

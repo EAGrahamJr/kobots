@@ -74,7 +74,7 @@ object PickWithRotomatic {
     private val returnToRotomatic = sequence {
         name = "Return To Rotomatic"
         action { waist rotate WAIST_HOME }
-        action { elbow rotate elbowForRotomatic + 5 }
+        action { elbow rotate elbowForRotomatic + 2 }
         action { extender goTo extenderToRotomatic }
         action { elbow rotate elbowForRotomatic }
         action { gripper goTo GRIPPER_OPEN }

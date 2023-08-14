@@ -25,6 +25,7 @@ import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.execution.*
 import crackers.kobots.execution.NeoKeyBar.currentButtons
+import crackers.kobots.mqtt.KobotsMQTT
 import org.tinylog.Logger
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
@@ -40,6 +41,8 @@ private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
 
+private val mqtt = KobotsMQTT("TheArm")
+
 enum class Menu(val label: String, val action: () -> Unit) {
     HOME("Home", { armRequest(homeSequence) }),
 
@@ -54,7 +57,13 @@ enum class Menu(val label: String, val action: () -> Unit) {
 
     SAY_HI("Say Hi", { armRequest(sayHi) }),
     EXCUSE_ME("Excuse Me", { armRequest(excuseMe) }),
-    MANUAL("Manual", { _manualMode.set(true) })
+    MANUAL("Manual", { _manualMode.set(true) }),
+    ROTO_NEXT("Roto Next", {
+        mqtt.publish("kobots/rotoMatic", "next")
+    }),
+    ROTO_DROPS("Select Drops", {
+        mqtt.publish("kobots/rotoMatic", "0")
+    }),
 }
 
 private val WAIT_LOOP = Duration.ofMillis(50)
@@ -82,8 +91,8 @@ fun main() {
         EnviroHandler.startHandler()
         joinTopic(
             SLEEP_TOPIC,
-            KobotsSubscriber { event ->
-                if (event is SleepEvent) NeoKeyBar.brightness = if (event.sleep) 0.01f else 0.05f
+            KobotsSubscriber<SleepEvent> {
+                NeoKeyBar.brightness = if (it.sleep) 0.01f else .1f
             }
         )
 
