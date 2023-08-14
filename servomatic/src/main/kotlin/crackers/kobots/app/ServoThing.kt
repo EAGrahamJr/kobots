@@ -16,47 +16,36 @@
 
 package crackers.kobots.app
 
-import com.diozero.api.ServoDevice
-import com.diozero.api.ServoTrim
+import com.diozero.devices.ServoController
 import crackers.kobots.devices.at
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.mqtt.KobotsMQTT
 import crackers.kobots.mqtt.KobotsMQTT.Companion.BROKER
 import crackers.kobots.parts.ServoRotator
 import crackers.kobots.utilities.KobotSleep
+import org.json.JSONObject
 import kotlin.system.exitProcess
-import com.diozero.devices.PCA9685 as RobotHat
 
 /**
- * RotoMatic uses a Rotator to select a thing. Manual selections are through something with buttons.
+ * Handles a bunch of different servos for various things.
+ *
+ * - RotoMatic uses a Rotator to select a thing. Manual selections are through something with buttons. Also has an MQTT
+ *  interface.
  */
 
-private val hat by lazy {
-    RobotHat()
-}
+private val hat = ServoController()
 
-val servo by lazy {
-    // gpio style: need to use hardware GPIO
-    val builder =
-//        ServoDevice.Builder(18)
-        // hat style
-        ServoDevice.Builder(0).setDeviceFactory(hat)
+// TODO restore servo trim when it works
+private val rotoServo = hat.getServo(0).apply { angle = 5f }
+private val rotator = ServoRotator(rotoServo, (0..360), (0..180))
 
-    builder
-        .setTrim(ServoTrim.TOWERPRO_SG90)
-        .build()
-}
-
-private val rotator by lazy {
-    ServoRotator(servo, (0..180), (0..180), 2)
-}
-
-private val stopList = listOf(0, 60, 120, 180)
+private val stopList = listOf(10, 76, 132, 212, 284)
 private val gamepad by lazy { GamepadQT() }
 
 const val REMOTE_PI = "diozero.remote.hostname"
 const val PSYCHE = "psyche.local"
 const val TOPIC = "kobots/rotoMatic"
+const val EVENT_TOPIC = "kobots/events"
 var stopIndex = 0
 
 fun main() {
@@ -67,13 +56,19 @@ fun main() {
     val mqttClient = KobotsMQTT("Rotomatic", BROKER).apply {
         startAliveCheck()
         subscribe(TOPIC) { payload ->
-            if (payload.equals("next", true)) {
-                rotator.next()
-            } else {
-                val whichOne = payload.toInt()
-                if (whichOne >= 0 && whichOne < stopList.size) {
-                    rotator.swing(stopList[whichOne])
-                    stopIndex = whichOne
+            when {
+                payload.equals("next", true) -> rotator.next()
+                payload.equals("prev", true) -> rotator.prev()
+                else -> {
+                    val whichOne = payload.toInt()
+                    if (whichOne >= 0 && whichOne < stopList.size) {
+                        rotator.swing(stopList[whichOne])
+                        stopIndex = whichOne
+                        publish(EVENT_TOPIC, JSONObject().apply {
+                            put("source", "rotomatic")
+                            put("selected", stopIndex)
+                        }.toString())
+                    }
                 }
             }
         }
@@ -89,16 +84,16 @@ fun main() {
                     y -> rotator.prev()
 
                     x -> {
-                        val fl = servo.angle + 2f
-                        servo at fl
+                        val fl = rotoServo.angle + 1f
+                        rotoServo at fl
                     }
 
                     b -> {
-                        val fl = servo.angle - 2f
-                        servo at fl
+                        val fl = rotoServo.angle - 1f
+                        rotoServo at fl
                     }
 
-                    select -> println("Current angle ${rotator.current()}")
+                    select -> println("Current: rotator ${rotator.current()}, servo ${rotoServo.angle}")
                     start -> done = true
                     else -> {}
                 }

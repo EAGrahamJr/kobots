@@ -32,8 +32,9 @@ dependencies {
     implementation("com.typesafe:config:1.4.2")
 }
 
-project.ext.set("jar.name", "rotomatic")
+project.ext.set("jar.name", "servomatic")
 
 application {
-    mainClass.set("crackers.kobots.app.RotoThingKt")
+    mainClass.set("crackers.kobots.app.ServoThingKt")
+//    mainClass.set("crackers.app.ServoAdvance")
 }
