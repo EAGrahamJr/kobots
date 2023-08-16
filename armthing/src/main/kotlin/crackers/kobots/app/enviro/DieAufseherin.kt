@@ -23,6 +23,7 @@ import crackers.kobots.execution.KobotsEvent
 import crackers.kobots.execution.KobotsSubscriber
 import crackers.kobots.execution.joinTopic
 import crackers.kobots.execution.publishToTopic
+import crackers.kobots.parts.ActionSequence
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
@@ -50,6 +51,8 @@ object DieAufseherin {
     private val returnInProgress = AtomicBoolean(false)
     private val logger = LoggerFactory.getLogger("DieAufseherin")
 
+    private lateinit var returnRequest: ActionSequence
+
     fun setUpListeners() {
         localStuff()
         homeAssistantStuff()
@@ -68,7 +71,7 @@ object DieAufseherin {
         joinTopic(SensorSuite.PROXIMITY_TOPIC, KobotsSubscriber<SensorSuite.ProximityTrigger> {
             if (inTargetArea) {
                 if (returnInProgress.compareAndSet(false, true)) {
-                    TheArm.request(PickWithRotomatic.standingPickupAndReturn)
+                    TheArm.request(returnRequest)
                 }
             }
         })
@@ -95,8 +98,25 @@ object DieAufseherin {
         }
         haSub("kobots/events") { payload ->
             if (payload.has("source") && payload.getString("source") == "rotomatic") {
-                if (payload.getInt("selected") == 0) {
-                    TheArm.request(PickWithRotomatic.moveStandingObjectToTarget)
+                val rotoSelected = payload.getInt("selected")
+                val request = when {
+                    rotoSelected == 0 -> {
+                        returnRequest = PickWithRotomatic.standingPickupAndReturn
+                        PickWithRotomatic.moveStandingObjectToTarget
+                    }
+
+                    rotoSelected < 5 -> {
+                        returnRequest = PickWithRotomatic.thinItemReturn
+                        PickWithRotomatic.moveThinItemToTarget
+                    }
+
+                    else -> {
+                        logger.error("Unknown rotomatic selection: $rotoSelected")
+                        null
+                    }
+                }
+                if (request != null) {
+                    TheArm.request(request)
                 }
             }
         }

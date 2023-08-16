@@ -16,7 +16,9 @@
 
 package crackers.kobots.app.execution
 
+import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
 import crackers.kobots.app.arm.TheArm.EXTENDER_HOME
+import crackers.kobots.app.arm.TheArm.GRIPPER_CLOSED
 import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
 import crackers.kobots.app.arm.TheArm.WAIST_HOME
 import crackers.kobots.app.arm.TheArm.elbow
@@ -34,11 +36,34 @@ import crackers.kobots.parts.sequence
  * Picks up stuff from the Rotomatic and returns it.
  */
 object PickWithRotomatic {
-    private const val MAGIC_EXTENDER = 15
-    var closeOnItem: Int = 90 // how much to close the gripper to grab the item - this stresses the technic a bit
-    var extenderToRotomatic: Int = 66 // how far to extend the extender to reach the Rotomatic
-    var elbowForRotomatic: Int = 8 // how far to rotate the elbow to reach the Rotomatic
-    val elbowForTransport = 45
+    private val defaultMover = MoveStuffFromRotomatic(elbowForRotomatic = 11)
+    val moveStandingObjectToTarget = defaultMover.moveObjectToTarget()
+    val standingPickupAndReturn = defaultMover.pickupAndReturn()
+
+    private val defaultThinItemMover = MoveStuffFromRotomatic(
+        elbowForRotomatic = 9, closeOnItem = GRIPPER_CLOSED,
+        dropOffElbow = ELBOW_DOWN
+    )
+    val moveThinItemToTarget = defaultThinItemMover.moveObjectToTarget()
+    val thinItemReturn = defaultThinItemMover.pickupAndReturn()
+}
+
+/**
+ * Magic numbers for the Rotomatic
+ */
+const val MAGIC_EXTENDER = 15
+
+class MoveStuffFromRotomatic(
+    val closeOnItem: Int = 90, // how much to close the gripper to grab the item - this stresses the technic a bit
+
+    val extenderToRotomatic: Int = 66, // how far to extend the extender to reach the Rotomatic
+    val elbowForRotomatic: Int = 10, // how far to rotate the elbow to reach the Rotomatic
+
+    val elbowForTransport: Int = 45,
+
+    val dropOffExtender: Int = 30, // how far to extend the extender to reach the drop off point
+    val dropOffElbow: Int = -7 // how far to rotate the elbow to reach the drop off point
+) {
 
     private val backOffAndHome = sequence {
         action {
@@ -85,9 +110,7 @@ object PickWithRotomatic {
         this += backOffAndHome
     }
 
-    var dropOffExtender: Int = 30 // how far to extend the extender to reach the drop off point
-    var dropOffElbow: Int = -7 // how far to rotate the elbow to reach the drop off point
-    val moveStandingObjectToTarget = sequence {
+    fun moveObjectToTarget() = sequence {
         this += pickupFromRoto
         action { waist rotate 90 }
         action { extender goTo dropOffExtender }
@@ -107,7 +130,7 @@ object PickWithRotomatic {
         }
     }
 
-    val standingPickupAndReturn = sequence {
+    fun pickupAndReturn() = sequence {
         this += backOffAndHome
         action {
             waist rotate 90

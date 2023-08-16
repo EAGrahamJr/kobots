@@ -61,6 +61,10 @@ enum class Menu(val label: String, val action: () -> Unit) {
     ROTO_NEXT("Roto Next", { mqtt.publish("kobots/rotoMatic", "next") }),
     ROTO_PREV("Roto Previous", { mqtt.publish("kobots/rotoMatic", "prev") }),
     ROTO_DROPS("Select Drops", { rotoSelect(0) }),
+    ROTO_Thin1("Select Thin 1", { rotoSelect(1) }),
+    ROTO_Thin2("Select Thin 2", { rotoSelect(2) }),
+    ROTO_Thin3("Select Thin 3", { rotoSelect(3) }),
+    ROTO_Thin4("Select Thin 4", { rotoSelect(4) }),
 }
 
 private val WAIT_LOOP = Duration.ofMillis(50)
