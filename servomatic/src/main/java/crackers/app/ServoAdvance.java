@@ -44,14 +44,16 @@ public class ServoAdvance {
             System.out.println("Starting sweep");
             for (int i = 0; i <= 180; i++) {
                 boolean done = false;
+                float current = 0f;
                 for (int j = 0; j < 5; j++) {
                     servo.setAngle(i);
                     Thread.sleep(5);
+                    current = servo.getAngle();
                     done = servo.getAngle() == i;
                     if (done) break;
                 }
                 if (!done) {
-                    System.out.println("Failed to set angle to " + i);
+                    System.out.printf("Failed to set angle %d - current is %.02f%n", i, current);
                 }
             }
             System.out.println("Sweep complete - rolling back");

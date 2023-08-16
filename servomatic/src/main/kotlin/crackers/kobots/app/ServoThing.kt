@@ -16,6 +16,7 @@
 
 package crackers.kobots.app
 
+import com.diozero.api.ServoDevice
 import com.diozero.devices.ServoController
 import crackers.kobots.devices.at
 import crackers.kobots.devices.io.GamepadQT
@@ -33,11 +34,11 @@ import kotlin.system.exitProcess
  *  interface.
  */
 
-private val hat = ServoController()
+private val hat by lazy { ServoController() }
 
 // TODO restore servo trim when it works
-private val rotoServo = hat.getServo(0).apply { angle = 5f }
-private val rotator = ServoRotator(rotoServo, (0..360), (0..180))
+private lateinit var rotoServo: ServoDevice
+private val rotator by lazy { ServoRotator(rotoServo, (0..360), (0..180)) }
 
 private val stopList = listOf(10, 76, 132, 212, 284)
 private val gamepad by lazy { GamepadQT() }
@@ -50,6 +51,7 @@ var stopIndex = 0
 
 fun main() {
 //    System.setProperty(REMOTE_PI, PSYCHE)
+    rotoServo = hat.getServo(0, 0)
 
     rotator.swing(stopList[stopIndex])
 
@@ -102,6 +104,7 @@ fun main() {
         }
     }
     println("Rotomatic exit")
+    rotoServo.home()
     exitProcess(0)
 }
 
@@ -119,6 +122,16 @@ private fun ServoRotator.prev() {
 @Synchronized
 private fun ServoRotator.swing(target: Int) {
     while (!rotateTo(target)) {
-        KobotSleep.millis(50)
+        KobotSleep.millis(75)
+    }
+}
+
+@Synchronized
+private fun ServoDevice.home() {
+    var a = angle
+    while (a != 0f) {
+        at(a - 1f)
+        KobotSleep.millis(20)
+        a = angle
     }
 }

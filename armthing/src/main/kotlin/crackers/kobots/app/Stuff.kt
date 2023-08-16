@@ -20,6 +20,7 @@ import com.typesafe.config.ConfigFactory
 import crackers.hassk.HAssKClient
 import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.execution.executeWithMinTime
+import crackers.kobots.mqtt.KobotsMQTT
 import org.json.JSONObject
 import java.time.Duration
 import java.util.concurrent.Executors
@@ -61,3 +62,14 @@ class SleepEvent(val sleep: Boolean) : crackers.kobots.execution.KobotsEvent
  * Extension function on a JSON object to get a on/off status as a boolean.
  */
 internal fun JSONObject.onOff(key: String): Boolean = this.optString(key, "off") == "on"
+
+/**
+ * Wrapper for the MQTT client and start alive-check
+ */
+internal val mqtt = KobotsMQTT("TheArm").apply {
+    startAliveCheck()
+}
+
+internal fun rotoSelect(target: Int) {
+    mqtt.publish("kobots/rotoMatic", target.toString())
+}

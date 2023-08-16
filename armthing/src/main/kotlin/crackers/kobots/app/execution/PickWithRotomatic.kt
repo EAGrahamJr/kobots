@@ -23,7 +23,11 @@ import crackers.kobots.app.arm.TheArm.elbow
 import crackers.kobots.app.arm.TheArm.extender
 import crackers.kobots.app.arm.TheArm.gripper
 import crackers.kobots.app.arm.TheArm.waist
+import crackers.kobots.app.enviro.DieAufseherin.DA_TOPIC
+import crackers.kobots.app.enviro.DieAufseherin.dropOffComplete
+import crackers.kobots.app.enviro.DieAufseherin.returnComplete
 import crackers.kobots.app.homeSequence
+import crackers.kobots.execution.publishToTopic
 import crackers.kobots.parts.sequence
 
 /**
@@ -31,7 +35,7 @@ import crackers.kobots.parts.sequence
  */
 object PickWithRotomatic {
     private const val MAGIC_EXTENDER = 15
-    var closeOnItem: Int = 80 // how much to close the gripper to grab the item
+    var closeOnItem: Int = 90 // how much to close the gripper to grab the item - this stresses the technic a bit
     var extenderToRotomatic: Int = 66 // how far to extend the extender to reach the Rotomatic
     var elbowForRotomatic: Int = 8 // how far to rotate the elbow to reach the Rotomatic
     val elbowForTransport = 45
@@ -94,6 +98,13 @@ object PickWithRotomatic {
             elbow rotate elbowForTransport
         }
         this += homeSequence
+        // signal completion of this specific thing
+        action {
+            execute {
+                publishToTopic(DA_TOPIC, dropOffComplete)
+                true
+            }
+        }
     }
 
     val standingPickupAndReturn = sequence {
@@ -114,5 +125,12 @@ object PickWithRotomatic {
             elbow rotate elbowForTransport
         }
         this += returnToRotomatic
+        // signal completion of this specific thing
+        action {
+            execute {
+                publishToTopic(DA_TOPIC, returnComplete)
+                true
+            }
+        }
     }
 }

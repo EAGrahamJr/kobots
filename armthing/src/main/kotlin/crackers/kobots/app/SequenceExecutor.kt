@@ -16,12 +16,10 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.execution.EmergencyStop
-import crackers.kobots.execution.KobotsAction
-import crackers.kobots.execution.SequenceRequest
-import crackers.kobots.execution.executeWithMinTime
+import crackers.kobots.execution.*
 import crackers.kobots.parts.ActionSpeed
 import crackers.kobots.utilities.KobotSleep
+import org.json.JSONObject
 import org.tinylog.Logger
 import java.time.Duration
 import java.util.concurrent.Executors
@@ -56,6 +54,8 @@ abstract class SequenceExecutor {
     var stopImmediately: Boolean
         get() = _stop.get()
         private set(value) = _stop.set(value)
+
+    class SequenceCompleted(val sequence: String) : KobotsEvent
 
     /**
      * Sets the stop flag and blocks until the flag is cleared.
@@ -113,7 +113,15 @@ abstract class SequenceExecutor {
             // done
             _moving.set(false)
             updateCurrentState()
-            _stop.set(false) // clera emergency stop flag
+            _stop.set(false) // clear emergency stop flag
+
+            // publish completion event to the masses
+            val payload = JSONObject().apply {
+                put("source", "thearm")
+                put("sequence", request.sequence.name)
+            }.toString()
+            mqtt.publish(MQTT_TOPIC, payload)
+            publishToTopic(INTERNAL_TOPIC, SequenceCompleted(request.sequence.name))
         }
     }
 
@@ -131,4 +139,9 @@ abstract class SequenceExecutor {
      * Optionally updates the state of the executor.
      */
     open fun updateCurrentState() {}
+
+    companion object {
+        const val INTERNAL_TOPIC = "Executor.Sequences"
+        const val MQTT_TOPIC = "kobots/events"
+    }
 }

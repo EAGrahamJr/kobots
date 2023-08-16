@@ -14,16 +14,17 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app
+package crackers.kobots.app.enviro
 
 import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.checkRun
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.execution.allStop
 import crackers.kobots.execution.publishToTopic
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.logging.Logger
 import kotlin.math.abs
 import kotlin.math.ln
 
@@ -32,7 +33,7 @@ import kotlin.math.ln
  */
 object SensorSuite : AutoCloseable {
     const val CLOSE_ENOUGH = 15 // this is **approximately**  25mm
-    const val ALARM_TOPIC = "Prox.TooClose"
+    const val PROXIMITY_TOPIC = "Prox.TooClose"
     const val LUMEN_TOPIC = "Prox.Lumens"
 
     private lateinit var future: Future<*>
@@ -58,24 +59,25 @@ object SensorSuite : AutoCloseable {
     val tooClose: Boolean
         get() = proximity > CLOSE_ENOUGH
 
-    class ProximityAlert : crackers.kobots.execution.KobotsEvent
+    class ProximityTrigger : crackers.kobots.execution.KobotsEvent
     class LumensData(val lumens: Int) : crackers.kobots.execution.KobotsEvent
 
-    private val ohCrap = ProximityAlert()
+    private val ohCrap = ProximityTrigger()
     private var previousLumenus: Int = 0
+    private val logger = Logger.getLogger("SensorSuite")
 
     fun start() {
         future = checkRun(10) {
             val reading = proximitySensor.proximity.toInt()
             proximity = reading
             if (tooClose) {
-                publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-                publishToTopic(ALARM_TOPIC, ohCrap)
+//                logger.warning("too close: $reading")
+                publishToTopic(PROXIMITY_TOPIC, ohCrap)
             }
             lumens.also { lumens ->
                 if (abs(lumens - previousLumenus) > 2) {
                     publishToTopic(LUMEN_TOPIC, LumensData(lumens))
-                    lumeAlerts(lumens)
+//                    lumeAlerts(lumens)
                     previousLumenus = lumens
                 }
             }
@@ -96,7 +98,7 @@ object SensorSuite : AutoCloseable {
     }
 
     override fun close() {
-        if (!::future.isInitialized) return
+        if (!SensorSuite::future.isInitialized) return
         future.get()
         proximitySensor.close()
     }

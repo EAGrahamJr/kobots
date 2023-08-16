@@ -14,10 +14,11 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app
+package crackers.kobots.app.enviro
 
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.crickitHat
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.parts.BasicStepperRotator
 import crackers.kobots.utilities.KobotSleep

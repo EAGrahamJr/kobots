@@ -16,16 +16,17 @@
 
 package crackers.kobots.app
 
+import crackers.kobots.app.NeoKeyBar.currentButtons
 import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.homeAction
-import crackers.kobots.app.execution.PickWithRotomatic
+import crackers.kobots.app.enviro.DieAufseherin
+import crackers.kobots.app.enviro.SensorSuite
+import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.execution.*
-import crackers.kobots.execution.NeoKeyBar.currentButtons
-import crackers.kobots.mqtt.KobotsMQTT
 import org.tinylog.Logger
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
@@ -41,29 +42,25 @@ private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
 
-private val mqtt = KobotsMQTT("TheArm")
 
 enum class Menu(val label: String, val action: () -> Unit) {
     HOME("Home", { armRequest(homeSequence) }),
 
-    PICK("Pick Up Drops", {
-        armRequest(PickWithRotomatic.moveStandingObjectToTarget)
-        _menuIndex.incrementAndGet()
-    }),
-    RETURN_DROPS("Return to Sender", {
-        armRequest(PickWithRotomatic.standingPickupAndReturn)
-        _menuIndex.incrementAndGet()
-    }),
+//    PICK("Pick Up Drops", {
+//        armRequest(PickWithRotomatic.moveStandingObjectToTarget)
+//        _menuIndex.incrementAndGet()
+//    }),
+//    RETURN_DROPS("Return to Sender", {
+//        armRequest(PickWithRotomatic.standingPickupAndReturn)
+//        _menuIndex.incrementAndGet()
+//    }),
 
     SAY_HI("Say Hi", { armRequest(sayHi) }),
     EXCUSE_ME("Excuse Me", { armRequest(excuseMe) }),
     MANUAL("Manual", { _manualMode.set(true) }),
-    ROTO_NEXT("Roto Next", {
-        mqtt.publish("kobots/rotoMatic", "next")
-    }),
-    ROTO_DROPS("Select Drops", {
-        mqtt.publish("kobots/rotoMatic", "0")
-    }),
+    ROTO_NEXT("Roto Next", { mqtt.publish("kobots/rotoMatic", "next") }),
+    ROTO_PREV("Roto Previous", { mqtt.publish("kobots/rotoMatic", "prev") }),
+    ROTO_DROPS("Select Drops", { rotoSelect(0) }),
 }
 
 private val WAIT_LOOP = Duration.ofMillis(50)
@@ -75,7 +72,7 @@ fun main() {
 //    System.setProperty(REMOTE_PI, BRAINZ)
 
     // these do not require the CRICKIT
-//    SensorSuite.start()
+    SensorSuite.start()
     ArmMonitor.start()
 
     crickitHat.use {
@@ -88,13 +85,13 @@ fun main() {
         TheArm.start()
 
         // start auto-triggered stuff
-        EnviroHandler.startHandler()
         joinTopic(
             SLEEP_TOPIC,
             KobotsSubscriber<SleepEvent> {
                 NeoKeyBar.brightness = if (it.sleep) 0.01f else .1f
             }
         )
+        DieAufseherin.setUpListeners()
 
         // main loop!!!!!
         while (NeoKeyBar.buttonCheck()) {

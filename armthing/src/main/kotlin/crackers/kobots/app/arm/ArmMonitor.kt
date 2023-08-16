@@ -20,6 +20,7 @@ import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
 import crackers.kobots.app.*
+import crackers.kobots.app.enviro.SensorSuite
 import crackers.kobots.execution.KobotsSubscriber
 import crackers.kobots.execution.joinTopic
 import crackers.kobots.utilities.KobotSleep
