@@ -103,7 +103,7 @@ class MoveStuffFromRotomatic(
     private val returnToRotomatic = sequence {
         name = "Return To Rotomatic"
         action { waist rotate WAIST_HOME }
-        action { elbow rotate elbowForRotomatic + 2 }
+        action { elbow rotate elbowForRotomatic + 3 }
         action { extender goTo extenderToRotomatic }
         action { elbow rotate elbowForRotomatic }
         action { gripper goTo GRIPPER_OPEN }
