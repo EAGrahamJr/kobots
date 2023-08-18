@@ -41,7 +41,8 @@ object PickWithRotomatic {
     val standingPickupAndReturn = defaultMover.pickupAndReturn()
 
     private val defaultThinItemMover = MoveStuffFromRotomatic(
-        elbowForRotomatic = 9, closeOnItem = GRIPPER_CLOSED,
+        elbowForRotomatic = 9,
+        closeOnItem = GRIPPER_CLOSED,
         dropOffElbow = ELBOW_DOWN
     )
     val moveThinItemToTarget = defaultThinItemMover.moveObjectToTarget()

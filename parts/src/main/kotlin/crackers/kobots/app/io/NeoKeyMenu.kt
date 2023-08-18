@@ -50,7 +50,6 @@ class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items: Lis
         fun display(items: List<MenuItem>)
     }
 
-
     class MenuItem(
         val name: String,
         val abbrev: String? = null,
@@ -75,7 +74,7 @@ class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items: Lis
                 try {
                     action()
                 } catch (t: Throwable) {
-                    logger.error("Error executing menu item ${name}", t)
+                    logger.error("Error executing menu item $name", t)
                 }
             }
         }

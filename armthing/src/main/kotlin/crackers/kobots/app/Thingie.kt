@@ -42,7 +42,6 @@ private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
 
-
 enum class Menu(val label: String, val action: () -> Unit) {
     HOME("Home", { armRequest(homeSequence) }),
 
@@ -64,7 +63,7 @@ enum class Menu(val label: String, val action: () -> Unit) {
     ROTO_Thin1("Select Thin 1", { rotoSelect(1) }),
     ROTO_Thin2("Select Thin 2", { rotoSelect(2) }),
     ROTO_Thin3("Select Thin 3", { rotoSelect(3) }),
-    ROTO_Thin4("Select Thin 4", { rotoSelect(4) }),
+    ROTO_Thin4("Select Thin 4", { rotoSelect(4) })
 }
 
 private val WAIT_LOOP = Duration.ofMillis(50)

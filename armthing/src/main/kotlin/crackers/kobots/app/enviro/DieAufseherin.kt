@@ -56,35 +56,41 @@ object DieAufseherin {
     }
 
     private fun localStuff() {
-        joinTopic(DA_TOPIC, KobotsSubscriber<DasOverseerEvent> {
-            logger.info("Got a DA event: $it")
-            inTargetArea = it.dropOff
-            if (returnInProgress.get() && it.rtos) {
-                returnInProgress.set(false)
-            }
-            logger.info("inTargetArea: $inTargetArea, returnInProgress: ${returnInProgress.get()}")
-        })
-
-        joinTopic(SensorSuite.PROXIMITY_TOPIC, KobotsSubscriber<SensorSuite.ProximityTrigger> {
-            if (inTargetArea) {
-                if (returnInProgress.compareAndSet(false, true)) {
-                    TheArm.request(returnRequest)
+        joinTopic(
+            DA_TOPIC,
+            KobotsSubscriber<DasOverseerEvent> {
+                logger.info("Got a DA event: $it")
+                inTargetArea = it.dropOff
+                if (returnInProgress.get() && it.rtos) {
+                    returnInProgress.set(false)
                 }
-            } else {
-                // assume this is an emergency stop
-                publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-                mqtt.publish("kobots/rotoMatic", "stop")
-                runFlag.set(false)
+                logger.info("inTargetArea: $inTargetArea, returnInProgress: ${returnInProgress.get()}")
             }
-        })
-    }
+        )
 
+        joinTopic(
+            SensorSuite.PROXIMITY_TOPIC,
+            KobotsSubscriber<SensorSuite.ProximityTrigger> {
+                if (inTargetArea) {
+                    if (returnInProgress.compareAndSet(false, true)) {
+                        TheArm.request(returnRequest)
+                    }
+                } else {
+                    // assume this is an emergency stop
+                    publishToTopic(TheArm.REQUEST_TOPIC, allStop)
+                    mqtt.publish("kobots/rotoMatic", "stop")
+                    runFlag.set(false)
+                }
+            }
+        )
+    }
 
     private fun homeAssistantStuff() {
         haSub("homebody/bedroom/casey") { payload ->
             if (payload.has("lamp")) {
-                if (LocalTime.now().hour == 22)
+                if (LocalTime.now().hour == 22) {
                     rotoSelect(0)
+                }
             }
         }
         haSub("homebody/office/paper") { payload ->

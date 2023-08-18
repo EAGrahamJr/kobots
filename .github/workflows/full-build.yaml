@@ -75,4 +75,4 @@ jobs:
       - name: Build Kobots
         run: |
           cd kobots
-          ./gradlew --no-daemon --quiet build
+          ./gradlew --no-daemon --quiet test

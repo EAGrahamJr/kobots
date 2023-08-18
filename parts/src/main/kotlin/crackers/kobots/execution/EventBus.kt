@@ -67,7 +67,6 @@ private class KobotsSubscriberDecorator<T : KobotsMessage>(val listener: KobotsS
     }
 }
 
-
 // TODO type safety is a problem here
 /**
  * Get items (default 1 at a time) asynchronously.

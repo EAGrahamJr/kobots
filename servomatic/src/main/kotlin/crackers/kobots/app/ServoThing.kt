@@ -39,7 +39,7 @@ lateinit var rotoServo: ServoDevice
 val rotator by lazy { ServoRotator(rotoServo, (0..360), (0..180)) }
 val stopList = listOf(10, 76, 132, 212, 284)
 
-//lateinit var flagServo: ServoDevice
+// lateinit var flagServo: ServoDevice
 
 const val REMOTE_PI = "diozero.remote.hostname"
 const val PSYCHE = "psyche.local"
@@ -60,10 +60,13 @@ val mqttClient = KobotsMQTT("Rotomatic", BROKER).apply {
                 if (whichOne >= 0 && whichOne < stopList.size) {
                     rotator.swing(stopList[whichOne])
                     stopIndex = whichOne
-                    publish(EVENT_TOPIC, JSONObject().apply {
-                        put("source", "rotomatic")
-                        put("selected", stopIndex)
-                    }.toString())
+                    publish(
+                        EVENT_TOPIC,
+                        JSONObject().apply {
+                            put("source", "rotomatic")
+                            put("selected", stopIndex)
+                        }.toString()
+                    )
                 }
             }
         }
