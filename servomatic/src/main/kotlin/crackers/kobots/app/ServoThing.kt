@@ -32,106 +32,145 @@ import kotlin.system.exitProcess
  *
  * - RotoMatic uses a Rotator to select a thing. Manual selections are through something with buttons. Also has an MQTT
  *  interface.
+ * - TODO: FlagNag is a servo that moves a flag back and forth to get attention
  */
 
-private val hat by lazy { ServoController() }
+lateinit var rotoServo: ServoDevice
+val rotator by lazy { ServoRotator(rotoServo, (0..360), (0..180)) }
+val stopList = listOf(10, 76, 132, 212, 284)
 
-// TODO restore servo trim when it works
-private lateinit var rotoServo: ServoDevice
-private val rotator by lazy { ServoRotator(rotoServo, (0..360), (0..180)) }
-
-private val stopList = listOf(10, 76, 132, 212, 284)
-private val gamepad by lazy { GamepadQT() }
+//lateinit var flagServo: ServoDevice
 
 const val REMOTE_PI = "diozero.remote.hostname"
 const val PSYCHE = "psyche.local"
-const val TOPIC = "kobots/rotoMatic"
+const val RQST_TOPIC = "kobots/rotoMatic"
 const val EVENT_TOPIC = "kobots/events"
 var stopIndex = 0
 
+val mqttClient = KobotsMQTT("Rotomatic", BROKER).apply {
+    startAliveCheck()
+    subscribe(RQST_TOPIC) { payload ->
+        when {
+            payload.equals("stop", true) -> done = true
+            payload.equals("next", true) -> rotator.next()
+            payload.equals("prev", true) -> rotator.prev()
+//            payload.equals("nag", true) -> flagServo.nag()
+            else -> {
+                val whichOne = payload.toInt()
+                if (whichOne >= 0 && whichOne < stopList.size) {
+                    rotator.swing(stopList[whichOne])
+                    stopIndex = whichOne
+                    publish(EVENT_TOPIC, JSONObject().apply {
+                        put("source", "rotomatic")
+                        put("selected", stopIndex)
+                    }.toString())
+                }
+            }
+        }
+    }
+}
+
+@Volatile
+var done: Boolean = false
+
 fun main() {
 //    System.setProperty(REMOTE_PI, PSYCHE)
-    rotoServo = hat.getServo(0, 0)
+    ServoController().use { hat ->
+        // TODO restore servo trim when it works
+        rotoServo = hat.getServo(0, 0)
+//        flagServo = hat.getServo(1, 90)
 
-    rotator.swing(stopList[stopIndex])
+        rotator.swing(stopList[stopIndex])
 
-    val mqttClient = KobotsMQTT("Rotomatic", BROKER).apply {
-        startAliveCheck()
-        subscribe(TOPIC) { payload ->
-            when {
-                payload.equals("next", true) -> rotator.next()
-                payload.equals("prev", true) -> rotator.prev()
-                else -> {
-                    val whichOne = payload.toInt()
-                    if (whichOne >= 0 && whichOne < stopList.size) {
-                        rotator.swing(stopList[whichOne])
-                        stopIndex = whichOne
-                        publish(EVENT_TOPIC, JSONObject().apply {
-                            put("source", "rotomatic")
-                            put("selected", stopIndex)
-                        }.toString())
-                    }
-                }
-            }
+        GamepadQT().use { pad ->
+            runLoop(pad)
         }
+        println("Rotomatic exit")
+        rotoServo.home()
+//        flagServo.angle = 90f
     }
-
-    gamepad.use { pad ->
-        var done = false
-        while (!done) {
-            pad.read().apply {
-                when {
-                    a -> rotator.next()
-
-                    y -> rotator.prev()
-
-                    x -> {
-                        val fl = rotoServo.angle + 1f
-                        rotoServo at fl
-                    }
-
-                    b -> {
-                        val fl = rotoServo.angle - 1f
-                        rotoServo at fl
-                    }
-
-                    select -> println("Current: rotator ${rotator.current()}, servo ${rotoServo.angle}")
-                    start -> done = true
-                    else -> {}
-                }
-            }
-            KobotSleep.millis(50)
-        }
-    }
-    println("Rotomatic exit")
-    rotoServo.home()
     exitProcess(0)
 }
 
-private fun ServoRotator.next() {
+private fun runLoop(pad: GamepadQT) {
+    var manualServo = rotoServo
+
+    while (!done) {
+        pad.read().apply {
+            when {
+                a -> rotator.next()
+                y -> rotator.prev()
+
+                x -> {
+                    val fl = manualServo.angle + 1f
+                    manualServo at fl
+                }
+
+                b -> {
+                    val fl = manualServo.angle - 1f
+                    manualServo at fl
+                }
+
+                select -> {
+//                            println("Current: rotator ${rotator.current()}, servo ${rotoServo.angle}")
+                    if (manualServo == rotoServo) {
+//                                manualServo = flagServo
+                        println("Flag servo")
+                    } else {
+                        manualServo = rotoServo
+                        println("Roto servo")
+                    }
+                }
+
+                start -> done = true
+                else -> {}
+            }
+        }
+        KobotSleep.millis(50)
+    }
+}
+
+@Synchronized
+fun ServoRotator.next() {
     stopIndex = (stopIndex + 1) % stopList.size
     rotator.swing(stopList[stopIndex])
 }
 
-private fun ServoRotator.prev() {
+@Synchronized
+fun ServoRotator.prev() {
     stopIndex--
     if (stopIndex < 0) stopIndex = stopList.size - 1
     rotator.swing(stopList[stopIndex])
 }
 
 @Synchronized
-private fun ServoRotator.swing(target: Int) {
+fun ServoRotator.swing(target: Int) {
     while (!rotateTo(target)) {
         KobotSleep.millis(75)
     }
 }
 
 @Synchronized
-private fun ServoDevice.home() {
+fun ServoDevice.home() {
     var a = angle
     while (a != 0f) {
         at(a - 1f)
         KobotSleep.millis(20)
         a = angle
     }
+}
+
+@Synchronized
+fun ServoDevice.nag() {
+    for (repeat in 1..5) {
+        for (angle in 90..180 step 5) {
+            at(angle)
+            KobotSleep.millis(5)
+        }
+        for (angle in 180 downTo 90 step 5) {
+            at(angle)
+            KobotSleep.millis(5)
+        }
+    }
+    at(90)
 }

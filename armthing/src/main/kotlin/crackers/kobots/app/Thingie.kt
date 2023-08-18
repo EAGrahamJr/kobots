@@ -98,7 +98,7 @@ fun main() {
         DieAufseherin.setUpListeners()
 
         // main loop!!!!!
-        while (NeoKeyBar.buttonCheck()) {
+        while (NeoKeyBar.buttonCheck() && runFlag.get()) {
             try {
                 executeWithMinTime(WAIT_LOOP) {
                     // figure out if we're doing anything

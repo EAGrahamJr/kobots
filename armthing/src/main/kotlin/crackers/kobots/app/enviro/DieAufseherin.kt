@@ -19,10 +19,7 @@ package crackers.kobots.app.enviro
 import crackers.kobots.app.*
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.PickWithRotomatic
-import crackers.kobots.execution.KobotsEvent
-import crackers.kobots.execution.KobotsSubscriber
-import crackers.kobots.execution.joinTopic
-import crackers.kobots.execution.publishToTopic
+import crackers.kobots.execution.*
 import crackers.kobots.parts.ActionSequence
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
@@ -73,6 +70,11 @@ object DieAufseherin {
                 if (returnInProgress.compareAndSet(false, true)) {
                     TheArm.request(returnRequest)
                 }
+            } else {
+                // assume this is an emergency stop
+                publishToTopic(TheArm.REQUEST_TOPIC, allStop)
+                mqtt.publish("kobots/rotoMatic", "stop")
+                runFlag.set(false)
             }
         })
     }
