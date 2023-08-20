@@ -21,7 +21,6 @@ import com.diozero.devices.ServoController
 import crackers.kobots.devices.at
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.mqtt.KobotsMQTT
-import crackers.kobots.mqtt.KobotsMQTT.Companion.BROKER
 import crackers.kobots.parts.ServoRotator
 import crackers.kobots.utilities.KobotSleep
 import org.json.JSONObject
@@ -39,7 +38,7 @@ lateinit var rotoServo: ServoDevice
 val rotator by lazy { ServoRotator(rotoServo, (0..360), (0..180)) }
 val stopList = listOf(10, 76, 132, 212, 284)
 
-// lateinit var flagServo: ServoDevice
+lateinit var flagServo: ServoDevice
 
 const val REMOTE_PI = "diozero.remote.hostname"
 const val PSYCHE = "psyche.local"
@@ -47,14 +46,14 @@ const val RQST_TOPIC = "kobots/rotoMatic"
 const val EVENT_TOPIC = "kobots/events"
 var stopIndex = 0
 
-val mqttClient = KobotsMQTT("Rotomatic", BROKER).apply {
+val mqttClient = KobotsMQTT("Rotomatic", "tcp://192.168.1.4:1883").apply {
     startAliveCheck()
     subscribe(RQST_TOPIC) { payload ->
         when {
             payload.equals("stop", true) -> done = true
             payload.equals("next", true) -> rotator.next()
             payload.equals("prev", true) -> rotator.prev()
-//            payload.equals("nag", true) -> flagServo.nag()
+            payload.equals("nag", true) -> flagServo.nag()
             else -> {
                 val whichOne = payload.toInt()
                 if (whichOne >= 0 && whichOne < stopList.size) {
@@ -77,11 +76,12 @@ val mqttClient = KobotsMQTT("Rotomatic", BROKER).apply {
 var done: Boolean = false
 
 fun main() {
+    SensorSuite.start()
 //    System.setProperty(REMOTE_PI, PSYCHE)
     ServoController().use { hat ->
         // TODO restore servo trim when it works
         rotoServo = hat.getServo(0, 0)
-//        flagServo = hat.getServo(1, 90)
+        flagServo = hat.getServo(1, 90)
 
         rotator.swing(stopList[stopIndex])
 
@@ -90,8 +90,9 @@ fun main() {
         }
         println("Rotomatic exit")
         rotoServo.home()
-//        flagServo.angle = 90f
+        flagServo.angle = 90f
     }
+    SensorSuite.close()
     exitProcess(0)
 }
 
