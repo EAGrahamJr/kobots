@@ -21,8 +21,10 @@ import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.enviro.DieAufseherin
-import crackers.kobots.app.enviro.SensorSuite
+import crackers.kobots.app.enviro.DieAufseherin.returnRequested
 import crackers.kobots.app.enviro.VeryDumbThermometer
+import crackers.kobots.app.execution.ROTO_PICKUP
+import crackers.kobots.app.execution.ROTO_RETURN
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.io.GamepadQT
@@ -44,26 +46,17 @@ val manualMode: Boolean
 
 enum class Menu(val label: String, val action: () -> Unit) {
     HOME("Home", { armRequest(homeSequence) }),
-
-//    PICK("Pick Up Drops", {
-//        armRequest(PickWithRotomatic.moveStandingObjectToTarget)
-//        _menuIndex.incrementAndGet()
-//    }),
-//    RETURN_DROPS("Return to Sender", {
-//        armRequest(PickWithRotomatic.standingPickupAndReturn)
-//        _menuIndex.incrementAndGet()
-//    }),
-
     SAY_HI("Say Hi", { armRequest(sayHi) }),
     EXCUSE_ME("Excuse Me", { armRequest(excuseMe) }),
     MANUAL("Manual", { _manualMode.set(true) }),
     ROTO_NEXT("Roto Next", { mqtt.publish("kobots/rotoMatic", "next") }),
     ROTO_PREV("Roto Previous", { mqtt.publish("kobots/rotoMatic", "prev") }),
     ROTO_DROPS("Select Drops", { rotoSelect(0) }),
-    ROTO_Thin1("Select Thin 1", { rotoSelect(1) }),
-    ROTO_Thin2("Select Thin 2", { rotoSelect(2) }),
-    ROTO_Thin3("Select Thin 3", { rotoSelect(3) }),
-    ROTO_Thin4("Select Thin 4", { rotoSelect(4) })
+    ROTO_THIN1("Select Thin 1", { rotoSelect(1) }),
+    ROTO_THIN2("Select Thin 2", { rotoSelect(2) }),
+    ROTO_THIN3("Select Thin 3", { rotoSelect(3) }),
+    ROTO_THIN4("Select Thin 4", { rotoSelect(4) }),
+    RETURN_PICK("Return last pick", { publishToTopic(DieAufseherin.DA_TOPIC, returnRequested) })
 }
 
 private val WAIT_LOOP = Duration.ofMillis(50)
@@ -75,7 +68,6 @@ fun main() {
 //    System.setProperty(REMOTE_PI, BRAINZ)
 
     // these do not require the CRICKIT
-    SensorSuite.start()
     ArmMonitor.start()
 
     crickitHat.use {
@@ -90,10 +82,20 @@ fun main() {
         // start auto-triggered stuff
         joinTopic(
             SLEEP_TOPIC,
-            KobotsSubscriber<SleepEvent> {
-                NeoKeyBar.brightness = if (it.sleep) 0.01f else .1f
+            KobotsSubscriber<SleepEvent> { event ->
+                NeoKeyBar.brightness = if (event.sleep) 0.01f else .1f
             }
         )
+        joinTopic(SequenceExecutor.INTERNAL_TOPIC,
+                  KobotsSubscriber<SequenceExecutor.SequenceCompleted> {
+                      when (it.sequence) {
+                          ROTO_PICKUP -> _menuIndex.set(Menu.RETURN_PICK.ordinal)
+                          ROTO_RETURN -> _menuIndex.set(Menu.ROTO_DROPS.ordinal)
+                          else -> {
+                              // do nothing
+                          }
+                      }
+                  })
         DieAufseherin.setUpListeners()
 
         // main loop!!!!!
@@ -104,7 +106,7 @@ fun main() {
                     when {
                         manualMode -> joyRide()
                         gamepad.xButton -> publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-                        currentButtons.any { it } -> buttonPresses()
+                        currentButtons.any { b -> b } -> buttonPresses()
                     }
                 }
             } catch (e: Exception) {
@@ -116,7 +118,6 @@ fun main() {
         VeryDumbThermometer.stop()
         fanMotor.value = 0.0f
     }
-    SensorSuite.close()
     ArmMonitor.stop()
     executor.shutdownNow()
     NeoKeyBar.close()

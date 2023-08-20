@@ -14,14 +14,13 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.enviro
+package crackers.kobots.app
 
-import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.checkRun
-import crackers.kobots.app.execution.excuseMe
-import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.execution.publishToTopic
+import crackers.kobots.utilities.KobotSleep
+import org.json.JSONObject
+import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.logging.Logger
@@ -65,21 +64,30 @@ object SensorSuite : AutoCloseable {
     private val ohCrap = ProximityTrigger()
     private var previousLumenus: Int = 0
     private val logger = Logger.getLogger("SensorSuite")
+    private val executor = Executors.newSingleThreadExecutor()
 
     fun start() {
-        future = checkRun(10) {
-            val reading = proximitySensor.proximity.toInt()
-            proximity = reading
-            if (tooClose) {
-//                logger.warning("too close: $reading")
-                publishToTopic(PROXIMITY_TOPIC, ohCrap)
-            }
-            lumens.also { lumens ->
-                if (abs(lumens - previousLumenus) > 2) {
-                    publishToTopic(LUMEN_TOPIC, LumensData(lumens))
-//                    lumeAlerts(lumens)
-                    previousLumenus = lumens
+        future = executor.submit {
+            while (true) {
+                val reading = proximitySensor.proximity.toInt()
+                proximity = reading
+                if (tooClose) {
+                    //                logger.warning("too close: $reading")
+                    publishToTopic(PROXIMITY_TOPIC, ohCrap)
+                    mqttClient.publish(EVENT_TOPIC, JSONObject().apply {
+                        put("source", "proximity")
+                        put("value", reading)
+                    }.toString())
+                    done = true
                 }
+                lumens.also { lumens ->
+                    if (abs(lumens - previousLumenus) > 2) {
+                        publishToTopic(LUMEN_TOPIC, LumensData(lumens))
+                        //                    lumeAlerts(lumens)
+                        previousLumenus = lumens
+                    }
+                }
+                KobotSleep.millis(20)
             }
         }
     }
@@ -88,18 +96,19 @@ object SensorSuite : AutoCloseable {
         val l = lumens.toDouble()
         val p = previousLumenus.toDouble()
         val diff = abs((ln(l) - ln(p)) / ln(l))
-        if (diff > .1) {
-            when {
-                l > 300 && previousLumenus < 300 -> TheArm.request(sayHi)
-                l > 5 && previousLumenus < 5 -> TheArm.request(excuseMe)
-            }
-        }
+//        if (diff > .1) {
+//            when {
+//                l > 300 && previousLumenus < 300 -> TheArm.request(sayHi)
+//                l > 5 && previousLumenus < 5 -> TheArm.request(excuseMe)
+//            }
+//        }
         return l
     }
 
     override fun close() {
         if (!SensorSuite::future.isInitialized) return
         future.get()
+
         proximitySensor.close()
     }
 }

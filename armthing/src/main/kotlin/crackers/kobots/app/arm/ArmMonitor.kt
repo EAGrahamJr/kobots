@@ -20,7 +20,6 @@ import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
 import crackers.kobots.app.*
-import crackers.kobots.app.enviro.SensorSuite
 import crackers.kobots.execution.KobotsSubscriber
 import crackers.kobots.execution.joinTopic
 import crackers.kobots.utilities.KobotSleep
@@ -32,7 +31,6 @@ import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -48,7 +46,7 @@ object ArmMonitor {
 
     private val monitorFont = Font(Font.SANS_SERIF, Font.PLAIN, 12)
     private val monitorMetrics: FontMetrics
-    private var monitorLineHight: Int
+    private var monitorLineHeight: Int
 
     private val busyFont = Font(Font.MONOSPACED, Font.BOLD, 8)
     private val busyTextLocation: Pair<Int, Int>
@@ -56,7 +54,7 @@ object ArmMonitor {
     private val image = BufferedImage(MAX_WD, MAX_HT, BufferedImage.TYPE_BYTE_GRAY).also { img: BufferedImage ->
         screenGraphics = (img.graphics as Graphics2D).also {
             monitorMetrics = it.getFontMetrics(monitorFont)
-            monitorLineHight = monitorMetrics.ascent + 1
+            monitorLineHeight = monitorMetrics.ascent + 1
             it.getFontMetrics(busyFont).run {
                 busyTextLocation = (126 - stringWidth("B")) to ascent
             }
@@ -69,7 +67,6 @@ object ArmMonitor {
     }
 
     private val lastStateReceived = AtomicReference<ArmState>()
-    private val lastLumensRecieved = AtomicInteger(0)
     private val imageChanged = AtomicBoolean(false)
     private lateinit var future: Future<*>
     private val headers = listOf("WST", "XTN", "ELB", "GRP")
@@ -77,21 +74,7 @@ object ArmMonitor {
     fun start() {
         joinTopic(
             TheArm.STATE_TOPIC,
-            KobotsSubscriber { message ->
-                if (message is ArmState) lastStateReceived.set(message)
-//                if (message is ManualModeEvent) drawHeaders(message.index)
-            }
-        )
-        joinTopic(
-            SensorSuite.LUMEN_TOPIC,
-            KobotsSubscriber { message ->
-                if (message is SensorSuite.LumensData) {
-                    val lumens = message.lumens
-                    if (lastLumensRecieved.compareAndExchange(lumens, lumens) != lumens) {
-                        imageChanged.set(true)
-                    }
-                }
-            }
+            KobotsSubscriber { message -> if (message is ArmState) lastStateReceived.set(message) }
         )
         joinTopic(SLEEP_TOPIC, KobotsSubscriber { event -> if (event is SleepEvent) screen.setDisplayOn(!event.sleep) })
 
@@ -113,19 +96,10 @@ object ArmMonitor {
                     // show last recorded status
                     if (lastMenuItem == Menu.MANUAL) showLastStatus()
                 }
-//                if (SensorSuite.lumens > 0) displayLumens(SensorSuite.lumens)
                 if (imageChanged.getAndSet(false)) screen.display(image)
                 KobotSleep.millis(10)
             }
         }
-    }
-
-    private fun displayLumens(lumens: Int) = with(screenGraphics) {
-        color = Color.BLACK
-        fillRect(100, 0, 28, monitorLineHight)
-        // show lumens in upper right corner
-        color = Color.YELLOW
-        drawString(lumens.toString(), 105, monitorLineHight)
     }
 
     private val menuIcons = listOf("\u25C1", "\u25A1", "\u25B7", "\u2718")
@@ -136,7 +110,7 @@ object ArmMonitor {
         font = monitorFont
         val text = menuItem.label
         var x = monitorMetrics.center(text, MAX_WD)
-        drawString(text, x, monitorLineHight)
+        drawString(text, x, monitorLineHeight)
 
         font = monitorFont.deriveFont(16)
         menuIcons.forEachIndexed { index, item ->
@@ -172,7 +146,7 @@ object ArmMonitor {
             state.position.let { arm ->
                 listOf(arm.waist, arm.extender, arm.elbow, arm.gripper)
             }.map {
-                it.angle.toInt().toString()
+                it.angle.toString()
             }.forEachIndexed { i, string ->
                 color = Color.WHITE
                 val x = monitorMetrics.center(string, COL_WD - 1)

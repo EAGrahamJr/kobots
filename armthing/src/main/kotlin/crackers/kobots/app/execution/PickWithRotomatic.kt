@@ -27,7 +27,6 @@ import crackers.kobots.app.arm.TheArm.gripper
 import crackers.kobots.app.arm.TheArm.waist
 import crackers.kobots.app.enviro.DieAufseherin.DA_TOPIC
 import crackers.kobots.app.enviro.DieAufseherin.dropOffComplete
-import crackers.kobots.app.enviro.DieAufseherin.returnComplete
 import crackers.kobots.app.homeSequence
 import crackers.kobots.execution.publishToTopic
 import crackers.kobots.parts.sequence
@@ -50,9 +49,11 @@ object PickWithRotomatic {
 }
 
 /**
- * Magic numbers for the Rotomatic
+ * Magic things for the Rotomatic
  */
 const val MAGIC_EXTENDER = 15
+const val ROTO_PICKUP = "Pick Up From Rotomatic"
+const val ROTO_RETURN = "Return To Rotomatic"
 
 class MoveStuffFromRotomatic(
     val closeOnItem: Int = 90, // how much to close the gripper to grab the item - this stresses the technic a bit
@@ -74,7 +75,6 @@ class MoveStuffFromRotomatic(
     }
 
     private val pickupFromRoto = sequence {
-        name = "Pick Up From Rotomatic"
         this += backOffAndHome
 
         // avoid collisions!!
@@ -102,7 +102,6 @@ class MoveStuffFromRotomatic(
 
     // assumes something is in the gripper
     private val returnToRotomatic = sequence {
-        name = "Return To Rotomatic"
         action { waist rotate WAIST_HOME }
         action { elbow rotate elbowForRotomatic + 3 }
         action { extender goTo extenderToRotomatic }
@@ -112,6 +111,7 @@ class MoveStuffFromRotomatic(
     }
 
     fun moveObjectToTarget() = sequence {
+        name = ROTO_PICKUP
         this += pickupFromRoto
         action { waist rotate 90 }
         action { extender goTo dropOffExtender }
@@ -132,6 +132,7 @@ class MoveStuffFromRotomatic(
     }
 
     fun pickupAndReturn() = sequence {
+        name = ROTO_RETURN
         this += backOffAndHome
         action {
             waist rotate 90
@@ -149,12 +150,5 @@ class MoveStuffFromRotomatic(
             elbow rotate elbowForTransport
         }
         this += returnToRotomatic
-        // signal completion of this specific thing
-        action {
-            execute {
-                publishToTopic(DA_TOPIC, returnComplete)
-                true
-            }
-        }
     }
 }

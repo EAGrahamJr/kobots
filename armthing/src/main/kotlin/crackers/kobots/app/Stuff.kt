@@ -66,7 +66,7 @@ internal fun JSONObject.onOff(key: String): Boolean = this.optString(key, "off")
 /**
  * Wrapper for the MQTT client and start alive-check
  */
-internal val mqtt = KobotsMQTT("TheArm").apply {
+internal val mqtt = KobotsMQTT("TheArm", "tcp://192.168.1.4:1883").apply {
     startAliveCheck()
 }
 

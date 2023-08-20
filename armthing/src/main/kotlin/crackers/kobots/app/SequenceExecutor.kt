@@ -61,7 +61,7 @@ abstract class SequenceExecutor {
      * Sets the stop flag and blocks until the flag is cleared.
      */
     open fun stop() {
-        if (moveInProgress) stopImmediately = true
+        stopImmediately = moveInProgress
         while (stopImmediately) KobotSleep.millis(5)
     }
 

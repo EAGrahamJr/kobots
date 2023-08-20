@@ -19,12 +19,12 @@ package crackers.kobots.app.enviro
 import crackers.kobots.app.*
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.PickWithRotomatic
+import crackers.kobots.app.execution.goToSleep
 import crackers.kobots.execution.*
 import crackers.kobots.parts.ActionSequence
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
-import java.util.concurrent.atomic.AtomicBoolean
 
 /*
  * Message central.
@@ -36,19 +36,11 @@ object DieAufseherin {
 
     // singletons events
     internal val dropOffComplete = DasOverseerEvent(true, false)
-    internal val returnComplete = DasOverseerEvent(false, true)
+    internal val returnRequested = DasOverseerEvent(false, true)
 
-    /**
-     * Something is in the target area
-     */
-    private val _inTarget = AtomicBoolean(false)
-    var inTargetArea: Boolean
-        get() = _inTarget.get()
-        private set(b) = _inTarget.set(b)
-    private val returnInProgress = AtomicBoolean(false)
     private val logger = LoggerFactory.getLogger("DieAufseherin")
 
-    private lateinit var returnRequest: ActionSequence
+    private var returnRequest: ActionSequence? = null
 
     fun setUpListeners() {
         localStuff()
@@ -60,26 +52,9 @@ object DieAufseherin {
             DA_TOPIC,
             KobotsSubscriber<DasOverseerEvent> {
                 logger.info("Got a DA event: $it")
-                inTargetArea = it.dropOff
-                if (returnInProgress.get() && it.rtos) {
-                    returnInProgress.set(false)
-                }
-                logger.info("inTargetArea: $inTargetArea, returnInProgress: ${returnInProgress.get()}")
-            }
-        )
-
-        joinTopic(
-            SensorSuite.PROXIMITY_TOPIC,
-            KobotsSubscriber<SensorSuite.ProximityTrigger> {
-                if (inTargetArea) {
-                    if (returnInProgress.compareAndSet(false, true)) {
-                        TheArm.request(returnRequest)
-                    }
-                } else {
-                    // assume this is an emergency stop
-                    publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-                    mqtt.publish("kobots/rotoMatic", "stop")
-                    runFlag.set(false)
+                if (it.rtos && returnRequest != null) {
+                    TheArm.request(returnRequest!!)
+                    returnRequest = null
                 }
             }
         )
@@ -95,7 +70,9 @@ object DieAufseherin {
         }
         haSub("homebody/office/paper") { payload ->
             if (payload.has("lamp")) {
-                publishToTopic(SLEEP_TOPIC, SleepEvent(!payload.onOff("lamp")))
+                val sleepy = !payload.onOff("lamp")
+                publishToTopic(SLEEP_TOPIC, SleepEvent(sleepy))
+                if (sleepy) TheArm.request(goToSleep) else if (LocalTime.now().hour < 16) rotoSelect(0)
             }
         }
         haSub("zwave/Office/TriBaby/49/0/Air_temperature") { payload ->
@@ -105,30 +82,40 @@ object DieAufseherin {
             }
         }
         haSub("kobots/events") { payload ->
-            if (payload.has("source") && payload.getString("source") == "rotomatic") {
-                val rotoSelected = payload.getInt("selected")
-                val request = when {
-                    rotoSelected == 0 -> {
-                        returnRequest = PickWithRotomatic.standingPickupAndReturn
-                        PickWithRotomatic.moveStandingObjectToTarget
+            if (payload.has("source")) {
+                when (payload.getString("source")) {
+                    "rotomatic" -> handleRotomatc(payload)
+                    "proximity" -> if (runFlag.get()) {
+                        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
+                        runFlag.set(false)
                     }
-
-                    rotoSelected < 5 -> {
-                        returnRequest = PickWithRotomatic.thinItemReturn
-                        PickWithRotomatic.moveThinItemToTarget
-                    }
-
-                    else -> {
-                        logger.error("Unknown rotomatic selection: $rotoSelected")
-                        null
-                    }
-                }
-                if (request != null) {
-                    TheArm.request(request)
                 }
             }
         }
         // zwave/nodeID_14/48/0/Motion
+    }
+
+    /**
+     * What to do when the Rotomatic is selected.
+     */
+    private fun handleRotomatc(payload: JSONObject) {
+        val rotoSelected = payload.getInt("selected")
+        when {
+            rotoSelected == 0 -> {
+                returnRequest = PickWithRotomatic.standingPickupAndReturn
+                PickWithRotomatic.moveStandingObjectToTarget
+            }
+
+            rotoSelected < 5 -> {
+                returnRequest = PickWithRotomatic.thinItemReturn
+                PickWithRotomatic.moveThinItemToTarget
+            }
+
+            else -> {
+                logger.error("Unknown Rotomatic selection: $rotoSelected")
+                null
+            }
+        }?.let { TheArm.request(it) }
     }
 
     private fun haSub(s: String, handler: (JSONObject) -> Unit) {
