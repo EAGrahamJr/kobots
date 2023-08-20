@@ -81,7 +81,7 @@ fun main() {
     ServoController().use { hat ->
         // TODO restore servo trim when it works
         rotoServo = hat.getServo(0, 0)
-        flagServo = hat.getServo(1, 90)
+        flagServo = hat.getServo(1, 0)
 
         rotator.swing(stopList[stopIndex])
 
@@ -90,7 +90,7 @@ fun main() {
         }
         println("Rotomatic exit")
         rotoServo.home()
-        flagServo.angle = 90f
+        flagServo.angle = 0f
     }
     SensorSuite.close()
     exitProcess(0)
@@ -166,15 +166,19 @@ fun ServoDevice.home() {
 
 @Synchronized
 fun ServoDevice.nag() {
+    for (angle in 0..90 step 5) {
+        at(angle)
+        KobotSleep.millis(15)
+    }
+
     for (repeat in 1..5) {
-        for (angle in 90..180 step 5) {
+        for (angle in 60..120 step 5) {
+            KobotSleep.millis(30)
             at(angle)
-            KobotSleep.millis(5)
-        }
-        for (angle in 180 downTo 90 step 5) {
-            at(angle)
-            KobotSleep.millis(5)
         }
     }
-    at(90)
+    for (angle in 90 downTo 0 step 5) {
+        at(angle)
+        KobotSleep.millis(15)
+    }
 }

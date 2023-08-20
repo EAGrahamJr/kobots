@@ -22,6 +22,7 @@ import crackers.kobots.app.execution.PickWithRotomatic
 import crackers.kobots.app.execution.goToSleep
 import crackers.kobots.execution.*
 import crackers.kobots.parts.ActionSequence
+import crackers.kobots.utilities.KobotSleep
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
@@ -103,6 +104,12 @@ object DieAufseherin {
         when {
             rotoSelected == 0 -> {
                 returnRequest = PickWithRotomatic.standingPickupAndReturn
+                executor.submit {
+                    while (returnRequest != null) {
+                        KobotSleep.seconds(20)
+                        mqtt.publish("kobots/rotoMatic", "nag")
+                    }
+                }
                 PickWithRotomatic.moveStandingObjectToTarget
             }
 
