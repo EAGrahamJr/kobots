@@ -26,15 +26,15 @@ import com.diozero.devices.PCA9685;
 public class ServoAdvance {
     public static void main(String[] args) throws Exception {
         try (PCA9685 servoController = new PCA9685()) {
-            ServoDevice servo = new ServoDevice.Builder(0)
+            ServoDevice servo = new ServoDevice.Builder(1)
                     // does not work
-                    //  .setTrim(ServoTrim.TOWERPRO_SG90)
-                    //  .setTrim(newServoTrim(1500,901))
+//                      .setTrim(ServoTrim.TOWERPRO_SG90)
+                    .setTrim(new ServoTrim(1500, 1100))
                     //  .setTrim(newServoTrim(1450,901))
 
                     // works
 //                    .setTrim(ServoTrim.DEFAULT)
-                    .setTrim(new ServoTrim(1450, 900))
+//                    .setTrim(new ServoTrim(1450, 900))
                     .setFrequency(servoController.getBoardPwmFrequency())
                     .setDeviceFactory(servoController)
                     .build();
@@ -47,7 +47,7 @@ public class ServoAdvance {
                 float current = 0f;
                 for (int j = 0; j < 5; j++) {
                     servo.setAngle(i);
-                    Thread.sleep(5);
+                    Thread.sleep(10);
                     current = servo.getAngle();
                     done = servo.getAngle() == i;
                     if (done) break;
@@ -59,7 +59,7 @@ public class ServoAdvance {
             System.out.println("Sweep complete - rolling back");
             for (int i = 180; i >= 0; i--) {
                 servo.setAngle(i);
-                Thread.sleep(5);
+                Thread.sleep(10);
             }
             System.out.println("Rollback complete");
         }

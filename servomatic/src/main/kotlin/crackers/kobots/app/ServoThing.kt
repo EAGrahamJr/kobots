@@ -17,6 +17,7 @@
 package crackers.kobots.app
 
 import com.diozero.api.ServoDevice
+import com.diozero.api.ServoTrim
 import com.diozero.devices.ServoController
 import crackers.kobots.devices.at
 import crackers.kobots.devices.io.GamepadQT
@@ -31,14 +32,15 @@ import kotlin.system.exitProcess
  *
  * - RotoMatic uses a Rotator to select a thing. Manual selections are through something with buttons. Also has an MQTT
  *  interface.
- * - TODO: FlagNag is a servo that moves a flag back and forth to get attention
+ * - FlagNag is a servo that moves a flag back and forth to get attention
  */
 
 lateinit var rotoServo: ServoDevice
 val rotator by lazy { ServoRotator(rotoServo, (0..360), (0..180)) }
-val stopList = listOf(10, 76, 132, 212, 284)
+val stopList = listOf(0, 58, 115, 184, 254, 312)
 
 lateinit var flagServo: ServoDevice
+val nagger by lazy { ServoRotator(flagServo, (0..180), (0..180)) }
 
 const val REMOTE_PI = "diozero.remote.hostname"
 const val PSYCHE = "psyche.local"
@@ -79,18 +81,19 @@ fun main() {
     SensorSuite.start()
 //    System.setProperty(REMOTE_PI, PSYCHE)
     ServoController().use { hat ->
-        // TODO restore servo trim when it works
-        rotoServo = hat.getServo(0, 0)
-        flagServo = hat.getServo(1, 0)
+        rotoServo = hat.getServo(0, ServoTrim.TOWERPRO_SG90, 0)
+        flagServo = hat.getServo(1, ServoTrim(1500, 1100), 0)
 
         rotator.swing(stopList[stopIndex])
+        nagger.swing(90, 15)
 
         GamepadQT().use { pad ->
+            nagger.swing(0, 15)
             runLoop(pad)
         }
         println("Rotomatic exit")
-        rotoServo.home()
-        flagServo.angle = 0f
+        rotator.swing(0)
+        flagServo at 0
     }
     SensorSuite.close()
     exitProcess(0)
@@ -116,9 +119,9 @@ private fun runLoop(pad: GamepadQT) {
                 }
 
                 select -> {
-//                            println("Current: rotator ${rotator.current()}, servo ${rotoServo.angle}")
+//                    println("Current: rotator ${rotator.current()}, servo ${rotoServo.angle}")
                     if (manualServo == rotoServo) {
-//                                manualServo = flagServo
+                        manualServo = flagServo
                         println("Flag servo")
                     } else {
                         manualServo = rotoServo
@@ -148,9 +151,9 @@ fun ServoRotator.prev() {
 }
 
 @Synchronized
-fun ServoRotator.swing(target: Int) {
+fun ServoRotator.swing(target: Int, speed: Long = 75) {
     while (!rotateTo(target)) {
-        KobotSleep.millis(75)
+        KobotSleep.millis(speed)
     }
 }
 
@@ -166,10 +169,7 @@ fun ServoDevice.home() {
 
 @Synchronized
 fun ServoDevice.nag() {
-    for (angle in 0..90 step 5) {
-        at(angle)
-        KobotSleep.millis(15)
-    }
+    nagger.swing(90, 50)
 
     for (repeat in 1..5) {
         for (angle in 60..120 step 5) {
@@ -177,8 +177,5 @@ fun ServoDevice.nag() {
             at(angle)
         }
     }
-    for (angle in 90 downTo 0 step 5) {
-        at(angle)
-        KobotSleep.millis(15)
-    }
+    nagger.swing(0, 50)
 }

@@ -58,26 +58,24 @@ object SensorSuite : AutoCloseable {
     val tooClose: Boolean
         get() = proximity > CLOSE_ENOUGH
 
-    class ProximityTrigger : crackers.kobots.execution.KobotsEvent
+    data class ProximityTrigger(val source: String, val reading: Int) : crackers.kobots.execution.KobotsEvent
     class LumensData(val lumens: Int) : crackers.kobots.execution.KobotsEvent
 
-    private val ohCrap = ProximityTrigger()
+    //    private val ohCrap = ProximityTrigger()
     private var previousLumenus: Int = 0
     private val logger = Logger.getLogger("SensorSuite")
-    private val executor = Executors.newSingleThreadExecutor()
+    private val executor by lazy { Executors.newSingleThreadExecutor() }
 
     fun start() {
         future = executor.submit {
-            while (true) {
+            while (!done) {
                 val reading = proximitySensor.proximity.toInt()
                 proximity = reading
                 if (tooClose) {
                     //                logger.warning("too close: $reading")
-                    publishToTopic(PROXIMITY_TOPIC, ohCrap)
-                    mqttClient.publish(EVENT_TOPIC, JSONObject().apply {
-                        put("source", "proximity")
-                        put("value", reading)
-                    }.toString())
+                    val trigger = ProximityTrigger("proximity", reading)
+                    publishToTopic(PROXIMITY_TOPIC, trigger)
+                    mqttClient.publish(EVENT_TOPIC, JSONObject(trigger).toString())
                     done = true
                 }
                 lumens.also { lumens ->
@@ -107,8 +105,7 @@ object SensorSuite : AutoCloseable {
 
     override fun close() {
         if (!SensorSuite::future.isInitialized) return
-        future.get()
-
+        executor.shutdownNow()
         proximitySensor.close()
     }
 }
