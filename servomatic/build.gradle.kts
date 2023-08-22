@@ -36,5 +36,4 @@ project.ext.set("jar.name", "servomatic")
 
 application {
     mainClass.set("crackers.kobots.app.ServoThingKt")
-//    mainClass.set("crackers.app.ServoAdvance")
 }

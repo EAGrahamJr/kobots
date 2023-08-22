@@ -17,13 +17,14 @@
 package crackers.kobots.app
 
 import crackers.kobots.devices.sensors.VCNL4040
+import crackers.kobots.execution.KobotsEvent
 import crackers.kobots.execution.publishToTopic
 import crackers.kobots.utilities.KobotSleep
 import org.json.JSONObject
+import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.logging.Logger
 import kotlin.math.abs
 import kotlin.math.ln
 
@@ -58,30 +59,30 @@ object SensorSuite : AutoCloseable {
     val tooClose: Boolean
         get() = proximity > CLOSE_ENOUGH
 
-    data class ProximityTrigger(val source: String, val reading: Int) : crackers.kobots.execution.KobotsEvent
-    class LumensData(val lumens: Int) : crackers.kobots.execution.KobotsEvent
+    data class ProximityTrigger(val source: String = "proximity", val reading: Int) : KobotsEvent
+    class LumensData(val source: String = "proximity", val lumens: Int) : KobotsEvent
 
     //    private val ohCrap = ProximityTrigger()
     private var previousLumenus: Int = 0
-    private val logger = Logger.getLogger("SensorSuite")
+    private val logger = LoggerFactory.getLogger("SensorSuite")
     private val executor by lazy { Executors.newSingleThreadExecutor() }
 
     fun start() {
         future = executor.submit {
-            while (!done) {
+            while (doneLatch.count > 0) {
                 val reading = proximitySensor.proximity.toInt()
                 proximity = reading
                 if (tooClose) {
-                    //                logger.warning("too close: $reading")
-                    val trigger = ProximityTrigger("proximity", reading)
+                    logger.error("Proximity sensor triggered")
+                    val trigger = ProximityTrigger(reading = reading)
                     publishToTopic(PROXIMITY_TOPIC, trigger)
                     mqttClient.publish(EVENT_TOPIC, JSONObject(trigger).toString())
-                    done = true
                 }
                 lumens.also { lumens ->
                     if (abs(lumens - previousLumenus) > 2) {
-                        publishToTopic(LUMEN_TOPIC, LumensData(lumens))
-                        //                    lumeAlerts(lumens)
+                        val trigger = LumensData(lumens = lumens)
+                        publishToTopic(LUMEN_TOPIC, trigger)
+                        mqttClient.publish(EVENT_TOPIC, JSONObject(trigger).toString())
                         previousLumenus = lumens
                     }
                 }

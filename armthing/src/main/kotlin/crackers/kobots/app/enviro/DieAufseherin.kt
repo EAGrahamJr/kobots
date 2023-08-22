@@ -20,7 +20,10 @@ import crackers.kobots.app.*
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.PickWithRotomatic
 import crackers.kobots.app.execution.goToSleep
-import crackers.kobots.execution.*
+import crackers.kobots.execution.KobotsEvent
+import crackers.kobots.execution.KobotsSubscriber
+import crackers.kobots.execution.joinTopic
+import crackers.kobots.execution.publishToTopic
 import crackers.kobots.parts.ActionSequence
 import crackers.kobots.utilities.KobotSleep
 import org.json.JSONObject
@@ -87,8 +90,9 @@ object DieAufseherin {
                 when (payload.getString("source")) {
                     "rotomatic" -> handleRotomatc(payload)
                     "proximity" -> if (runFlag.get()) {
-                        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-                        runFlag.set(false)
+                        logger.error("Proximity sensor triggered")
+//                        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
+//                        runFlag.set(false)
                     }
                 }
             }

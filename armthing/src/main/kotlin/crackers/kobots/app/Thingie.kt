@@ -29,6 +29,7 @@ import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.execution.*
+import org.slf4j.LoggerFactory
 import org.tinylog.Logger
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
@@ -60,12 +61,16 @@ enum class Menu(val label: String, val action: () -> Unit) {
 }
 
 private val WAIT_LOOP = Duration.ofMillis(50)
+const val REMOTE_PI = "diozero.remote.hostname"
+private val logger = LoggerFactory.getLogger("BRAINZ")
 
 /**
  * Run this.
  */
-fun main() {
-//    System.setProperty(REMOTE_PI, BRAINZ)
+fun main(args: Array<String>? = null) {
+    // pass any arg and we'll use the remote pi
+    // NOTE: this reqquires a diozero daemon running on the remote pi and the diozero remote jar in the classpath
+    if (args?.isNotEmpty() == true) System.setProperty(REMOTE_PI, args[0])
 
     // these do not require the CRICKIT
     ArmMonitor.start()
@@ -113,6 +118,8 @@ fun main() {
                 Logger.error(e, "Exception")
             }
         }
+        logger.error("Exiting")
+        rotoKill()
         runFlag.set(false)
         TheArm.stop()
         VeryDumbThermometer.stop()

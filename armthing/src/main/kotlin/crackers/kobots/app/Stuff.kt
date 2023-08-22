@@ -73,3 +73,7 @@ internal val mqtt = KobotsMQTT("TheArm", "tcp://192.168.1.4:1883").apply {
 internal fun rotoSelect(target: Int) {
     mqtt.publish("kobots/rotoMatic", target.toString())
 }
+
+internal fun rotoKill() {
+    mqtt.publish("kobots/rotoMatic", "stop")
+}

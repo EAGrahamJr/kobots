@@ -20,11 +20,12 @@ import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim
 import com.diozero.devices.ServoController
 import crackers.kobots.devices.at
-import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.mqtt.KobotsMQTT
 import crackers.kobots.parts.ServoRotator
 import crackers.kobots.utilities.KobotSleep
 import org.json.JSONObject
+import org.slf4j.LoggerFactory
+import java.util.concurrent.CountDownLatch
 import kotlin.system.exitProcess
 
 /**
@@ -43,16 +44,21 @@ lateinit var flagServo: ServoDevice
 val nagger by lazy { ServoRotator(flagServo, (0..180), (0..180)) }
 
 const val REMOTE_PI = "diozero.remote.hostname"
-const val PSYCHE = "psyche.local"
 const val RQST_TOPIC = "kobots/rotoMatic"
 const val EVENT_TOPIC = "kobots/events"
 var stopIndex = 0
 
+val logger = LoggerFactory.getLogger("servomatci")
+val doneLatch = CountDownLatch(1)
 val mqttClient = KobotsMQTT("Rotomatic", "tcp://192.168.1.4:1883").apply {
     startAliveCheck()
     subscribe(RQST_TOPIC) { payload ->
         when {
-            payload.equals("stop", true) -> done = true
+            payload.equals("stop", true) -> {
+                logger.error("Stopping")
+                doneLatch.countDown()
+            }
+
             payload.equals("next", true) -> rotator.next()
             payload.equals("prev", true) -> rotator.prev()
             payload.equals("nag", true) -> flagServo.nag()
@@ -74,67 +80,28 @@ val mqttClient = KobotsMQTT("Rotomatic", "tcp://192.168.1.4:1883").apply {
     }
 }
 
-@Volatile
-var done: Boolean = false
 
-fun main() {
+fun main(args: Array<String>?) {
+    // pass any arg and we'll use the remote pi
+    // NOTE: this reqquires a diozero daemon running on the remote pi and the diozero remote jar in the classpath
+    if (args?.isNotEmpty() == true) System.setProperty(REMOTE_PI, args[0])
+
     SensorSuite.start()
-//    System.setProperty(REMOTE_PI, PSYCHE)
     ServoController().use { hat ->
         rotoServo = hat.getServo(0, ServoTrim.TOWERPRO_SG90, 0)
         flagServo = hat.getServo(1, ServoTrim(1500, 1100), 0)
 
         rotator.swing(stopList[stopIndex])
         nagger.swing(90, 15)
-
-        GamepadQT().use { pad ->
-            nagger.swing(0, 15)
-            runLoop(pad)
-        }
+        KobotSleep.seconds(1)
+        nagger.swing(0, 15)
+        doneLatch.await()
         println("Rotomatic exit")
         rotator.swing(0)
         flagServo at 0
     }
     SensorSuite.close()
     exitProcess(0)
-}
-
-private fun runLoop(pad: GamepadQT) {
-    var manualServo = rotoServo
-
-    while (!done) {
-        pad.read().apply {
-            when {
-                a -> rotator.next()
-                y -> rotator.prev()
-
-                x -> {
-                    val fl = manualServo.angle + 1f
-                    manualServo at fl
-                }
-
-                b -> {
-                    val fl = manualServo.angle - 1f
-                    manualServo at fl
-                }
-
-                select -> {
-//                    println("Current: rotator ${rotator.current()}, servo ${rotoServo.angle}")
-                    if (manualServo == rotoServo) {
-                        manualServo = flagServo
-                        println("Flag servo")
-                    } else {
-                        manualServo = rotoServo
-                        println("Roto servo")
-                    }
-                }
-
-                start -> done = true
-                else -> {}
-            }
-        }
-        KobotSleep.millis(50)
-    }
 }
 
 @Synchronized
