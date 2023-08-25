@@ -27,18 +27,19 @@ import java.awt.Color
  * "tight" loop, but if you're doing other things in between, you may want to do your own debouncing.
  * @param keyboard the NeoKey1x4 to use
  * @param activationColor the color to use when a button is pressed
- * @param buttonColors the colors to use when a button is _not_ pressed (default blue, green, cyan, red)
+ * @param initialColors the initial set of colors to use when a button is _not_ pressed (default blue, green, cyan, red)
  * @param initialBrightness the initial brightness of the keyboard (default 0.05)
  *
- * TODO allow for multiplexiting multiple NeoKey1x4s
- * TODO allow for "chords" (multiple buttons pressed at once)
+ * TODO allow for multiplexing multiple NeoKey1x4s
  */
 class NeoKeyHandler(
     private val keyboard: NeoKey = NeoKey(),
     private val activationColor: Color = Color.YELLOW,
-    private var buttonColors: List<Color> = listOf(Color.BLUE, Color.GREEN, Color.CYAN, Color.RED),
+    initialColors: List<Color> = listOf(Color.BLUE, Color.GREEN, Color.CYAN, Color.RED),
     initialBrightness: Float = 0.05f
 ) : AutoCloseable {
+
+    private var _colors: List<Color> = initialColors.toList()
 
     init {
         keyboard.brightness = initialBrightness
@@ -70,13 +71,12 @@ class NeoKeyHandler(
     val numberOfButtons: Int
         get() = SINGLE_KEYBOARD
 
-    /**
-     * Update the colors of the buttons when not pressed.
-     */
-    fun setButtonColors(colors: List<Color>) {
-        buttonColors = colors
-        updateButtonColors()
-    }
+    var buttonColors: List<Color>
+        get() = _colors
+        set(c) {
+            _colors = c.toList()
+            updateButtonColors()
+        }
 
     /**
      * Update the colors of the buttons when not pressed, only if necessary.
@@ -90,7 +90,7 @@ class NeoKeyHandler(
      * Read the current button presses, and set the colors of the buttons as needed. Any "active" buttons will be
      * set to the [activationColor].
      */
-    fun read() = try {
+    fun read(): List<Boolean> = try {
         keyboard.read().let { read ->
             // nothing changed, make sure buttons are the "right" color
             if (read == lastButtonValues) {

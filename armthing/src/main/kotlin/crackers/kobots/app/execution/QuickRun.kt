@@ -16,6 +16,7 @@
 
 package crackers.kobots.app.execution
 
+import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
 import crackers.kobots.app.arm.TheArm.EXTENDER_FULL
 import crackers.kobots.app.arm.TheArm.GRIPPER_CLOSED
@@ -24,10 +25,20 @@ import crackers.kobots.app.arm.TheArm.WAIST_MAX
 import crackers.kobots.app.arm.TheArm.elbow
 import crackers.kobots.app.arm.TheArm.extender
 import crackers.kobots.app.arm.TheArm.gripper
-import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.arm.TheArm.waist
+import crackers.kobots.parts.ActionBuilder
 import crackers.kobots.parts.ActionSpeed
 import crackers.kobots.parts.sequence
+
+/**
+ * Home the arm.
+ */
+val homeAction = ActionBuilder().apply {
+    waist rotate TheArm.WAIST_HOME
+    extender goTo TheArm.EXTENDER_HOME
+    elbow rotate TheArm.ELBOW_UP
+    gripper goTo GRIPPER_CLOSED
+}
 
 /**
  * Wave hello kinda.
@@ -89,4 +100,8 @@ val goToSleep by lazy {
             elbow rotate ELBOW_DOWN
         }
     }
+}
+
+val homeSequence = sequence {
+    this + homeAction
 }

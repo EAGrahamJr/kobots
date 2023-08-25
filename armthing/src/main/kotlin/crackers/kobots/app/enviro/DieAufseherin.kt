@@ -18,7 +18,7 @@ package crackers.kobots.app.enviro
 
 import crackers.kobots.app.*
 import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.execution.PickWithRotomatic
+import crackers.kobots.app.execution.PickUpAndMoveStuff
 import crackers.kobots.app.execution.goToSleep
 import crackers.kobots.execution.KobotsEvent
 import crackers.kobots.execution.KobotsSubscriber
@@ -39,8 +39,8 @@ object DieAufseherin {
     data class DasOverseerEvent(val dropOff: Boolean, val rtos: Boolean) : KobotsEvent
 
     // singletons events
-    internal val dropOffComplete = DasOverseerEvent(true, false)
-    internal val returnRequested = DasOverseerEvent(false, true)
+    internal val dropOffRequested = DasOverseerEvent(dropOff = true, rtos = false)
+    internal val returnRequested = DasOverseerEvent(dropOff = false, rtos = true)
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
 
@@ -59,6 +59,9 @@ object DieAufseherin {
                 if (it.rtos && returnRequest != null) {
                     TheArm.request(returnRequest!!)
                     returnRequest = null
+                } else if (it.dropOff) {
+                    returnRequest = PickUpAndMoveStuff.returnDropsToStorage
+                    TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
                 }
             }
         )
@@ -68,7 +71,7 @@ object DieAufseherin {
         haSub("homebody/bedroom/casey") { payload ->
             if (payload.has("lamp")) {
                 if (LocalTime.now().hour == 22) {
-                    rotoSelect(0)
+                    publishToTopic(DA_TOPIC, dropOffRequested)
                 }
             }
         }
@@ -107,19 +110,19 @@ object DieAufseherin {
         val rotoSelected = payload.getInt("selected")
         when {
             rotoSelected == 0 -> {
-                returnRequest = PickWithRotomatic.standingPickupAndReturn
+                returnRequest = PickUpAndMoveStuff.returnDropsToStorage
                 executor.submit {
                     while (returnRequest != null) {
                         KobotSleep.seconds(20)
                         mqtt.publish("kobots/rotoMatic", "nag")
                     }
                 }
-                PickWithRotomatic.moveStandingObjectToTarget
+                PickUpAndMoveStuff.moveEyeDropsToDropZone
             }
 
             rotoSelected < 5 -> {
-                returnRequest = PickWithRotomatic.thinItemReturn
-                PickWithRotomatic.moveThinItemToTarget
+                returnRequest = PickUpAndMoveStuff.thinItemReturn
+                PickUpAndMoveStuff.moveThinItemToTarget
             }
 
             else -> {

@@ -25,22 +25,18 @@ import crackers.kobots.app.arm.TheArm.elbow
 import crackers.kobots.app.arm.TheArm.extender
 import crackers.kobots.app.arm.TheArm.gripper
 import crackers.kobots.app.arm.TheArm.waist
-import crackers.kobots.app.enviro.DieAufseherin.DA_TOPIC
-import crackers.kobots.app.enviro.DieAufseherin.dropOffComplete
-import crackers.kobots.app.homeSequence
-import crackers.kobots.execution.publishToTopic
 import crackers.kobots.parts.sequence
 
 /**
- * Picks up stuff from the Rotomatic and returns it.
+ * Picks up stuff from the places and returns it.
  */
-object PickWithRotomatic {
-    private val defaultMover = MoveStuffFromRotomatic(elbowForRotomatic = 11)
-    val moveStandingObjectToTarget = defaultMover.moveObjectToTarget()
-    val standingPickupAndReturn = defaultMover.pickupAndReturn()
+object PickUpAndMoveStuff {
+    private val dropMover = MoveStuffAround(extenderToPickupTarget = 55, elbowForPickupTarget = -7)
+    val moveEyeDropsToDropZone = dropMover.moveObjectToTarget()
+    val returnDropsToStorage = dropMover.pickupAndReturn()
 
-    private val defaultThinItemMover = MoveStuffFromRotomatic(
-        elbowForRotomatic = 9,
+    private val defaultThinItemMover = MoveStuffAround(
+        elbowForPickupTarget = 9,
         closeOnItem = GRIPPER_CLOSED,
         dropOffElbow = ELBOW_DOWN
     )
@@ -49,17 +45,17 @@ object PickWithRotomatic {
 }
 
 /**
- * Magic things for the Rotomatic
+ * Magic things for transporting stuff.
  */
 const val MAGIC_EXTENDER = 15
-const val ROTO_PICKUP = "Pick Up From Rotomatic"
-const val ROTO_RETURN = "Return To Rotomatic"
+const val ROTO_PICKUP = "Pick Up From Location"
+const val ROTO_RETURN = "Return To Sender"
 
-class MoveStuffFromRotomatic(
+class MoveStuffAround(
     val closeOnItem: Int = 90, // how much to close the gripper to grab the item - this stresses the technic a bit
 
-    val extenderToRotomatic: Int = 66, // how far to extend the extender to reach the Rotomatic
-    val elbowForRotomatic: Int = 10, // how far to rotate the elbow to reach the Rotomatic
+    val extenderToPickupTarget: Int = 66, // how far to extend the extender to reach the pickup zone
+    val elbowForPickupTarget: Int = 10, // how far to rotate the elbow to reach the pickup zone
 
     val elbowForTransport: Int = 45,
 
@@ -74,7 +70,7 @@ class MoveStuffFromRotomatic(
         this += homeSequence
     }
 
-    private val pickupFromRoto = sequence {
+    private val pickupFromLocation = sequence {
         this += backOffAndHome
 
         // avoid collisions!!
@@ -82,14 +78,14 @@ class MoveStuffFromRotomatic(
             waist rotate WAIST_HOME
             gripper goTo GRIPPER_OPEN
         }
-        action { elbow rotate elbowForRotomatic }
-        action { extender goTo extenderToRotomatic }
+        action { elbow rotate elbowForPickupTarget }
+        action { extender goTo extenderToPickupTarget }
 
         action { gripper goTo closeOnItem }
 
         // basically just pick it up a little bit
         action {
-            elbow rotate elbowForRotomatic + 5
+            elbow rotate elbowForPickupTarget + 5
             extender goTo MAGIC_EXTENDER
         }
 
@@ -101,18 +97,18 @@ class MoveStuffFromRotomatic(
     }
 
     // assumes something is in the gripper
-    private val returnToRotomatic = sequence {
+    private val returnToPickupLocation = sequence {
         action { waist rotate WAIST_HOME }
-        action { elbow rotate elbowForRotomatic + 3 }
-        action { extender goTo extenderToRotomatic }
-        action { elbow rotate elbowForRotomatic }
+        action { elbow rotate elbowForPickupTarget + 5 }
+        action { extender goTo extenderToPickupTarget }
+        action { elbow rotate elbowForPickupTarget }
         action { gripper goTo GRIPPER_OPEN }
         this += backOffAndHome
     }
 
     fun moveObjectToTarget() = sequence {
         name = ROTO_PICKUP
-        this += pickupFromRoto
+        this += pickupFromLocation
         action { waist rotate 90 }
         action { extender goTo dropOffExtender }
         action { elbow rotate dropOffElbow }
@@ -122,13 +118,6 @@ class MoveStuffFromRotomatic(
             elbow rotate elbowForTransport
         }
         this += homeSequence
-        // signal completion of this specific thing
-        action {
-            execute {
-                publishToTopic(DA_TOPIC, dropOffComplete)
-                true
-            }
-        }
     }
 
     fun pickupAndReturn() = sequence {
@@ -149,6 +138,6 @@ class MoveStuffFromRotomatic(
             extender goTo EXTENDER_HOME
             elbow rotate elbowForTransport
         }
-        this += returnToRotomatic
+        this += returnToPickupLocation
     }
 }

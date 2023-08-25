@@ -48,9 +48,9 @@ const val RQST_TOPIC = "kobots/rotoMatic"
 const val EVENT_TOPIC = "kobots/events"
 var stopIndex = 0
 
-val logger = LoggerFactory.getLogger("servomatci")
+val logger = LoggerFactory.getLogger("servomatic")
 val doneLatch = CountDownLatch(1)
-val mqttClient = KobotsMQTT("Rotomatic", "tcp://192.168.1.4:1883").apply {
+val mqttClient = KobotsMQTT("servomatic", "tcp://192.168.1.4:1883").apply {
     startAliveCheck()
     subscribe(RQST_TOPIC) { payload ->
         when {

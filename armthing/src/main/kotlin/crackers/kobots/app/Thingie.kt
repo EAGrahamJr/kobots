@@ -16,19 +16,18 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.NeoKeyBar.currentButtons
 import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.arm.TheArm.homeAction
 import crackers.kobots.app.enviro.DieAufseherin
+import crackers.kobots.app.enviro.DieAufseherin.DA_TOPIC
+import crackers.kobots.app.enviro.DieAufseherin.dropOffRequested
 import crackers.kobots.app.enviro.DieAufseherin.returnRequested
 import crackers.kobots.app.enviro.VeryDumbThermometer
-import crackers.kobots.app.execution.ROTO_PICKUP
-import crackers.kobots.app.execution.ROTO_RETURN
-import crackers.kobots.app.execution.excuseMe
-import crackers.kobots.app.execution.sayHi
+import crackers.kobots.app.execution.*
+import crackers.kobots.app.io.NeoKeyHandler
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.execution.*
+import crackers.kobots.parts.SequenceExecutor
 import org.slf4j.LoggerFactory
 import org.tinylog.Logger
 import java.time.Duration
@@ -52,12 +51,8 @@ enum class Menu(val label: String, val action: () -> Unit) {
     MANUAL("Manual", { _manualMode.set(true) }),
     ROTO_NEXT("Roto Next", { mqtt.publish("kobots/rotoMatic", "next") }),
     ROTO_PREV("Roto Previous", { mqtt.publish("kobots/rotoMatic", "prev") }),
-    ROTO_DROPS("Select Drops", { rotoSelect(0) }),
-    ROTO_THIN1("Select Thin 1", { rotoSelect(1) }),
-    ROTO_THIN2("Select Thin 2", { rotoSelect(2) }),
-    ROTO_THIN3("Select Thin 3", { rotoSelect(3) }),
-    ROTO_THIN4("Select Thin 4", { rotoSelect(4) }),
-    RETURN_PICK("Return last pick", { publishToTopic(DieAufseherin.DA_TOPIC, returnRequested) })
+    ROTO_DROPS("Select Drops", { publishToTopic(DA_TOPIC, dropOffRequested) }),
+    RETURN_PICK("Return last pick", { publishToTopic(DA_TOPIC, returnRequested) })
 }
 
 private val WAIT_LOOP = Duration.ofMillis(50)
@@ -69,16 +64,14 @@ private val logger = LoggerFactory.getLogger("BRAINZ")
  */
 fun main(args: Array<String>? = null) {
     // pass any arg and we'll use the remote pi
-    // NOTE: this reqquires a diozero daemon running on the remote pi and the diozero remote jar in the classpath
+    // NOTE: this requires a diozero daemon running on the remote pi and the diozero remote jar in the classpath
     if (args?.isNotEmpty() == true) System.setProperty(REMOTE_PI, args[0])
 
     // these do not require the CRICKIT
     ArmMonitor.start()
+    val keyboard = NeoKeyHandler()
 
     crickitHat.use {
-        // run the fan
-        val fanMotor = it.motor(1)
-        fanMotor.value = 1.0f
 
         // start all the things that require the CRICKIT
         VeryDumbThermometer.start()
@@ -88,30 +81,32 @@ fun main(args: Array<String>? = null) {
         joinTopic(
             SLEEP_TOPIC,
             KobotsSubscriber<SleepEvent> { event ->
-                NeoKeyBar.brightness = if (event.sleep) 0.01f else .1f
+                keyboard.brightness = if (event.sleep) 0.01f else .1f
             }
         )
-        joinTopic(SequenceExecutor.INTERNAL_TOPIC,
-                  KobotsSubscriber<SequenceExecutor.SequenceCompleted> {
-                      when (it.sequence) {
-                          ROTO_PICKUP -> _menuIndex.set(Menu.RETURN_PICK.ordinal)
-                          ROTO_RETURN -> _menuIndex.set(Menu.ROTO_DROPS.ordinal)
-                          else -> {
-                              // do nothing
-                          }
-                      }
-                  })
+        joinTopic(
+            SequenceExecutor.INTERNAL_TOPIC,
+            KobotsSubscriber<SequenceExecutor.SequenceCompleted> { msg ->
+                when (msg.sequence) {
+                    ROTO_PICKUP -> _menuIndex.set(Menu.RETURN_PICK.ordinal)
+                    ROTO_RETURN -> _menuIndex.set(Menu.ROTO_DROPS.ordinal)
+                    else -> {
+                        // do nothing
+                    }
+                }
+            })
         DieAufseherin.setUpListeners()
 
         // main loop!!!!!
-        while (NeoKeyBar.buttonCheck() && runFlag.get()) {
+        while (runFlag.get()) {
             try {
                 executeWithMinTime(WAIT_LOOP) {
+                    val currentButtons = keyboard.read()
                     // figure out if we're doing anything
                     when {
                         manualMode -> joyRide()
                         gamepad.xButton -> publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-                        currentButtons.any { b -> b } -> buttonPresses()
+                        currentButtons.any { it } -> buttonPresses(currentButtons)
                     }
                 }
             } catch (e: Exception) {
@@ -123,15 +118,14 @@ fun main(args: Array<String>? = null) {
         runFlag.set(false)
         TheArm.stop()
         VeryDumbThermometer.stop()
-        fanMotor.value = 0.0f
     }
     ArmMonitor.stop()
     executor.shutdownNow()
-    NeoKeyBar.close()
+    keyboard.close()
     exitProcess(0)
 }
 
-private fun buttonPresses() {
+private fun buttonPresses(currentButtons: List<Boolean>) {
     when {
         // previous menu item
         currentButtons[0] -> {
@@ -151,13 +145,9 @@ private fun buttonPresses() {
         currentButtons[1] -> currentMenuItem.action()
 
         else -> {
-            // do nothing
+            runFlag.set(false)
         }
     }
-}
-
-val homeSequence = crackers.kobots.parts.sequence {
-    this + homeAction
 }
 
 private val gamepad by lazy { GamepadQT() }

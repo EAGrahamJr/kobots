@@ -17,12 +17,13 @@
 package crackers.kobots.app.arm
 
 import com.diozero.api.ServoTrim
-import crackers.kobots.app.SequenceExecutor
 import crackers.kobots.app.crickitHat
+import crackers.kobots.app.mqtt
+import crackers.kobots.app.runFlag
 import crackers.kobots.devices.at
 import crackers.kobots.execution.*
-import crackers.kobots.parts.ActionBuilder
 import crackers.kobots.parts.ActionSequence
+import crackers.kobots.parts.SequenceExecutor
 import crackers.kobots.parts.ServoLinearActuator
 import crackers.kobots.parts.ServoRotator
 import java.util.concurrent.atomic.AtomicReference
@@ -30,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * V5 iteration of a controlled "arm-like" structure.
  */
-object TheArm : SequenceExecutor() {
+object TheArm : SequenceExecutor(mqttClient = mqtt) {
     const val STATE_TOPIC = "TheArm.State"
     const val REQUEST_TOPIC = "TheArm.Request"
 
@@ -102,16 +103,6 @@ object TheArm : SequenceExecutor() {
         ServoRotator(servo, physicalRange, servoRange)
     }
 
-    /**
-     * Home the arm.
-     */
-    val homeAction = ActionBuilder().apply {
-        waist rotate WAIST_HOME
-        extender goTo EXTENDER_HOME
-        elbow rotate ELBOW_UP
-        gripper goTo GRIPPER_CLOSED
-    }
-
     // manage the state of this construct =============================================================================
     private val _currentState = AtomicReference(ArmState(HOME_POSITION, false))
 
@@ -132,6 +123,8 @@ object TheArm : SequenceExecutor() {
             }
         )
     }
+
+    override fun canRun() = runFlag.get()
 
     override fun stop() {
         super.stop()

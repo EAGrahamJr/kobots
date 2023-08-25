@@ -14,10 +14,10 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app
+package crackers.kobots.parts
 
 import crackers.kobots.execution.*
-import crackers.kobots.parts.ActionSpeed
+import crackers.kobots.mqtt.KobotsMQTT
 import crackers.kobots.utilities.KobotSleep
 import org.json.JSONObject
 import org.tinylog.Logger
@@ -30,7 +30,10 @@ import java.util.concurrent.atomic.AtomicBoolean
  * completion or until the [stop] method is called or if an [EmergencyStop] is received. Only one sequence can be
  * running at a time (see the [moveInProgress] flag).
  */
-abstract class SequenceExecutor {
+abstract class SequenceExecutor(
+    val executorName: String = this::class.java.simpleName,
+    private val mqttClient: KobotsMQTT
+) {
     private fun ActionSpeed.toMillis(): Long {
         return when (this) {
             ActionSpeed.SLOW -> 50
@@ -55,7 +58,7 @@ abstract class SequenceExecutor {
         get() = _stop.get()
         private set(value) = _stop.set(value)
 
-    class SequenceCompleted(val sequence: String) : KobotsEvent
+    class SequenceCompleted(val source: String, val sequence: String) : KobotsEvent
 
     /**
      * Sets the stop flag and blocks until the flag is cleared.
@@ -65,7 +68,7 @@ abstract class SequenceExecutor {
         while (stopImmediately) KobotSleep.millis(5)
     }
 
-    private fun canRun() = runFlag.get() && !stopImmediately
+    protected abstract fun canRun(): Boolean
 
     /**
      * Handles a request. If the request is a sequence, it is executed on a background thread. If the request is an
@@ -95,7 +98,7 @@ abstract class SequenceExecutor {
             preExecution()
             try {
                 request.sequence.build().forEach { action ->
-                    if (!canRun()) return@forEach
+                    if (!canRun() || stopImmediately) return@forEach
                     var running = true
                     while (running) {
                         val maxPause = Duration.ofMillis(action.speed.toMillis())
@@ -116,12 +119,10 @@ abstract class SequenceExecutor {
             _stop.set(false) // clear emergency stop flag
 
             // publish completion event to the masses
-            val payload = JSONObject().apply {
-                put("source", "thearm")
-                put("sequence", request.sequence.name)
-            }.toString()
-            mqtt.publish(MQTT_TOPIC, payload)
-            publishToTopic(INTERNAL_TOPIC, SequenceCompleted(request.sequence.name))
+            val completedMessage = SequenceCompleted(executorName, request.sequence.name)
+            val payload = JSONObject(completedMessage).toString()
+            mqttClient.publish(MQTT_TOPIC, payload)
+            publishToTopic(INTERNAL_TOPIC, completedMessage)
         }
     }
 

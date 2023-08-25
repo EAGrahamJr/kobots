@@ -26,8 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger
  * An "actionable" menu using the NeoKey. Due to the limited number of buttons, the menu is "rotated" between the
  * number of keys available. The [display] will get a subset of `n-1` items, plus a "next" item. The "next" item will
  * rotate the menu to the next subset of items.
+ *
+ * TODO define a way to associate a menu item with "chords" (multiple button presses)
  */
-class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items: List<MenuItem>) {
+open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items: List<MenuItem>) {
     private val logger = LoggerFactory.getLogger("NeoKeyMenu")
 
     // clone immutable list
@@ -50,24 +52,30 @@ class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items: Lis
         fun display(items: List<MenuItem>)
     }
 
+    /**
+     * Describes a menu item.
+     */
     class MenuItem(
         val name: String,
         val abbrev: String? = null,
         val icon: Image? = null,
         val buttonColor: Color = Color.GREEN,
         val action: () -> Unit
-    )
+    ) {
+        override fun toString() = abbrev ?: name
+    }
 
     private val currentMenuItem = AtomicInteger(0)
-    val nextMenuItem = MenuItem("Next", "\u25B7", buttonColor = Color.BLUE) {
+    private val nextMenuItem = MenuItem("Next", "\u25B7", buttonColor = Color.BLUE) {
         currentMenuItem.set(currentMenuItem.incrementAndGet() % items.size)
         displayMenu()
     }
 
     /**
-     * Reads the keyboard and does the things.
+     * Reads the keyboard and does the things. This default implementation will execute the _first_ button pressed.
      */
-    fun execute() {
+    @Synchronized
+    open fun execute() {
         val button = neoKey.read().indexOf(true)
         if (button >= 0) {
             menuItems[currentMenuItem.get() + button].apply {
@@ -80,13 +88,17 @@ class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items: Lis
         }
     }
 
-    private fun displayMenu() {
+    /**
+     * Sets up the sub-selection of menu items and displays them.
+     */
+    @Synchronized
+    fun displayMenu() {
         val fromIndex = currentMenuItem.get()
         val toDisplay = menuItems.subList(fromIndex, fromIndex + maxKeys).toMutableList()
         toDisplay += nextMenuItem
 
         // display the stuff and set the button colors
         display.display(toDisplay)
-        neoKey.setButtonColors(toDisplay.map { it.buttonColor })
+        neoKey.buttonColors = toDisplay.map { it.buttonColor }
     }
 }

@@ -86,15 +86,13 @@ object ArmMonitor {
                 if (lastStateReceived.get()?.busy == true) {
                     showLastStatus()
                     lastMenuItem = null
-                } else {
+                } else if (manualMode) showLastStatus()
+                else {
                     if (currentMenuItem != lastMenuItem) {
                         lastMenuItem = currentMenuItem
                         showMenuItem(lastMenuItem)
                         lastStateReceived.set(null)
                     }
-
-                    // show last recorded status
-                    if (lastMenuItem == Menu.MANUAL) showLastStatus()
                 }
                 if (imageChanged.getAndSet(false)) screen.display(image)
                 KobotSleep.millis(10)
