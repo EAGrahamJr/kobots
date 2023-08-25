@@ -19,7 +19,6 @@ package crackers.kobots.app.io
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.awt.Image
-import java.awt.MenuItem
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -27,13 +26,17 @@ import java.util.concurrent.atomic.AtomicInteger
  * number of keys available. The [display] will get a subset of `n-1` items, plus a "next" item. The "next" item will
  * rotate the menu to the next subset of items.
  *
- * TODO define a way to associate a menu item with "chords" (multiple button presses)
+ * The calling application can use the return map to determine which button was pressed and what action to take,
+ * exeucting more than one if desired. This also allows the application to use the keys to "chord" actions that are
+ * not necessarily menu items.
  */
 open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items: List<MenuItem>) {
     private val logger = LoggerFactory.getLogger("NeoKeyMenu")
 
     // clone immutable list
     private val menuItems = items.toList()
+
+    // take off one for the "next" button
     private val maxKeys = neoKey.numberOfButtons - 1
 
     /**
@@ -66,26 +69,29 @@ open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items
     }
 
     private val currentMenuItem = AtomicInteger(0)
-    private val nextMenuItem = MenuItem("Next", "\u25B7", buttonColor = Color.BLUE) {
-        currentMenuItem.set(currentMenuItem.incrementAndGet() % items.size)
+
+    private val nextMenuItem = MenuItem("Next", abbrev = "\u25B7", buttonColor = Color.BLUE) {
+        rotateMenu(currentMenuItem.get() + maxKeys)
+    }
+
+    private fun rotateMenu(proposed: Int) {
+        var nextIndex = proposed
+        if (nextIndex >= menuItems.size) nextIndex = 0
+        else if (nextIndex + maxKeys >= menuItems.size) nextIndex = menuItems.size - maxKeys
+        currentMenuItem.set(nextIndex)
         displayMenu()
     }
 
     /**
-     * Reads the keyboard and does the things. This default implementation will execute the _first_ button pressed.
+     * Reads the keyboard and maps buttons pressed to actions to be performed.
      */
     @Synchronized
-    open fun execute() {
-        val button = neoKey.read().indexOf(true)
-        if (button >= 0) {
-            menuItems[currentMenuItem.get() + button].apply {
-                try {
-                    action()
-                } catch (t: Throwable) {
-                    logger.error("Error executing menu item $name", t)
-                }
-            }
-        }
+    open fun execute(): List<Pair<Int, MenuItem>> {
+        val keys = neoKey.read()
+        val result = mutableListOf<Pair<Int, MenuItem>>()
+        for (i in 0..maxKeys - 1) if (keys[i]) result += i to menuItems[currentMenuItem.get() + i]
+        if (keys[3]) result += 3 to nextMenuItem
+        return result
     }
 
     /**

@@ -19,6 +19,7 @@ package crackers.kobots.app
 import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim
 import com.diozero.devices.ServoController
+import crackers.kobots.REMOTE_PI
 import crackers.kobots.devices.at
 import crackers.kobots.mqtt.KobotsMQTT
 import crackers.kobots.parts.ServoRotator
@@ -43,7 +44,6 @@ val stopList = listOf(0, 58, 115, 184, 254, 312)
 lateinit var flagServo: ServoDevice
 val nagger by lazy { ServoRotator(flagServo, (0..180), (0..180)) }
 
-const val REMOTE_PI = "diozero.remote.hostname"
 const val RQST_TOPIC = "kobots/rotoMatic"
 const val EVENT_TOPIC = "kobots/events"
 var stopIndex = 0

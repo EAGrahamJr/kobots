@@ -20,15 +20,17 @@ import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
 import crackers.kobots.app.*
+import crackers.kobots.app.io.NeoKeyMenu
 import crackers.kobots.execution.KobotsSubscriber
+import crackers.kobots.execution.executeWithMinTime
 import crackers.kobots.execution.joinTopic
-import crackers.kobots.utilities.KobotSleep
 import crackers.kobots.utilities.center
 import java.awt.Color
 import java.awt.Font
 import java.awt.FontMetrics
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
+import java.time.Duration
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
@@ -36,7 +38,8 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * Shows where the arm is on a timed basis.
  */
-object ArmMonitor {
+object ArmMonitor : NeoKeyMenu.MenuDisplay {
+    private lateinit var lastMenu: List<NeoKeyMenu.MenuItem>
     private const val MAX_WD = 128
     private const val MAX_HT = 32
     private const val HALF_HT = MAX_HT / 2
@@ -79,45 +82,22 @@ object ArmMonitor {
         joinTopic(SLEEP_TOPIC, KobotsSubscriber { event -> if (event is SleepEvent) screen.setDisplayOn(!event.sleep) })
 
         future = executor.submit {
-            var lastMenuItem: Menu? = null
-
             while (runFlag.get()) {
-                // if the arm is busy, show its status
-                if (lastStateReceived.get()?.busy == true) {
-                    showLastStatus()
-                    lastMenuItem = null
-                } else if (manualMode) showLastStatus()
-                else {
-                    if (currentMenuItem != lastMenuItem) {
-                        lastMenuItem = currentMenuItem
-                        showMenuItem(lastMenuItem)
-                        lastStateReceived.set(null)
+                executeWithMinTime(Duration.ofMillis(10)) {
+                    // if the arm is busy, show its status
+                    val lastState = lastStateReceived.get()
+                    val showStatus = lastState != null && lastState.busy || manualMode
+                    if (showStatus) showLastStatus()
+                    else {
+                        if (lastState != null) {
+                            lastStateReceived.set(null)
+                            display(lastMenu.toList())
+                        }
                     }
+                    if (imageChanged.getAndSet(false)) screen.display(image)
                 }
-                if (imageChanged.getAndSet(false)) screen.display(image)
-                KobotSleep.millis(10)
             }
         }
-    }
-
-    private val menuIcons = listOf("\u25C1", "\u25A1", "\u25B7", "\u2718")
-    private val menuColors = listOf(Color.BLUE, Color.GREEN, Color.CYAN, Color.RED)
-    private fun showMenuItem(menuItem: Menu) = with(screenGraphics) {
-        clearImage()
-        color = Color.WHITE
-        font = monitorFont
-        val text = menuItem.label
-        var x = monitorMetrics.center(text, MAX_WD)
-        drawString(text, x, monitorLineHeight)
-
-        font = monitorFont.deriveFont(16)
-        menuIcons.forEachIndexed { index, item ->
-            color = menuColors[index]
-            x = monitorMetrics.center(item, COL_WD - 1)
-            drawString(item, (COL_WD * index) + x, MAX_HT - 1)
-        }
-
-        imageChanged.set(true)
     }
 
     private fun Graphics2D.clearImage() {
@@ -157,5 +137,28 @@ object ArmMonitor {
     fun stop() {
         future.get()
         screen.close()
+    }
+
+    override fun display(items: List<NeoKeyMenu.MenuItem>) = with(screenGraphics) {
+        lastMenu = items
+        clearImage()
+        color = Color.WHITE
+        font = monitorFont
+
+        drawString(items[0].toString(), 0, monitorLineHeight)
+        color = Color.BLACK
+        fillRect(MAX_WD / 2, 0, MAX_WD, monitorLineHeight)
+        color = Color.WHITE
+        drawString("  " + items[1].toString(), (MAX_WD / 2) - 3, monitorLineHeight)
+
+        drawString(items[2].toString(), 0, MAX_HT)
+        color = Color.BLACK
+        fillRect(MAX_WD / 2, HALF_HT, MAX_WD, MAX_HT)
+        color = Color.WHITE
+        val s = "  ${items[3]}  "
+        val xn = MAX_WD - monitorMetrics.stringWidth(s)
+        drawString(s, xn, MAX_HT)
+
+        imageChanged.set(true)
     }
 }

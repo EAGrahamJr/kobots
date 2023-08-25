@@ -16,6 +16,7 @@
 
 package crackers.kobots.app
 
+import crackers.kobots.REMOTE_PI
 import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.enviro.DieAufseherin
@@ -23,40 +24,42 @@ import crackers.kobots.app.enviro.DieAufseherin.DA_TOPIC
 import crackers.kobots.app.enviro.DieAufseherin.dropOffRequested
 import crackers.kobots.app.enviro.DieAufseherin.returnRequested
 import crackers.kobots.app.enviro.VeryDumbThermometer
-import crackers.kobots.app.execution.*
+import crackers.kobots.app.execution.excuseMe
+import crackers.kobots.app.execution.homeSequence
+import crackers.kobots.app.execution.sayHi
 import crackers.kobots.app.io.NeoKeyHandler
+import crackers.kobots.app.io.NeoKeyMenu
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.execution.*
 import crackers.kobots.parts.SequenceExecutor
+import crackers.kobots.utilities.GOLDENROD
+import crackers.kobots.utilities.PURPLE
 import org.slf4j.LoggerFactory
 import org.tinylog.Logger
+import java.awt.Color
 import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.exitProcess
 import crackers.kobots.app.arm.TheArm.request as armRequest
-
-private val _menuIndex = AtomicInteger(0)
-val currentMenuItem: Menu
-    get() = Menu.values()[_menuIndex.get()]
 
 private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
 
-enum class Menu(val label: String, val action: () -> Unit) {
-    HOME("Home", { armRequest(homeSequence) }),
-    SAY_HI("Say Hi", { armRequest(sayHi) }),
-    EXCUSE_ME("Excuse Me", { armRequest(excuseMe) }),
-    MANUAL("Manual", { _manualMode.set(true) }),
-    ROTO_NEXT("Roto Next", { mqtt.publish("kobots/rotoMatic", "next") }),
-    ROTO_PREV("Roto Previous", { mqtt.publish("kobots/rotoMatic", "prev") }),
-    ROTO_DROPS("Select Drops", { publishToTopic(DA_TOPIC, dropOffRequested) }),
-    RETURN_PICK("Return last pick", { publishToTopic(DA_TOPIC, returnRequested) })
-}
+
+private val gripperMenu = listOf(
+    NeoKeyMenu.MenuItem("Home") { armRequest(homeSequence) },
+    NeoKeyMenu.MenuItem("Say Hi", buttonColor = Color.BLUE) { armRequest(sayHi) },
+    NeoKeyMenu.MenuItem("Excuse Me", buttonColor = PURPLE) { armRequest(excuseMe) },
+    NeoKeyMenu.MenuItem("Manual", buttonColor = Color.ORANGE) { _manualMode.set(true) },
+//    NeoKeyMenu.MenuItem("Roto Next") { mqtt.publish("kobots/RotoMatic", "next") },
+//    NeoKeyMenu.MenuItem("Roto Previous") { mqtt.publish("kobots/RotoMatic", "prev") },
+    NeoKeyMenu.MenuItem("Select Drops", buttonColor = Color.CYAN) { publishToTopic(DA_TOPIC, dropOffRequested) },
+    NeoKeyMenu.MenuItem("Return last pick", buttonColor = GOLDENROD) { publishToTopic(DA_TOPIC, returnRequested) },
+    NeoKeyMenu.MenuItem("Exit", buttonColor = Color.RED) { runFlag.set(false) }
+)
 
 private val WAIT_LOOP = Duration.ofMillis(50)
-const val REMOTE_PI = "diozero.remote.hostname"
 private val logger = LoggerFactory.getLogger("BRAINZ")
 
 /**
@@ -70,6 +73,7 @@ fun main(args: Array<String>? = null) {
     // these do not require the CRICKIT
     ArmMonitor.start()
     val keyboard = NeoKeyHandler()
+    val neoMenu = NeoKeyMenu(keyboard, ArmMonitor, gripperMenu)
 
     crickitHat.use {
 
@@ -88,25 +92,32 @@ fun main(args: Array<String>? = null) {
             SequenceExecutor.INTERNAL_TOPIC,
             KobotsSubscriber<SequenceExecutor.SequenceCompleted> { msg ->
                 when (msg.sequence) {
-                    ROTO_PICKUP -> _menuIndex.set(Menu.RETURN_PICK.ordinal)
-                    ROTO_RETURN -> _menuIndex.set(Menu.ROTO_DROPS.ordinal)
+//                    ROTO_PICKUP -> _menuIndex.set(Menu.RETURN_PICK.ordinal)
+//                    ROTO_RETURN -> _menuIndex.set(Menu.ROTO_DROPS.ordinal)
                     else -> {
                         // do nothing
                     }
                 }
             })
         DieAufseherin.setUpListeners()
+        neoMenu.displayMenu()
 
         // main loop!!!!!
         while (runFlag.get()) {
             try {
                 executeWithMinTime(WAIT_LOOP) {
-                    val currentButtons = keyboard.read()
+                    val keys = neoMenu.execute()
                     // figure out if we're doing anything
                     when {
                         manualMode -> joyRide()
                         gamepad.xButton -> publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-                        currentButtons.any { it } -> buttonPresses(currentButtons)
+                        keys.isNotEmpty() -> {
+                            keys.first().second.action()
+                        }
+
+                        else -> {
+                            // do nothing
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -125,35 +136,15 @@ fun main(args: Array<String>? = null) {
     exitProcess(0)
 }
 
-private fun buttonPresses(currentButtons: List<Boolean>) {
-    when {
-        // previous menu item
-        currentButtons[0] -> {
-            val next = _menuIndex.decrementAndGet().let {
-                if (it < 0) Menu.values().size - 1 else it
-            }
-            _menuIndex.set(next)
-        }
-
-        // next menu item
-        currentButtons[2] -> {
-            val next = _menuIndex.incrementAndGet() % Menu.values().size
-            _menuIndex.set(next)
-        }
-
-        // do the thing
-        currentButtons[1] -> currentMenuItem.action()
-
-        else -> {
-            runFlag.set(false)
-        }
-    }
-}
-
 private val gamepad by lazy { GamepadQT() }
 private var gpZeroX: Float = 0f
 private var gpZeroY: Float = 0f
 
+/**
+ * Run a thing with the Gamepad
+ *
+ * TODO enable sending "remote" commands via MQTT - aka a selectable target with moving things
+ */
 private fun joyRide() {
     // do not let this interrupt anything else
     with(TheArm) {

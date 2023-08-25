@@ -84,7 +84,7 @@ object TheArm : SequenceExecutor(mqttClient = mqtt) {
 
     val elbow by lazy {
         val servo2 = crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
-            this at 0f
+            this at 0
         }
         val physicalRange = IntRange(ELBOW_DOWN, ELBOW_UP)
         val servoRange = IntRange(180, 0)
@@ -98,7 +98,7 @@ object TheArm : SequenceExecutor(mqttClient = mqtt) {
         val servoRange = IntRange(_HOME, _MAX)
         val physicalRange = IntRange(0, 128) // gear ratio 1.4:1
         val servo = crickitHat.servo(4, ServoTrim.TOWERPRO_SG90).apply {
-            this at _HOME.toFloat()
+            this at _HOME
         }
         ServoRotator(servo, physicalRange, servoRange)
     }
