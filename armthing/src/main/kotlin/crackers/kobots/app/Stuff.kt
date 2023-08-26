@@ -70,10 +70,19 @@ internal val mqtt = KobotsMQTT("TheArm", "tcp://192.168.1.4:1883").apply {
     startAliveCheck()
 }
 
+const val SERVO_TOPIC = "kobots/servoMatic"
+
 internal fun rotoSelect(target: Int) {
-    mqtt.publish("kobots/rotoMatic", target.toString())
+    mqtt.publish(
+        SERVO_TOPIC,
+        when (target) {
+            0 -> "left"
+            2 -> "right"
+            else -> "center"
+        }
+    )
 }
 
 internal fun rotoKill() {
-    mqtt.publish("kobots/rotoMatic", "stop")
+    mqtt.publish(SERVO_TOPIC, "stop")
 }

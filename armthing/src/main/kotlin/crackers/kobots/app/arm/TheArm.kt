@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * V5 iteration of a controlled "arm-like" structure.
  */
-object TheArm : SequenceExecutor(mqttClient = mqtt) {
+object TheArm : SequenceExecutor("TheArm", mqtt) {
     const val STATE_TOPIC = "TheArm.State"
     const val REQUEST_TOPIC = "TheArm.Request"
 

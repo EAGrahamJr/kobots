@@ -19,13 +19,16 @@ package crackers.kobots.app.enviro
 import crackers.kobots.app.*
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.PickUpAndMoveStuff
+import crackers.kobots.app.execution.ROTO_RETURN
 import crackers.kobots.app.execution.goToSleep
+import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.execution.KobotsEvent
 import crackers.kobots.execution.KobotsSubscriber
 import crackers.kobots.execution.joinTopic
 import crackers.kobots.execution.publishToTopic
 import crackers.kobots.parts.ActionSequence
-import crackers.kobots.utilities.KobotSleep
+import crackers.kobots.parts.SequenceExecutor
+import crackers.kobots.parts.SequenceExecutor.Companion.INTERNAL_TOPIC
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
@@ -52,26 +55,37 @@ object DieAufseherin {
     }
 
     private fun localStuff() {
-        joinTopic(
-            DA_TOPIC,
-            KobotsSubscriber<DasOverseerEvent> {
-                logger.info("Got a DA event: $it")
-                if (it.rtos && returnRequest != null) {
-                    TheArm.request(returnRequest!!)
-                    returnRequest = null
-                } else if (it.dropOff) {
-                    returnRequest = PickUpAndMoveStuff.returnDropsToStorage
-                    TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
-                }
-            }
+        joinTopic(DA_TOPIC,
+                  KobotsSubscriber<DasOverseerEvent> {
+                      logger.info("Got a DA event: $it")
+                      if (it.rtos && returnRequest != null) {
+                          TheArm.request(returnRequest!!)
+                          returnRequest = null
+                      } else if (it.dropOff) {
+                          returnRequest = PickUpAndMoveStuff.returnDropsToStorage
+                          TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
+                      }
+                  }
         )
+        joinTopic(INTERNAL_TOPIC,
+                  KobotsSubscriber<SequenceExecutor.SequenceCompleted> { msg ->
+                      logger.info("Sequence completed: $msg")
+                      when (msg.sequence) {
+//                    ROTO_PICKUP -> _menuIndex.set(Menu.RETURN_PICK.ordinal)
+                          ROTO_RETURN -> mqtt.publish(SERVO_TOPIC, "down")
+                          else -> {
+                              // do nothing
+                          }
+                      }
+                  })
+
     }
 
     private fun homeAssistantStuff() {
         haSub("homebody/bedroom/casey") { payload ->
             if (payload.has("lamp")) {
                 if (LocalTime.now().hour == 22) {
-                    publishToTopic(DA_TOPIC, dropOffRequested)
+                    mqtt.publish(SERVO_TOPIC, "up")
                 }
             }
         }
@@ -91,7 +105,7 @@ object DieAufseherin {
         haSub("kobots/events") { payload ->
             if (payload.has("source")) {
                 when (payload.getString("source")) {
-                    "rotomatic" -> handleRotomatc(payload)
+                    "servomatic" -> handleRotomatc(payload)
                     "proximity" -> if (runFlag.get()) {
                         logger.error("Proximity sensor triggered")
 //                        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
@@ -107,29 +121,10 @@ object DieAufseherin {
      * What to do when the Rotomatic is selected.
      */
     private fun handleRotomatc(payload: JSONObject) {
-        val rotoSelected = payload.getInt("selected")
-        when {
-            rotoSelected == 0 -> {
-                returnRequest = PickUpAndMoveStuff.returnDropsToStorage
-                executor.submit {
-                    while (returnRequest != null) {
-                        KobotSleep.seconds(20)
-                        mqtt.publish("kobots/rotoMatic", "nag")
-                    }
-                }
-                PickUpAndMoveStuff.moveEyeDropsToDropZone
-            }
-
-            rotoSelected < 5 -> {
-                returnRequest = PickUpAndMoveStuff.thinItemReturn
-                PickUpAndMoveStuff.moveThinItemToTarget
-            }
-
-            else -> {
-                logger.error("Unknown Rotomatic selection: $rotoSelected")
-                null
-            }
-        }?.let { TheArm.request(it) }
+        if (payload.optBoolean("liftIsUp", false)) LocalTime.now().hour.also { h ->
+            publishToTopic(DA_TOPIC, dropOffRequested)
+        }
+        else TheArm.request(homeSequence)
     }
 
     private fun haSub(s: String, handler: (JSONObject) -> Unit) {

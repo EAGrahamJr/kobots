@@ -31,7 +31,6 @@ import crackers.kobots.app.io.NeoKeyHandler
 import crackers.kobots.app.io.NeoKeyMenu
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.execution.*
-import crackers.kobots.parts.SequenceExecutor
 import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.PURPLE
 import org.slf4j.LoggerFactory
@@ -54,9 +53,13 @@ private val gripperMenu = listOf(
     NeoKeyMenu.MenuItem("Manual", buttonColor = Color.ORANGE) { _manualMode.set(true) },
 //    NeoKeyMenu.MenuItem("Roto Next") { mqtt.publish("kobots/RotoMatic", "next") },
 //    NeoKeyMenu.MenuItem("Roto Previous") { mqtt.publish("kobots/RotoMatic", "prev") },
+    NeoKeyMenu.MenuItem("Lift It", buttonColor = Color.GREEN) { mqtt.publish(SERVO_TOPIC, "up") },
     NeoKeyMenu.MenuItem("Select Drops", buttonColor = Color.CYAN) { publishToTopic(DA_TOPIC, dropOffRequested) },
     NeoKeyMenu.MenuItem("Return last pick", buttonColor = GOLDENROD) { publishToTopic(DA_TOPIC, returnRequested) },
-    NeoKeyMenu.MenuItem("Exit", buttonColor = Color.RED) { runFlag.set(false) }
+    NeoKeyMenu.MenuItem("Exit", buttonColor = Color.RED) {
+        rotoKill()
+        runFlag.set(false)
+    }
 )
 
 private val WAIT_LOOP = Duration.ofMillis(50)
@@ -88,17 +91,7 @@ fun main(args: Array<String>? = null) {
                 keyboard.brightness = if (event.sleep) 0.01f else .1f
             }
         )
-        joinTopic(
-            SequenceExecutor.INTERNAL_TOPIC,
-            KobotsSubscriber<SequenceExecutor.SequenceCompleted> { msg ->
-                when (msg.sequence) {
-//                    ROTO_PICKUP -> _menuIndex.set(Menu.RETURN_PICK.ordinal)
-//                    ROTO_RETURN -> _menuIndex.set(Menu.ROTO_DROPS.ordinal)
-                    else -> {
-                        // do nothing
-                    }
-                }
-            })
+
         DieAufseherin.setUpListeners()
         neoMenu.displayMenu()
 

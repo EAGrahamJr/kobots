@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * running at a time (see the [moveInProgress] flag).
  */
 abstract class SequenceExecutor(
-    val executorName: String = this::class.java.simpleName,
+    val executorName: String,
     private val mqttClient: KobotsMQTT
 ) {
     private fun ActionSpeed.toMillis(): Long {

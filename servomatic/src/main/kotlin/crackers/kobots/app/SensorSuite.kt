@@ -73,7 +73,7 @@ object SensorSuite : AutoCloseable {
                 val reading = proximitySensor.proximity.toInt()
                 proximity = reading
                 if (tooClose) {
-                    logger.error("Proximity sensor triggered")
+//                    logger.error("Proximity sensor triggered")
                     val trigger = ProximityTrigger(reading = reading)
                     publishToTopic(PROXIMITY_TOPIC, trigger)
                     mqttClient.publish(EVENT_TOPIC, JSONObject(trigger).toString())
