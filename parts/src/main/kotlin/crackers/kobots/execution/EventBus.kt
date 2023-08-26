@@ -67,9 +67,10 @@ private class KobotsSubscriberDecorator<T : KobotsMessage>(val listener: KobotsS
     }
 }
 
-// TODO type safety is a problem here
 /**
  * Get items (default 1 at a time) asynchronously.
+ *
+ * TODO type safety is a problem here?
  */
 @Suppress("UNCHECKED_CAST")
 fun <T : KobotsMessage> joinTopic(topic: String, listener: KobotsSubscriber<T>, batchSize: Long = 1) {
@@ -95,6 +96,8 @@ fun <T : KobotsMessage> publishToTopic(topic: String, vararg items: T) {
 
 /**
  * Publish a collection of [items] to a [topic]
+ *
+ * TODO type safety is a problem here?
  */
 @Suppress("UNCHECKED_CAST")
 fun <T : KobotsMessage> publishToTopic(topic: String, items: Collection<T>) {

@@ -16,6 +16,10 @@
 
 package crackers.kobots
 
+import crackers.kobots.utilities.center
+import java.awt.Color
+import java.awt.Graphics2D
+
 /*
  * Copyright 2022-2023 by E. A. Graham, Jr.
  *
@@ -36,3 +40,40 @@ package crackers.kobots
  * TODO can't believe I'm doing this...
  */
 const val REMOTE_PI = "diozero.remote.hostname"
+
+interface ColumnDisplay {
+    fun Graphics2D.clearImage()
+    fun Graphics2D.displayStatuses(status: Map<String, Number>)
+}
+
+class DelgatedColumnDisplay(private val widthOfDisplay: Int, private val heightOfDisplay: Int) : ColumnDisplay {
+    override fun Graphics2D.clearImage() {
+        color = Color.BLACK
+        fillRect(0, 0, widthOfDisplay, heightOfDisplay)
+    }
+
+    override fun Graphics2D.displayStatuses(mapped: Map<String, Number>) {
+        val colHeaders = mapped.keys
+        val columnWidth = (widthOfDisplay / colHeaders.size)
+        val halfHeightOfDisplay = heightOfDisplay / 2
+
+        clearImage()
+        colHeaders.forEachIndexed { i, header ->
+            val colPosition = i * columnWidth
+            val drawWidth = columnWidth - 1
+
+            // position headers
+            color = Color.GRAY
+            fillRect(colPosition, 0, drawWidth, halfHeightOfDisplay)
+            color = Color.BLACK
+            val headerX = colPosition + fontMetrics.center(header, drawWidth)
+            drawString(header, headerX, fontMetrics.ascent)
+
+            // position values
+            color = Color.WHITE
+            val value = mapped[header].toString()
+            val valueX = colPosition + fontMetrics.center(value, drawWidth)
+            drawString(value, valueX, heightOfDisplay - 1)
+        }
+    }
+}
