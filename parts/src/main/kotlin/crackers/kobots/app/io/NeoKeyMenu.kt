@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * rotate the menu to the next subset of items.
  *
  * The calling application can use the return map to determine which button was pressed and what action to take,
- * exeucting more than one if desired. This also allows the application to use the keys to "chord" actions that are
+ * executing more than one if desired. This also allows the application to use the keys to "chord" actions that are
  * not necessarily menu items.
  */
 open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items: List<MenuItem>) {
@@ -40,23 +40,19 @@ open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items
     private val maxKeys = neoKey.numberOfButtons - 1
 
     /**
+     * Displays menu items.
+     */
+    interface MenuDisplay {
+        fun displayItems(items: List<MenuItem>)
+    }
+
+    /**
      * Describes a menu item.
      * @param name the name of the menu item
      * @param abbrev an optional abbreviation for the menu item
      * @param icon an optional icon for the menu item
      * @param buttonColor the color to use for the button (default GREEN)
      * @param action the action to take when the button is pressed
-     */
-
-    /**
-     * Displays menu items.
-     */
-    interface MenuDisplay {
-        fun display(items: List<MenuItem>)
-    }
-
-    /**
-     * Describes a menu item.
      */
     class MenuItem(
         val name: String,
@@ -89,7 +85,7 @@ open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items
     open fun execute(): List<Pair<Int, MenuItem>> {
         val keys = neoKey.read()
         val result = mutableListOf<Pair<Int, MenuItem>>()
-        for (i in 0..maxKeys - 1) if (keys[i]) result += i to menuItems[currentMenuItem.get() + i]
+        for (i in 0..<maxKeys) if (keys[i]) result += i to menuItems[currentMenuItem.get() + i]
         if (keys[3]) result += 3 to nextMenuItem
         return result
     }
@@ -104,7 +100,7 @@ open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items
         toDisplay += nextMenuItem
 
         // display the stuff and set the button colors
-        display.display(toDisplay)
+        display.displayItems(toDisplay)
         neoKey.buttonColors = toDisplay.map { it.buttonColor }
     }
 }

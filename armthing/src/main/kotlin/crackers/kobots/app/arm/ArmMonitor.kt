@@ -85,7 +85,7 @@ object ArmMonitor : NeoKeyMenu.MenuDisplay, ColumnDisplay by DelgatedColumnDispl
                     else {
                         if (lastState != null) {
                             lastStateReceived.set(null)
-                            display(lastMenu.toList())
+                            displayItems(lastMenu.toList())
                         }
                     }
                     if (imageChanged.getAndSet(false)) screen.display(image)
@@ -114,7 +114,7 @@ object ArmMonitor : NeoKeyMenu.MenuDisplay, ColumnDisplay by DelgatedColumnDispl
         screen.close()
     }
 
-    override fun display(items: List<NeoKeyMenu.MenuItem>) = with(screenGraphics) {
+    override fun displayItems(items: List<NeoKeyMenu.MenuItem>) = with(screenGraphics) {
         lastMenu = items
         clearImage()
         color = Color.WHITE
