@@ -18,6 +18,7 @@ package crackers.kobots
 
 import crackers.kobots.utilities.center
 import java.awt.Color
+import java.awt.Font
 import java.awt.Graphics2D
 
 /*
@@ -56,6 +57,8 @@ class DelgatedColumnDisplay(private val widthOfDisplay: Int, private val heightO
         val colHeaders = mapped.keys
         val columnWidth = (widthOfDisplay / colHeaders.size)
         val halfHeightOfDisplay = heightOfDisplay / 2
+        val ogFont = font
+        val headerFont = font.deriveFont(Font.BOLD)
 
         clearImage()
         colHeaders.forEachIndexed { i, header ->
@@ -66,11 +69,13 @@ class DelgatedColumnDisplay(private val widthOfDisplay: Int, private val heightO
             color = Color.GRAY
             fillRect(colPosition, 0, drawWidth, halfHeightOfDisplay)
             color = Color.BLACK
+            font = headerFont
             val headerX = colPosition + fontMetrics.center(header, drawWidth)
             drawString(header, headerX, fontMetrics.ascent)
 
             // position values
             color = Color.WHITE
+            font = ogFont
             val value = mapped[header].toString()
             val valueX = colPosition + fontMetrics.center(value, drawWidth)
             drawString(value, valueX, heightOfDisplay - 1)
