@@ -58,7 +58,7 @@ abstract class SequenceExecutor(
         get() = _stop.get()
         private set(value) = _stop.set(value)
 
-    class SequenceCompleted(val source: String, val sequence: String) : KobotsEvent
+    data class SequenceCompleted(val source: String, val sequence: String) : KobotsEvent
 
     /**
      * Sets the stop flag and blocks until the flag is cleared.

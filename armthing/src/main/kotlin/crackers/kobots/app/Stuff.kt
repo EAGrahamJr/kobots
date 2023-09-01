@@ -18,6 +18,7 @@ package crackers.kobots.app
 
 import com.typesafe.config.ConfigFactory
 import crackers.hassk.HAssKClient
+import crackers.kobots.ServoMaticCommand
 import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.execution.executeWithMinTime
 import crackers.kobots.mqtt.KobotsMQTT
@@ -66,23 +67,15 @@ internal fun JSONObject.onOff(key: String): Boolean = this.optString(key, "off")
 /**
  * Wrapper for the MQTT client and start alive-check
  */
-internal val mqtt = KobotsMQTT("TheArm", "tcp://192.168.1.4:1883").apply {
+internal val mqtt = KobotsMQTT("brainz", "tcp://192.168.1.4:1883").apply {
     startAliveCheck()
 }
 
 const val SERVO_TOPIC = "kobots/servoMatic"
 
-internal fun rotoSelect(target: Int) {
-    mqtt.publish(
-        SERVO_TOPIC,
-        when (target) {
-            0 -> "left"
-            2 -> "right"
-            else -> "center"
-        }
-    )
-}
-
-internal fun rotoKill() {
-    mqtt.publish(SERVO_TOPIC, "stop")
+/**
+ * Send a servo command to the servoMatic topic
+ */
+internal fun ServoMaticCommand.send() {
+    mqtt.publish(SERVO_TOPIC, name)
 }

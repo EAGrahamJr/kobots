@@ -19,8 +19,8 @@ package crackers.kobots.app.arm
 import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
-import crackers.kobots.ColumnDisplay
-import crackers.kobots.DelgatedColumnDisplay
+import crackers.kobots.StatusColumnDelegate
+import crackers.kobots.StatusColumnDisplay
 import crackers.kobots.app.*
 import crackers.kobots.app.io.NeoKeyMenu
 import crackers.kobots.execution.KobotsSubscriber
@@ -42,7 +42,7 @@ private const val MAX_HT = 32
 /**
  * Shows where the arm is on a timed basis.
  */
-object ArmMonitor : NeoKeyMenu.MenuDisplay, ColumnDisplay by DelgatedColumnDisplay(MAX_WD, MAX_HT) {
+object ArmMonitor : NeoKeyMenu.MenuDisplay, StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) {
     private lateinit var lastMenu: List<NeoKeyMenu.MenuItem>
     private const val HALF_HT = MAX_HT / 2
 

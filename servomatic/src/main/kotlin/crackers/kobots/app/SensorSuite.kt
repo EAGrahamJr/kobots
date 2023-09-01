@@ -59,8 +59,10 @@ object SensorSuite : AutoCloseable {
     val tooClose: Boolean
         get() = proximity > CLOSE_ENOUGH
 
+    var disabled = false
+
     data class ProximityTrigger(val source: String = "proximity", val reading: Int) : KobotsEvent
-    class LumensData(val source: String = "proximity", val lumens: Int) : KobotsEvent
+    class LumensData(val source: String = "lumens", val lumens: Int) : KobotsEvent
 
     //    private val ohCrap = ProximityTrigger()
     private var previousLumenus: Int = 0
@@ -68,15 +70,21 @@ object SensorSuite : AutoCloseable {
     private val executor by lazy { Executors.newSingleThreadExecutor() }
 
     fun start() {
+        var wasTooClose = false
         future = executor.submit {
             while (doneLatch.count > 0) {
                 val reading = proximitySensor.proximity.toInt()
                 proximity = reading
                 if (tooClose) {
-//                    logger.error("Proximity sensor triggered")
-                    val trigger = ProximityTrigger(reading = reading)
-                    publishToTopic(PROXIMITY_TOPIC, trigger)
-                    mqttClient.publish(EVENT_TOPIC, JSONObject(trigger).toString())
+                    if (!disabled && !wasTooClose) {
+                        wasTooClose = true
+//                        logger.error("Proximity sensor triggered")
+                        val trigger = ProximityTrigger(reading = reading)
+                        publishToTopic(PROXIMITY_TOPIC, trigger)
+                        mqttClient.publish(EVENT_TOPIC, JSONObject(trigger).toString())
+                    }
+                } else {
+                    wasTooClose = false
                 }
                 lumens.also { lumens ->
                     if (abs(lumens - previousLumenus) > 2) {
@@ -105,7 +113,7 @@ object SensorSuite : AutoCloseable {
     }
 
     override fun close() {
-        if (!SensorSuite::future.isInitialized) return
+        if (!::future.isInitialized) return
         executor.shutdownNow()
         proximitySensor.close()
     }

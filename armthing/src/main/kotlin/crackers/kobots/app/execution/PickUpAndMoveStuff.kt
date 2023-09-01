@@ -99,7 +99,7 @@ class MoveStuffAround(
     // assumes something is in the gripper
     private val returnToPickupLocation = sequence {
         action { waist rotate WAIST_HOME }
-        action { elbow rotate elbowForPickupTarget + 5 }
+        action { elbow rotate elbowForPickupTarget + 10 }
         action { extender goTo extenderToPickupTarget }
         action { elbow rotate elbowForPickupTarget }
         action { gripper goTo GRIPPER_OPEN }

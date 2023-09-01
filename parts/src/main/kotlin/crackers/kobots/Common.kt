@@ -42,19 +42,31 @@ import java.awt.Graphics2D
  */
 const val REMOTE_PI = "diozero.remote.hostname"
 
-interface ColumnDisplay {
-    fun Graphics2D.clearImage()
-    fun Graphics2D.displayStatuses(status: Map<String, Number>)
+enum class ServoMaticCommand {
+    STOP, UP, DOWN, LEFT, RIGHT, CENTER, SLEEP, WAKEY
 }
 
-class DelgatedColumnDisplay(private val widthOfDisplay: Int, private val heightOfDisplay: Int) : ColumnDisplay {
+/**
+ * Display numeric status values in columns. This is primarily intended for use with a small OLED display (e.g. 128x32).
+ * The notion is that only the graphics portion of an image is updated with the data and actual display is handled
+ * elsewhere.
+ */
+interface StatusColumnDisplay {
+    fun Graphics2D.clearImage()
+    fun Graphics2D.displayStatuses(status: Map<String, Any>)
+}
+
+/**
+ * Default implementation of [StatusColumnDisplay].
+ */
+class StatusColumnDelegate(private val widthOfDisplay: Int, private val heightOfDisplay: Int) : StatusColumnDisplay {
     override fun Graphics2D.clearImage() {
         color = Color.BLACK
         fillRect(0, 0, widthOfDisplay, heightOfDisplay)
     }
 
-    override fun Graphics2D.displayStatuses(mapped: Map<String, Number>) {
-        val colHeaders = mapped.keys
+    override fun Graphics2D.displayStatuses(status: Map<String, Any>) {
+        val colHeaders = status.keys
         val columnWidth = (widthOfDisplay / colHeaders.size)
         val halfHeightOfDisplay = heightOfDisplay / 2
         val ogFont = font
@@ -76,7 +88,7 @@ class DelgatedColumnDisplay(private val widthOfDisplay: Int, private val heightO
             // position values
             color = Color.WHITE
             font = ogFont
-            val value = mapped[header].toString()
+            val value = status[header].toString()
             val valueX = colPosition + fontMetrics.center(value, drawWidth)
             drawString(value, valueX, heightOfDisplay - 1)
         }

@@ -19,8 +19,8 @@ package crackers.kobots.app
 import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel
-import crackers.kobots.ColumnDisplay
-import crackers.kobots.DelgatedColumnDisplay
+import crackers.kobots.StatusColumnDelegate
+import crackers.kobots.StatusColumnDisplay
 import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
@@ -28,7 +28,7 @@ import java.awt.image.BufferedImage
 /**
  * Shows where everything is
  */
-object ServoDisplay : ColumnDisplay by DelgatedColumnDisplay(128, 32) {
+object ServoDisplay : StatusColumnDisplay by StatusColumnDelegate(128, 32) {
     private val screen by lazy {
         val i2CDevice = I2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
         SSD1306(SsdOledCommunicationChannel.I2cCommunicationChannel(i2CDevice), SSD1306.Height.SHORT)

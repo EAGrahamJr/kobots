@@ -17,6 +17,7 @@
 package crackers.kobots.app
 
 import crackers.kobots.REMOTE_PI
+import crackers.kobots.ServoMaticCommand
 import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.enviro.DieAufseherin
@@ -51,15 +52,10 @@ private val gripperMenu = listOf(
     NeoKeyMenu.MenuItem("Say Hi", buttonColor = Color.BLUE) { armRequest(sayHi) },
     NeoKeyMenu.MenuItem("Excuse Me", buttonColor = PURPLE) { armRequest(excuseMe) },
     NeoKeyMenu.MenuItem("Manual", buttonColor = Color.ORANGE) { _manualMode.set(true) },
-//    NeoKeyMenu.MenuItem("Roto Next") { mqtt.publish("kobots/RotoMatic", "next") },
-//    NeoKeyMenu.MenuItem("Roto Previous") { mqtt.publish("kobots/RotoMatic", "prev") },
-    NeoKeyMenu.MenuItem("Lift It", buttonColor = Color.GREEN) { mqtt.publish(SERVO_TOPIC, "up") },
+    NeoKeyMenu.MenuItem("Lift It", buttonColor = Color.GREEN) { ServoMaticCommand.UP.send() },
     NeoKeyMenu.MenuItem("Select Drops", buttonColor = Color.CYAN) { publishToTopic(DA_TOPIC, dropOffRequested) },
     NeoKeyMenu.MenuItem("Return last pick", buttonColor = GOLDENROD) { publishToTopic(DA_TOPIC, returnRequested) },
-    NeoKeyMenu.MenuItem("Exit", buttonColor = Color.RED) {
-        rotoKill()
-        runFlag.set(false)
-    }
+    NeoKeyMenu.MenuItem("Exit", buttonColor = Color.RED) { runFlag.set(false) }
 )
 
 private val WAIT_LOOP = Duration.ofMillis(50)
@@ -83,6 +79,7 @@ fun main(args: Array<String>? = null) {
         // start all the things that require the CRICKIT
         VeryDumbThermometer.start()
         TheArm.start()
+        DieAufseherin.start()
 
         // start auto-triggered stuff
         joinTopic(
@@ -92,7 +89,6 @@ fun main(args: Array<String>? = null) {
             }
         )
 
-        DieAufseherin.setUpListeners()
         neoMenu.displayMenu()
 
         // main loop!!!!!
@@ -118,10 +114,12 @@ fun main(args: Array<String>? = null) {
             }
         }
         logger.error("Exiting")
-        rotoKill()
-        runFlag.set(false)
+        ServoMaticCommand.STOP.send()
+
+        // stop all the things using the crickit
         TheArm.stop()
         VeryDumbThermometer.stop()
+        DieAufseherin.stop()
     }
     ArmMonitor.stop()
     executor.shutdownNow()

@@ -16,11 +16,11 @@
 
 package crackers.kobots.app.enviro
 
+import crackers.kobots.ServoMaticCommand
 import crackers.kobots.app.*
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.PickUpAndMoveStuff
 import crackers.kobots.app.execution.ROTO_RETURN
-import crackers.kobots.app.execution.goToSleep
 import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.execution.KobotsEvent
 import crackers.kobots.execution.KobotsSubscriber
@@ -49,9 +49,14 @@ object DieAufseherin {
 
     private var returnRequest: ActionSequence? = null
 
-    fun setUpListeners() {
+    fun start() {
         localStuff()
         homeAssistantStuff()
+        RosetteStatus.manageAliveChecks()
+    }
+
+    fun stop() {
+        RosetteStatus.stop()
     }
 
     private fun localStuff() {
@@ -72,28 +77,34 @@ object DieAufseherin {
                       logger.info("Sequence completed: $msg")
                       when (msg.sequence) {
 //                    ROTO_PICKUP -> _menuIndex.set(Menu.RETURN_PICK.ordinal)
-                          ROTO_RETURN -> mqtt.publish(SERVO_TOPIC, "down")
+                          ROTO_RETURN -> ServoMaticCommand.DOWN.send()
                           else -> {
                               // do nothing
                           }
                       }
                   })
-
     }
 
     private fun homeAssistantStuff() {
         haSub("homebody/bedroom/casey") { payload ->
             if (payload.has("lamp")) {
                 if (LocalTime.now().hour == 22) {
-                    mqtt.publish(SERVO_TOPIC, "up")
+                    ServoMaticCommand.UP.send()
                 }
             }
         }
         haSub("homebody/office/paper") { payload ->
             if (payload.has("lamp")) {
                 val sleepy = !payload.onOff("lamp")
+                RosetteStatus.goToSleep.set(sleepy)
                 publishToTopic(SLEEP_TOPIC, SleepEvent(sleepy))
-                if (sleepy) TheArm.request(goToSleep) else if (LocalTime.now().hour < 16) rotoSelect(0)
+                if (sleepy) {
+                    TheArm.request(crackers.kobots.app.execution.goToSleep)
+                    ServoMaticCommand.SLEEP.send()
+                } else {
+                    ServoMaticCommand.WAKEY.send()
+                    if (LocalTime.now().hour < 10) ServoMaticCommand.UP.send()
+                }
             }
         }
         haSub("zwave/Office/TriBaby/49/0/Air_temperature") { payload ->
@@ -115,6 +126,7 @@ object DieAufseherin {
             }
         }
         // zwave/nodeID_14/48/0/Motion
+
     }
 
     /**
@@ -122,7 +134,7 @@ object DieAufseherin {
      */
     private fun handleRotomatc(payload: JSONObject) {
         if (payload.optBoolean("liftIsUp", false)) LocalTime.now().hour.also { h ->
-            publishToTopic(DA_TOPIC, dropOffRequested)
+            if (h < 8 || h == 22) publishToTopic(DA_TOPIC, dropOffRequested)
         }
         else TheArm.request(homeSequence)
     }
