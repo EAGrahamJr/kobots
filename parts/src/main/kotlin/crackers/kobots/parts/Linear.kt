@@ -27,13 +27,13 @@ import kotlin.math.roundToInt
  * of the total range of motion. Note that some actuators may not be able to move partially, so the actual movement
  * may be rounded to fully extend or retract (e.g. a solenoid).
  */
-abstract class LinearActuator : Actuator<LinearMovement> {
+interface LinearActuator : Actuator<LinearMovement> {
     override fun move(movement: LinearMovement): Boolean {
         return extendTo(max(0, min(100, movement.percentage)))
     }
 
-    abstract fun extendTo(percentage: Int): Boolean
-    abstract fun current(): Int
+    fun extendTo(percentage: Int): Boolean
+    fun current(): Int
 
     operator fun unaryPlus() {
         extendTo(current() + 1)
@@ -62,7 +62,7 @@ class ServoLinearActuator(
     val theServo: ServoDevice,
     val homeDegrees: Float,
     val maximumDegrees: Float
-) : LinearActuator() {
+) : LinearActuator {
     private val servoSwingDegrees = abs(maximumDegrees - homeDegrees)
     private val whichWay = if (maximumDegrees > homeDegrees) 1f else -1f
 
