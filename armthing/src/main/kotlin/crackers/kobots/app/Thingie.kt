@@ -137,10 +137,7 @@ private var gpZeroY: Float = 0f
  * TODO enable sending "remote" commands via MQTT - aka a selectable target with moving things
  */
 private fun joyRide() {
-    // do not let this interrupt anything else
     with(TheArm) {
-        if (state.busy) return
-
         val xAxis = gamepad.xAxis
         if (gpZeroX == 0f) gpZeroX = xAxis
         val yAxis = gamepad.yAxis

@@ -31,7 +31,7 @@ import crackers.kobots.parts.sequence
  * Picks up stuff from the places and returns it.
  */
 object PickUpAndMoveStuff {
-    private val dropMover = MoveStuffAround(extenderToPickupTarget = 55, elbowForPickupTarget = -7)
+    private val dropMover = MoveStuffAround(extenderToPickupTarget = 75, elbowForPickupTarget = 0)
     val moveEyeDropsToDropZone = dropMover.moveObjectToTarget()
     val returnDropsToStorage = dropMover.pickupAndReturn()
 
