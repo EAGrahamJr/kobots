@@ -16,7 +16,7 @@
 package base
 
 import crackers.kobots.utilities.elapsed
-import dork.danseMacbre
+import device.examples.qwiic.timeOfFlight
 import java.time.Instant
 import kotlin.system.exitProcess
 
@@ -50,6 +50,7 @@ fun main() {
 //    SonarScreen()
 //    Foo()
 //        .execute()
-    danseMacbre()
+//    danseMacbre()
+    timeOfFlight()
     exitProcess(0)
 }
