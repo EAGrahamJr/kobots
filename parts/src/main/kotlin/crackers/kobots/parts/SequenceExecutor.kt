@@ -29,17 +29,30 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Handles running a sequence for a thing. Every sequence is executed on a background thread that runs until
  * completion or until the [stop] method is called or if an [EmergencyStop] is received. Only one sequence can be
  * running at a time (see the [moveInProgress] flag).
+ *
+ * Default execution speeds are:
+ * - VERY_SLOW = 100ms
+ * - SLOW = 50ms
+ * - NORMAL = 10ms
+ * - FAST = 5ms
+ * - VERY_FAST = 2ms
+ *
+ * @param executorName the name of the executor
+ * @param mqttClient the MQTT client for publishing events
+ * @param executionSpeeds the map of [ActionSpeed] to milliseconds
  */
 abstract class SequenceExecutor(
     val executorName: String,
-    private val mqttClient: KobotsMQTT
+    private val mqttClient: KobotsMQTT,
+    private val executionSpeeds: Map<ActionSpeed, Long> = emptyMap()
 ) {
     private fun ActionSpeed.toMillis(): Long {
-        return when (this) {
+        return executionSpeeds[this] ?: when (this) {
+            ActionSpeed.VERY_SLOW -> 100
             ActionSpeed.SLOW -> 50
-            ActionSpeed.NORMAL -> 15
-            ActionSpeed.FAST -> 7
-            else -> 15
+            ActionSpeed.NORMAL -> 10
+            ActionSpeed.FAST -> 5
+            ActionSpeed.VERY_FAST -> 2
         }
     }
 
@@ -98,13 +111,10 @@ abstract class SequenceExecutor(
             preExecution()
             try {
                 request.sequence.build().forEach { action ->
-                    if (!canRun() || stopImmediately) return@forEach
-                    var running = true
-                    while (running) {
-                        val maxPause = Duration.ofMillis(action.speed.toMillis())
-                        executeWithMinTime(maxPause) {
-                            running = action.action.step()
-                        }
+                    val maxPause = Duration.ofMillis(action.speed.toMillis())
+
+                    // while can run, not stopping, and the action is not done...
+                    while (canRun() && !stopImmediately && !action.action.step(maxPause)) {
                         updateCurrentState()
                     }
                 }

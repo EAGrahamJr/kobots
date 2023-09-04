@@ -26,6 +26,7 @@ import crackers.kobots.app.enviro.DieAufseherin.dropOffRequested
 import crackers.kobots.app.enviro.DieAufseherin.returnRequested
 import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.app.execution.excuseMe
+import crackers.kobots.app.execution.goToSleep
 import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.app.io.NeoKeyHandler
@@ -53,9 +54,10 @@ private val gripperMenu = listOf(
     NeoKeyMenu.MenuItem("Excuse Me", buttonColor = PURPLE) { armRequest(excuseMe) },
     NeoKeyMenu.MenuItem("Manual", buttonColor = Color.ORANGE) { _manualMode.set(true) },
     NeoKeyMenu.MenuItem("Lift It", buttonColor = Color.GREEN) { ServoMaticCommand.UP.send() },
-    NeoKeyMenu.MenuItem("Select Drops", buttonColor = Color.CYAN) { publishToTopic(DA_TOPIC, dropOffRequested) },
-    NeoKeyMenu.MenuItem("Return last pick", buttonColor = GOLDENROD) { publishToTopic(DA_TOPIC, returnRequested) },
-    NeoKeyMenu.MenuItem("Exit", buttonColor = Color.RED) { runFlag.set(false) }
+    NeoKeyMenu.MenuItem("Get It", buttonColor = Color.CYAN) { publishToTopic(DA_TOPIC, dropOffRequested) },
+    NeoKeyMenu.MenuItem("Return", buttonColor = GOLDENROD) { publishToTopic(DA_TOPIC, returnRequested) },
+    NeoKeyMenu.MenuItem("Exit", buttonColor = Color.RED) { runFlag.set(false) },
+    NeoKeyMenu.MenuItem("Sleep", buttonColor = Color.BLUE.darker().darker()) { armRequest(goToSleep) }
 )
 
 private val WAIT_LOOP = Duration.ofMillis(50)

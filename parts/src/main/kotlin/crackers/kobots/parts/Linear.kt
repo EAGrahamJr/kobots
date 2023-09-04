@@ -28,11 +28,16 @@ import kotlin.math.roundToInt
  * may be rounded to fully extend or retract (e.g. a solenoid).
  */
 interface LinearActuator : Actuator<LinearMovement> {
-    override fun move(movement: LinearMovement): Boolean {
+    override infix fun move(movement: LinearMovement): Boolean {
         return extendTo(max(0, min(100, movement.percentage)))
     }
 
-    fun extendTo(percentage: Int): Boolean
+    /**
+     * Extend or retract the actuator to the given percentage of the total range of motion. Returns `true` if the
+     * target has been reached.
+     */
+    infix fun extendTo(percentage: Int): Boolean
+
     fun current(): Int
 
     operator fun unaryPlus() {
@@ -50,6 +55,8 @@ interface LinearActuator : Actuator<LinearMovement> {
     operator fun minusAssign(delta: Int) {
         extendTo(current() - delta)
     }
+
+    operator fun rem(delta: Int): Boolean = extendTo(delta)
 }
 
 /**
@@ -86,16 +93,4 @@ class ServoLinearActuator(
         val degrees = theServo.angle
         return (abs(degrees - homeDegrees) * 100 / servoSwingDegrees).roundToInt()
     }
-}
-
-/**
- * This actuator is essentially a "binary" type, where it can be either in or out (open or closed). Typically, this
- * would be powered by something like a solenoid.
- */
-abstract class InOutActuator : Actuator<InOutMovement> {
-    override fun move(movement: InOutMovement): Boolean {
-        return inOrOut(movement.moveIn)
-    }
-
-    abstract fun inOrOut(moveIn: Boolean): Boolean
 }

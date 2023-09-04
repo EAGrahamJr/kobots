@@ -21,6 +21,7 @@ import crackers.kobots.app.*
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.PickUpAndMoveStuff
 import crackers.kobots.app.execution.ROTO_RETURN
+import crackers.kobots.app.execution.goToSleep
 import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.execution.KobotsEvent
 import crackers.kobots.execution.KobotsSubscriber
@@ -99,7 +100,7 @@ object DieAufseherin {
                 RosetteStatus.goToSleep.set(sleepy)
                 publishToTopic(SLEEP_TOPIC, SleepEvent(sleepy))
                 if (sleepy) {
-                    TheArm.request(crackers.kobots.app.execution.goToSleep)
+                    TheArm.request(goToSleep)
                     ServoMaticCommand.SLEEP.send()
                 } else {
                     ServoMaticCommand.WAKEY.send()

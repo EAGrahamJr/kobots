@@ -47,7 +47,7 @@ lateinit var rotoServo: ServoDevice
 val rotoMatic by lazy { ServoRotator(rotoServo, (0..180), (0..180)) }
 
 lateinit var liftServo: ServoDevice
-val liftoMatic by lazy { ServoLinearActuator(liftServo, 15f, 85f) }
+val liftoMatic by lazy { ServoLinearActuator(liftServo, 0f, 45f) }
 
 const val SERVO_TOPIC = "kobots/servoMatic"
 const val EVENT_TOPIC = "kobots/events"
@@ -98,7 +98,7 @@ fun main(args: Array<String>?) {
     ServoDisplay.sleep(false)
     ServoController().use { hat ->
         rotoServo = hat.getServo(0, ServoTrim(1500, 1100), 0)
-        liftServo = hat.getServo(1, ServoTrim.TOWERPRO_SG90, 15)
+        liftServo = hat.getServo(1, ServoTrim.TOWERPRO_SG90, 0)
 
         joinTopic(PROXIMITY_TOPIC, KobotsSubscriber<SensorSuite.ProximityTrigger> { trigger ->
             if (liftLast) {

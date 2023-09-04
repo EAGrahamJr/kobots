@@ -1,6 +1,6 @@
 # Moving Parts
 
-Classes to describe interacting in a physical world.
+Classes to describe interacting in a physical world. The intent is to provide a means to _smoothly_ cause changes, avoiding large, immediate movements that can over-stress the physical systems, as well as allowing for bounds-checking and interrupts during execution.
 
 - A `Movement` describes some physical change that is desired
   - A "stop check" function can be supplied to also execute code as a limiter (or call-back)
@@ -15,14 +15,15 @@ Classes to describe interacting in a physical world.
 
 The sequences and actions are contained within a type-safe DSL. Actions and movements are **rebuilt** when retrieved from a sequence: this allows altering external variables that would influence _subseqeuent_ re-invocations of that same sequence.
 
-## :bangbang: IMPORTANT!!! Recommendations for Execution
-
-Currently, no "sequence executors" are defined, but there are _some_ quirks.
-
-- the `stopCheck` of a `Movement` should be checked _prior_ to executing the `move` requested
-- once a `Movement` is "complete" (`move` returns true or the `stopCheck` fires), that movement should **not** be re-invoked
-
 ## Actuators and Movements
+
+Actuators have a small set of _operators_ that are supported:
+
+- `+=` and `-+` for relative changes
+- `+a` and `-a` (unary plus/minus) for increment and decrement
+- `%` on a `LinearActuator` for positioning
+
+Each `Actuator` type may also contain specific `infix` capable functions for more DSL-like behavior. Note that these functions are "direct drive" and should immediately affect the device.
 
 ### Rotation
 
@@ -30,18 +31,21 @@ Fairly self-descriptive, a `Rotator` has a "turning" component. All instances of
 
 A gear-ratio determines how much an angular change of the motor translates to the physical change in the system. Motors _may_ also have restrictions on their spindle movements (e.g. servos can only move 180 degrees).
 
-#### Basic `BasicStepperRotator`
+#### BasicStepperRotator
 
 This `Rotator` uses stepper motors to move to a position by keeping track of "steps from zero". Note only that motors that will "single-step" can be used here.
 
 - the number of steps per rotation is translated to _steps per degree_
-- positioning is _not_ very precise due to rounding errors
+- **positioning is _not_ very precise due to rounding errors**
 - "zero" position is entirely arbitrary and is assumed to be pre-calibrated
 - there are no angular limits imposed, so over-rotation is a possibility
 
-#### Simple `ServoRotator`
+#### ServoRotator
 
-Models the attachment to a non-continuous servo. The physical movement is "mapped" to the servo's angular displacement.
+Models the attachment to a **non-continuous** servo. The physical movement is "mapped" to the servo's angular displacement.
+
+- due to rounding errors, some _physical_ angles may cause servo issues (e.g. jitter)
+- some angles may not be reachable (e.g. if the gear ratios work out to a servo being set to a _partial_ angle, it may not actually move)
 
 ### Linear
 
@@ -54,6 +58,14 @@ Only a single actuator is currently defined:
 ### Special
 
 - _ExecutionMovement_ is a "pseudo actuator and movement" that does **not** require a physical component, only executes the given code block as the _stop check_.
+
+## Sequence Executor
+
+The [SequenceExecutor](src/main/kotlin/crackers/kobots/parts/SequenceExecutor.kt) provides one means of executing sequences and actions. It is primarily intended to be used with the [Event Bus](EventBus.md).
+
+This class provides a means to execute sequences in a _background thread_. The actions are executed sequentially, invoking the _stopCheck_ functions prior to moving each component, as well as providing a mans of signalling an _immediate_ stop. The actions are executed in a way to provide pauses between invocations: this allows the physical systems to move incrementally, reducing stress (this speed can obviously be modified). The actual spped a step can execute will be limited by the hardware I/O.
+
+Implementations of this class **MUST** handle any device or I/O contention -- this class does not provide any "locking" of devices.
 
 ## DSL By Example
 

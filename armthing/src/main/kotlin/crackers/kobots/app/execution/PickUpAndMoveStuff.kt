@@ -16,9 +16,7 @@
 
 package crackers.kobots.app.execution
 
-import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
 import crackers.kobots.app.arm.TheArm.EXTENDER_HOME
-import crackers.kobots.app.arm.TheArm.GRIPPER_CLOSED
 import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
 import crackers.kobots.app.arm.TheArm.WAIST_HOME
 import crackers.kobots.app.arm.TheArm.elbow
@@ -34,14 +32,6 @@ object PickUpAndMoveStuff {
     private val dropMover = MoveStuffAround(extenderToPickupTarget = 75, elbowForPickupTarget = 0)
     val moveEyeDropsToDropZone = dropMover.moveObjectToTarget()
     val returnDropsToStorage = dropMover.pickupAndReturn()
-
-    private val defaultThinItemMover = MoveStuffAround(
-        elbowForPickupTarget = 9,
-        closeOnItem = GRIPPER_CLOSED,
-        dropOffElbow = ELBOW_DOWN
-    )
-    val moveThinItemToTarget = defaultThinItemMover.moveObjectToTarget()
-    val thinItemReturn = defaultThinItemMover.pickupAndReturn()
 }
 
 /**
@@ -63,15 +53,8 @@ class MoveStuffAround(
     val dropOffElbow: Int = -7 // how far to rotate the elbow to reach the drop off point
 ) {
 
-    private val backOffAndHome = sequence {
-        action {
-            extender goTo MAGIC_EXTENDER
-        }
-        this += homeSequence
-    }
-
     private val pickupFromLocation = sequence {
-        this += backOffAndHome
+        this += homeSequence
 
         // avoid collisions!!
         action {
@@ -103,7 +86,7 @@ class MoveStuffAround(
         action { extender goTo extenderToPickupTarget }
         action { elbow rotate elbowForPickupTarget }
         action { gripper goTo GRIPPER_OPEN }
-        this += backOffAndHome
+        this += homeSequence
     }
 
     fun moveObjectToTarget() = sequence {
@@ -122,7 +105,7 @@ class MoveStuffAround(
 
     fun pickupAndReturn() = sequence {
         name = ROTO_RETURN
-        this += backOffAndHome
+        this += homeSequence
         action {
             waist rotate 90
             gripper goTo GRIPPER_OPEN

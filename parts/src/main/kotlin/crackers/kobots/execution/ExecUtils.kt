@@ -22,14 +22,16 @@ import java.time.Duration
 /**
  * Run a [block] and ensure it takes up **at least** [maxPause] time. This is basically to keep various parts from
  * overloading the various buses.
+ *
+ * The purported granularity of the pause is _ostensibly_ nanoseconds.
  */
 fun <R> executeWithMinTime(maxPause: Duration, block: () -> R): R {
-    val millis = maxPause.toMillis()
-    val startAt = System.currentTimeMillis()
+    val pauseForNanos = maxPause.toNanos()
+    val startAt = System.nanoTime()
+
     val response = block()
-    val runtime = System.currentTimeMillis() - startAt
-    if (runtime < millis) {
-        SleepUtil.busySleep(Duration.ofMillis(millis - runtime).toNanos())
-    }
+
+    val runtime = System.nanoTime() - startAt
+    if (runtime < pauseForNanos) SleepUtil.busySleep(pauseForNanos - runtime)
     return response
 }

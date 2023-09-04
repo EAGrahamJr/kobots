@@ -16,29 +16,24 @@
 
 package crackers.kobots.app.execution
 
-import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
+import crackers.kobots.app.arm.TheArm.ELBOW_UP
 import crackers.kobots.app.arm.TheArm.EXTENDER_FULL
+import crackers.kobots.app.arm.TheArm.EXTENDER_HOME
 import crackers.kobots.app.arm.TheArm.GRIPPER_CLOSED
 import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
+import crackers.kobots.app.arm.TheArm.WAIST_HOME
 import crackers.kobots.app.arm.TheArm.WAIST_MAX
 import crackers.kobots.app.arm.TheArm.elbow
 import crackers.kobots.app.arm.TheArm.extender
 import crackers.kobots.app.arm.TheArm.gripper
 import crackers.kobots.app.arm.TheArm.waist
-import crackers.kobots.parts.ActionBuilder
 import crackers.kobots.parts.ActionSpeed
 import crackers.kobots.parts.sequence
 
 /**
  * Home the arm.
  */
-val homeAction = ActionBuilder().apply {
-    waist rotate TheArm.WAIST_HOME
-    extender goTo TheArm.EXTENDER_HOME
-    elbow rotate TheArm.ELBOW_UP
-    gripper goTo GRIPPER_CLOSED
-}
 
 /**
  * Wave hello kinda.
@@ -62,14 +57,14 @@ val sayHi by lazy {
                 requestedSpeed = ActionSpeed.FAST
             }
         }
-        this + homeAction
+        this += homeSequence
     }
 }
 
 val excuseMe by lazy {
     sequence {
         name = "Excuse Me"
-        this + homeAction
+        this += homeSequence
         action {
             waist rotate 90
             elbow rotate 45
@@ -84,24 +79,36 @@ val excuseMe by lazy {
                 requestedSpeed = ActionSpeed.FAST
             }
         }
-        this + homeAction
+        this += homeSequence
     }
 }
 
 val goToSleep by lazy {
     sequence {
         name = "Go To Sleep"
-        this + homeAction
+        this += homeSequence
         action {
             waist rotate WAIST_MAX
+            requestedSpeed = ActionSpeed.SLOW
         }
         action {
-            requestedSpeed = ActionSpeed.SLOW
+            requestedSpeed = ActionSpeed.VERY_SLOW
             elbow rotate ELBOW_DOWN
+            extender goTo 50
         }
     }
 }
 
-val homeSequence = sequence {
-    this + homeAction
+val homeSequence by lazy {
+    sequence {
+        name = "Home"
+        // make sure the gripper is out of the way of anything
+        action { extender goTo EXTENDER_HOME }
+        action { elbow rotate ELBOW_UP }
+        // now we can close and finish
+        action {
+            waist rotate WAIST_HOME
+            gripper goTo GRIPPER_CLOSED
+        }
+    }
 }

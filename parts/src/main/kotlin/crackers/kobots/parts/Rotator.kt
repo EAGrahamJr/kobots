@@ -30,14 +30,14 @@ import kotlin.math.roundToInt
  * corresponding to real world coordinates.
  */
 interface Rotator : Actuator<RotationMovement> {
-    override fun move(movement: RotationMovement): Boolean {
+    override infix fun move(movement: RotationMovement): Boolean {
         return rotateTo(movement.angle)
     }
 
     /**
      * Take a "step" towards this destination. Returns `true` if the target has been reached.
      */
-    fun rotateTo(angle: Int): Boolean
+    infix fun rotateTo(angle: Int): Boolean
 
     operator fun plusAssign(delta: Int) {
         rotateTo(current() + delta)
@@ -54,6 +54,8 @@ interface Rotator : Actuator<RotationMovement> {
     operator fun unaryPlus() {
         rotateTo(current() + 1)
     }
+
+    operator fun div(angle: Int): Boolean = rotateTo(angle)
 
     /**
      * Current location.
