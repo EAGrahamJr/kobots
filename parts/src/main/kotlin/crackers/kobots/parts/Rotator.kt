@@ -39,22 +39,47 @@ interface Rotator : Actuator<RotationMovement> {
      */
     infix fun rotateTo(angle: Int): Boolean
 
+    /**
+     * Rotate by the given delta in a positive direction. The target may or may not move by the indicated amount,
+     * depending on the implementation and current location.
+     *
+     * Example: rotator += 5
+     */
     operator fun plusAssign(delta: Int) {
         rotateTo(current() + delta)
     }
 
+    /**
+     * Rotate by the given delta in a negative direction. The target may or may not move by the indicated amount,
+     * depending on the implementation and current location.
+     *
+     * Example: rotator -= 5
+     */
     operator fun minusAssign(delta: Int) {
         rotateTo(current() - delta)
     }
 
+    /**
+     * Move one degree negatively, if possible.
+     *
+     * Example: -rotator
+     */
     operator fun unaryMinus() {
-        rotateTo(current() - 1)
+        minusAssign(1)
     }
 
+    /**
+     * Move one degree positively, if possible.
+     *
+     * Example: +rotator
+     */
     operator fun unaryPlus() {
-        rotateTo(current() + 1)
+        plusAssign(1)
     }
 
+    /**
+     * Rotate to the given angle. Returns `true` if the target has been reached.
+     */
     operator fun div(angle: Int): Boolean = rotateTo(angle)
 
     /**
@@ -62,13 +87,39 @@ interface Rotator : Actuator<RotationMovement> {
      */
     fun current(): Int
 
+    /**
+     * Determine if this float is  "almost" equal to [another], within the given [wibble].
+     */
     fun Float.almostEquals(another: Float, wibble: Float): Boolean = abs(this - another) < wibble
 }
 
 /**
+ * A [Rotator] that is constrained to a physical angular range, in degrees. This is useful for servos that are not
+ * "continuous rotation" types.
+ *
+ * @param physicalRange the physical range of the rotator, in degrees
+ */
+interface LimitedRotator : Rotator {
+    val physicalRange: IntRange
+
+    /**
+     * Operator to rotate to a percentage of the physical range. For example, if the physical range is `0..180`, then
+     * `rotator % 50` would rotate to 90 degrees.
+     */
+    operator fun rem(percentage: Int): Boolean {
+        val range = physicalRange.last - physicalRange.first
+        return rotateTo(physicalRange.first + (range * percentage / 100f).roundToInt())
+    }
+}
+
+/**
  * Stepper motor with an optional gear ratio. If [reversed] is `true`, the motor is mounted "backwards" relative to
- * desired rotation. Each movement is executed as a single step of the motor. The accuracy of the movement is dependent
- * on rounding errors in the calculation of the number of steps required to reach the destination.
+ * desired rotation. Each movement is executed as a single step of the motor.
+ *
+ * **NOTE** The accuracy of the movement is dependent on rounding errors in the calculation of the number of steps
+ * required to reach the destination. The _timing_ of each step may also affect if the motor receives the pulse or not.
+ *
+ * [theStepper] _should_ be "released" after use to avoid motor burnout and to allow for "re-calibration" if necessary.
  */
 class BasicStepperRotator(
     private val theStepper: StepperMotorInterface,
@@ -91,7 +142,7 @@ class BasicStepperRotator(
     override fun current(): Int = (360 * stepsLocation / maxSteps).roundToInt()
 
     override fun rotateTo(angle: Int): Boolean {
-        val destinationSteps = (maxSteps * angle / 360).toInt()
+        val destinationSteps = (maxSteps * angle / 360).roundToInt()
         if (destinationSteps == stepsLocation) return true
 
         // move towards the destination
@@ -129,16 +180,17 @@ class BasicStepperRotator(
  */
 class ServoRotator(
     private val theServo: ServoDevice,
-    private val physicalRange: IntRange,
+    override val physicalRange: IntRange,
     private val servoRange: IntRange,
     deltaDegrees: Int? = 1
-) : Rotator {
+) : LimitedRotator {
     private val delta: Float? = if (deltaDegrees == null) null else abs(deltaDegrees).toFloat()
 
     private val PRECISION = 0.1f
 
     private val servoLowerLimit: Float
     private val servoUpperLimit: Float
+    private val gearRatio: Float
 
     init {
         require(physicalRange.first < physicalRange.last) { "physicalRange '$physicalRange' must be increasing" }
@@ -146,22 +198,22 @@ class ServoRotator(
             servoLowerLimit = (if (first < last) first else last).toFloat()
             servoUpperLimit = (if (first < last) last else first).toFloat()
         }
+        gearRatio = (physicalRange.last - physicalRange.first).toFloat() /
+            (servoRange.last - servoRange.first).toFloat()
     }
-
-    private fun IntRange.length(): Int = last - first
 
     // translate an angle in the physical range to a servo angle
     private fun translate(angle: Int): Float {
-        val physical = (angle - physicalRange.first).toFloat()
-        val servo = physical * servoRange.length() / physicalRange.length()
-        return servo + servoRange.first
+        val physicalOffset = angle - physicalRange.first
+        val servoOffset = physicalOffset / gearRatio
+        return servoOffset + servoRange.first
     }
 
     // report the current angle, translated to the physical range
     override fun current(): Int = theServo.angle.let {
-        val servo = it - servoRange.first
-        val physical = servo * physicalRange.length() / servoRange.length()
-        physical + physicalRange.first
+        val servoOffset = it - servoRange.first
+        val physicalOffset = servoOffset * gearRatio
+        physicalOffset + physicalRange.first
     }.roundToInt()
 
     /**

@@ -38,24 +38,54 @@ interface LinearActuator : Actuator<LinearMovement> {
      */
     infix fun extendTo(percentage: Int): Boolean
 
+    /**
+     * Returns the current position as a percentage of the total range of motion.
+     */
     fun current(): Int
 
+    /**
+     * Extend the actuator by one step.
+     *
+     * Example: `+actuator`
+     */
     operator fun unaryPlus() {
         extendTo(current() + 1)
     }
 
+    /**
+     * Extend the actuator by the given delta. The target may or may not move by the indicated amount if the bounds are
+     * reached, depending on the implementation and current location.
+     *
+     * Example: `actuator += 5`
+     */
     operator fun plusAssign(delta: Int) {
         extendTo(current() + delta)
     }
 
+    /**
+     * Retract the actuator by one step.
+     *
+     * Example: `-actuator`
+     */
     operator fun unaryMinus() {
         extendTo(current() - 1)
     }
 
+    /**
+     * Retract the actuator by the given delta. The target may or may not move by the indicated amount if the bounds are
+     * reached, depending on the implementation and current location.
+     *
+     * Example: `actuator -= 5`
+     */
     operator fun minusAssign(delta: Int) {
         extendTo(current() - delta)
     }
 
+    /**
+     * Operator short-cut for [extendTo].
+     *
+     * Example: `actuator % 50`
+     */
     operator fun rem(delta: Int): Boolean = extendTo(delta)
 }
 

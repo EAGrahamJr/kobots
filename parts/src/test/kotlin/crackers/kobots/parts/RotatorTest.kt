@@ -113,10 +113,10 @@ class RotatorTest : FunSpec(
             while (!rotatable.rotateTo(45)) {
                 // just count things
             }
-            verify(exactly = 81) {
+            verify(exactly = 80) {
                 mockServo.setAngle(any())
             }
-            currentAngle shouldBe 81f
+            currentAngle shouldBe 82f
         }
 
         /**
