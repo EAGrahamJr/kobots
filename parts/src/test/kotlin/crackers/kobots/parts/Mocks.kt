@@ -41,7 +41,7 @@ open class MockRotator : Rotator {
 
 fun runAndGetCount(block: () -> Boolean): Int {
     var count = 0
-    while (block()) count++
+    while (!block()) count++
     return count
 }
 

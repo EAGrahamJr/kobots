@@ -39,7 +39,7 @@ class ActionSequenceTest : FunSpec(
             val action = actionDef.action
 
             runAndGetCount(action::step) shouldBe 89
-            action.step() shouldBe false
+            action.step() shouldBe true
             rotator.current() shouldBe 90
         }
 
@@ -74,8 +74,8 @@ class ActionSequenceTest : FunSpec(
                 // N.B. moving to an absolute angle takes 1 less step than the angle
                 val numberOfMoves = abs(randomAngle.toInt()) * 2 - 2
                 runAndGetCount(firstAction::step) + runAndGetCount(secondAction::step) shouldBe numberOfMoves
-                firstAction.step() shouldBe false
-                secondAction.step() shouldBe false
+                firstAction.step() shouldBe true
+                secondAction.step() shouldBe true
                 rotator.current() shouldBe 0f
             }
         }
