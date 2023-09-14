@@ -16,61 +16,72 @@
 
 package crackers.kobots.app.enviro
 
+import com.diozero.sbc.LocalSystemInfo
+import crackers.kobots.app.AppCommon.executor
 import crackers.kobots.app.crickitHat
-import crackers.kobots.app.mqtt
-import crackers.kobots.devices.lighting.WS2811
-import crackers.kobots.mqtt.KobotsMQTT
-import org.slf4j.LoggerFactory
+import crackers.kobots.utilities.ORANGISH
 import java.awt.Color
-import java.time.Duration
-import java.time.ZonedDateTime
-import java.util.concurrent.Executors
+import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.roundToInt
 
 /**
  * Blinken lights.
  */
 object RosetteStatus {
     private val pixelStatus by lazy { crickitHat.neoPixel(8).apply { brightness = .005f } }
-    private val lastCheckIn = mutableMapOf<String, ZonedDateTime>()
-    private val aliveCheckExecutor = Executors.newSingleThreadScheduledExecutor()
-    private val hostList = listOf("brainz", "marvin", "useless", "zeke")
-    private val logger = LoggerFactory.getLogger("RosetteStatus")
-    internal val goToSleep = AtomicBoolean(false)
+    val systemInfoInstance = LocalSystemInfo.getInstance()
+
+    private val cpuColors = listOf(
+        Color.GREEN, Color.GREEN, Color.GREEN,
+        ORANGISH, ORANGISH, ORANGISH,
+        Color.ORANGE,
+        Color.RED
+    )
+    internal val atomicSleep = AtomicBoolean(false)
+    lateinit var future: Future<*>
+
+    private val NUM_PIXELS = 8
+    private val TEMPERATURE_OFFSET = 40
+    private val TEMPERATURE_RANGE = 40
+
+    internal var goToSleep: Boolean
+        get() = atomicSleep.get()
+        set(value) {
+            atomicSleep.set(value)
+            if (value) pixelStatus.fill(Color.BLACK)
+            else startColors()
+        }
 
     internal fun stop() {
         pixelStatus.fill(Color.BLACK)
+        if (::future.isInitialized) future.cancel(true)
     }
 
-    /**
-     * Listens for `KOBOTS_ALIVE` messages and tracks the last time a message was received from each host.
-     */
-    internal fun manageAliveChecks() {
-        // store everybody's last time
-        mqtt.subscribe(KobotsMQTT.KOBOTS_ALIVE) { s: String -> lastCheckIn[s] = ZonedDateTime.now() }
+    internal fun start() {
+        var lastTemp = -1
 
-        // check for dead kobots
+        startColors()
+
         val runner = Runnable {
-            val now = ZonedDateTime.now()
-            lastCheckIn.forEach { (host, lastSeenAt) ->
-                val lastGasp = Duration.between(lastSeenAt, now).seconds
-                val pixelNumber = hostList.indexOf(host)
-                if (pixelNumber < 0) logger.warn("Unknown host $host")
-                else {
-                    pixelStatus[pixelNumber] = when {
-                        goToSleep.get() -> WS2811.PixelColor(Color.BLACK, brightness = 0.0f)
-                        lastGasp < 60 -> WS2811.PixelColor(Color.GREEN, brightness = 0.005f)
-                        lastGasp < 120 -> WS2811.PixelColor(Color.YELLOW, brightness = 0.01f)
-                        else -> WS2811.PixelColor(Color.RED, brightness = 0.1f)
+            if (!goToSleep) {
+                systemInfoInstance.cpuTemperature.toDouble().let { temp ->
+                    val x = ((temp - TEMPERATURE_OFFSET) * NUM_PIXELS / TEMPERATURE_RANGE).roundToInt()
+                    if (x in (0 until NUM_PIXELS) && x != lastTemp) {
+                        if (lastTemp != -1) pixelStatus[lastTemp] = cpuColors[lastTemp]
+                        pixelStatus[x] = Color.WHITE
+                        lastTemp = x
                     }
                 }
             }
-            hostList.forEachIndexed { i, host ->
-                if (!lastCheckIn.containsKey(host)) pixelStatus[i] = Color.BLUE
-            }
         }
-        aliveCheckExecutor.scheduleAtFixedRate(runner, 15, 15, TimeUnit.SECONDS)
+
+        future = executor.scheduleAtFixedRate(runner, 0, 15, TimeUnit.SECONDS)
+    }
+
+    private fun startColors() {
+        cpuColors.forEachIndexed { index, color -> pixelStatus[index] = color }
     }
 
 }

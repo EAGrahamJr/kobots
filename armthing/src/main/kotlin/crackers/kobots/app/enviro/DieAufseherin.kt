@@ -16,8 +16,10 @@
 
 package crackers.kobots.app.enviro
 
-import crackers.kobots.ServoMaticCommand
 import crackers.kobots.app.*
+import crackers.kobots.app.AppCommon.SLEEP_TOPIC
+import crackers.kobots.app.AppCommon.onOff
+import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.execution.PickUpAndMoveStuff
 import crackers.kobots.app.execution.ROTO_RETURN
@@ -53,7 +55,7 @@ object DieAufseherin {
     fun start() {
         localStuff()
         homeAssistantStuff()
-        RosetteStatus.manageAliveChecks()
+        RosetteStatus.start()
     }
 
     fun stop() {
@@ -97,8 +99,8 @@ object DieAufseherin {
         haSub("homebody/office/paper") { payload ->
             if (payload.has("lamp")) {
                 val sleepy = !payload.onOff("lamp")
-                RosetteStatus.goToSleep.set(sleepy)
-                publishToTopic(SLEEP_TOPIC, SleepEvent(sleepy))
+                RosetteStatus.goToSleep = sleepy
+                publishToTopic(SLEEP_TOPIC, AppCommon.SleepEvent(sleepy))
                 if (sleepy) {
                     TheArm.request(goToSleep)
                     ServoMaticCommand.SLEEP.send()
@@ -114,7 +116,7 @@ object DieAufseherin {
                 VeryDumbThermometer.setTemperature(temp.toFloat())
             }
         }
-        haSub("kobots/events") { payload ->
+        haSub(EVENT_TOPIC) { payload ->
             if (payload.has("source")) {
                 when (payload.getString("source")) {
                     "servomatic" -> handleRotomatc(payload)

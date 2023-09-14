@@ -19,12 +19,14 @@ package crackers.kobots.app.arm
 import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
-import crackers.kobots.StatusColumnDelegate
-import crackers.kobots.StatusColumnDisplay
-import crackers.kobots.app.*
+import crackers.kobots.app.AppCommon
+import crackers.kobots.app.AppCommon.SLEEP_TOPIC
+import crackers.kobots.app.AppCommon.checkRun
 import crackers.kobots.app.io.NeoKeyMenu
+import crackers.kobots.app.io.StatusColumnDelegate
+import crackers.kobots.app.io.StatusColumnDisplay
+import crackers.kobots.app.manualMode
 import crackers.kobots.execution.KobotsSubscriber
-import crackers.kobots.execution.executeWithMinTime
 import crackers.kobots.execution.joinTopic
 import java.awt.Color
 import java.awt.Font
@@ -73,24 +75,22 @@ object ArmMonitor : NeoKeyMenu.MenuDisplay, StatusColumnDisplay by StatusColumnD
             TheArm.STATE_TOPIC,
             KobotsSubscriber { message -> if (message is ArmState) lastStateReceived.set(message) }
         )
-        joinTopic(SLEEP_TOPIC, KobotsSubscriber { event -> if (event is SleepEvent) screen.setDisplayOn(!event.sleep) })
+        joinTopic(
+            SLEEP_TOPIC,
+            KobotsSubscriber { event -> if (event is AppCommon.SleepEvent) screen.setDisplayOn(!event.sleep) })
 
-        future = executor.submit {
-            while (runFlag.get()) {
-                executeWithMinTime(Duration.ofMillis(10)) {
-                    // if the arm is busy, show its status
-                    val lastState = lastStateReceived.get()
-                    val showStatus = lastState != null && lastState.busy || manualMode
-                    if (showStatus) showLastStatus()
-                    else {
-                        if (lastState != null) {
-                            lastStateReceived.set(null)
-                            displayItems(lastMenu.toList())
-                        }
-                    }
-                    if (imageChanged.getAndSet(false)) screen.display(image)
+        future = checkRun(Duration.ofMillis(10)) {
+            // if the arm is busy, show its status
+            val lastState = lastStateReceived.get()
+            val showStatus = lastState != null && lastState.busy || manualMode
+            if (showStatus) showLastStatus()
+            else {
+                if (lastState != null) {
+                    lastStateReceived.set(null)
+                    displayItems(lastMenu.toList())
                 }
             }
+            if (imageChanged.getAndSet(false)) screen.display(image)
         }
     }
 

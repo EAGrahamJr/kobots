@@ -19,9 +19,6 @@ package crackers.kobots.app
 import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim
 import com.diozero.devices.ServoController
-import crackers.kobots.REMOTE_PI
-import crackers.kobots.ServoMaticCommand
-import crackers.kobots.ServoMaticCommand.*
 import crackers.kobots.app.SensorSuite.PROXIMITY_TOPIC
 import crackers.kobots.execution.KobotsSubscriber
 import crackers.kobots.execution.joinTopic
@@ -49,8 +46,6 @@ val rotoMatic by lazy { ServoRotator(rotoServo, (0..180), (0..180)) }
 lateinit var liftServo: ServoDevice
 val liftoMatic by lazy { ServoLinearActuator(liftServo, 0f, 45f) }
 
-const val SERVO_TOPIC = "kobots/servoMatic"
-const val EVENT_TOPIC = "kobots/events"
 
 val logger = LoggerFactory.getLogger("Servomatic")
 val doneLatch = CountDownLatch(1)
@@ -60,22 +55,22 @@ val mqttClient = KobotsMQTT("marvin", "tcp://192.168.1.4:1883").apply {
     subscribe(SERVO_TOPIC) {
         val payload = ServoMaticCommand.valueOf(it.uppercase())
         when (payload) {
-            STOP -> {
+            ServoMaticCommand.STOP -> {
                 logger.error("Stopping")
                 doneLatch.countDown()
             }
 
-            UP -> liftoMatic.move(100)
-            DOWN -> liftoMatic.move(0)
-            LEFT -> rotoMatic.swing(180)
-            RIGHT -> rotoMatic.swing(0)
-            CENTER -> rotoMatic.swing(90)
-            SLEEP -> {
+            ServoMaticCommand.UP -> liftoMatic.move(100)
+            ServoMaticCommand.DOWN -> liftoMatic.move(0)
+            ServoMaticCommand.LEFT -> rotoMatic.swing(180)
+            ServoMaticCommand.RIGHT -> rotoMatic.swing(0)
+            ServoMaticCommand.CENTER -> rotoMatic.swing(90)
+            ServoMaticCommand.SLEEP -> {
                 ServoDisplay.sleep(true)
                 SensorSuite.disabled = true
             }
 
-            WAKEY -> {
+            ServoMaticCommand.WAKEY -> {
                 ServoDisplay.sleep(false)
                 SensorSuite.disabled = false
             }

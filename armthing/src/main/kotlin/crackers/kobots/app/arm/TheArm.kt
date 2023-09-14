@@ -17,9 +17,9 @@
 package crackers.kobots.app.arm
 
 import com.diozero.api.ServoTrim
+import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.crickitHat
 import crackers.kobots.app.mqtt
-import crackers.kobots.app.runFlag
 import crackers.kobots.devices.at
 import crackers.kobots.execution.*
 import crackers.kobots.parts.ActionSequence

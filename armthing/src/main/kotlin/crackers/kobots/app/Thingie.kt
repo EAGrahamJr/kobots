@@ -16,8 +16,9 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.REMOTE_PI
-import crackers.kobots.ServoMaticCommand
+import crackers.kobots.app.AppCommon.SLEEP_TOPIC
+import crackers.kobots.app.AppCommon.executor
+import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.enviro.DieAufseherin
@@ -31,6 +32,7 @@ import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.app.io.NeoKeyHandler
 import crackers.kobots.app.io.NeoKeyMenu
+import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.execution.*
 import crackers.kobots.utilities.GOLDENROD
@@ -42,6 +44,9 @@ import java.time.Duration
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.exitProcess
 import crackers.kobots.app.arm.TheArm.request as armRequest
+
+// shared devices
+internal val crickitHat by lazy { CRICKITHat() }
 
 private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
@@ -77,7 +82,6 @@ fun main(args: Array<String>? = null) {
     val neoMenu = NeoKeyMenu(keyboard, ArmMonitor, gripperMenu)
 
     crickitHat.use {
-
         // start all the things that require the CRICKIT
         VeryDumbThermometer.start()
         TheArm.start()
@@ -86,7 +90,7 @@ fun main(args: Array<String>? = null) {
         // start auto-triggered stuff
         joinTopic(
             SLEEP_TOPIC,
-            KobotsSubscriber<SleepEvent> { event ->
+            KobotsSubscriber<AppCommon.SleepEvent> { event ->
                 keyboard.brightness = if (event.sleep) 0.01f else .1f
             }
         )
@@ -94,21 +98,19 @@ fun main(args: Array<String>? = null) {
         neoMenu.displayMenu()
 
         // main loop!!!!!
-        while (runFlag.get()) {
+        while (runFlag.get()) executeWithMinTime(WAIT_LOOP) {
             try {
-                executeWithMinTime(WAIT_LOOP) {
-                    val keys = neoMenu.execute()
-                    // figure out if we're doing anything
-                    when {
-                        manualMode -> joyRide()
-                        gamepad.xButton -> publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-                        keys.isNotEmpty() -> {
-                            keys.first().second.action()
-                        }
+                val keys = neoMenu.execute()
+                // figure out if we're doing anything
+                when {
+                    manualMode -> joyRide()
+                    gamepad.xButton -> publishToTopic(TheArm.REQUEST_TOPIC, allStop)
+                    keys.isNotEmpty() -> {
+                        keys.first().second.action()
+                    }
 
-                        else -> {
-                            // do nothing
-                        }
+                    else -> {
+                        // do nothing
                     }
                 }
             } catch (e: Exception) {
