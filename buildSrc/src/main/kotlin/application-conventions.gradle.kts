@@ -32,7 +32,7 @@ tasks {
         archiveBaseName.set(project.ext.get("jar.name").toString())
         archiveVersion.set("")
         archiveClassifier.set("")
-        // this is important for sing the remote client at the same time as other providers
+        // this is important for using the remote client at the same time as other providers
         mergeServiceFiles()
     }
 

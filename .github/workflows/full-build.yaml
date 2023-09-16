@@ -2,13 +2,13 @@ name: Build Kobots with dependent fork of 'diozero'
 on:
   push:
     branches: [ main ]
-    paths_ignore:
+    paths-ignore:
       - "*.md"
       - "docs/**"
       - "diagrams/**"
   pull_request:
     branches: [ main ]
-    paths_ignore:
+    paths-ignore:
       - "*.md"
       - "docs/**"
       - "diagrams/**"
