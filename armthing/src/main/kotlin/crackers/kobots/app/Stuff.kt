@@ -18,7 +18,6 @@ package crackers.kobots.app
 
 import crackers.kobots.mqtt.KobotsMQTT
 
-
 /**
  * Wrapper for the MQTT client and start alive-check
  */

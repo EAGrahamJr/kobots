@@ -19,15 +19,13 @@ package crackers.kobots.parts
 import crackers.kobots.mqtt.KobotsMQTT
 
 private abstract class RemoteSender(
-    private val mqttClient: KobotsMQTT, private val topic: String, private val
+    private val mqttClient: KobotsMQTT,
+    private val topic: String,
+    private val
     device: String
-) {
+)
 
-}
-
-private abstract class RemoteReceiver {
-
-}
+private abstract class RemoteReceiver
 
 /**
  * TODO fill this in

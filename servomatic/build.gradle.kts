@@ -29,3 +29,7 @@ project.ext.set("jar.name", "servomatic")
 application {
     mainClass.set("crackers.kobots.app.ServoThingKt")
 }
+
+tasks {
+    startScripts { enabled = false }
+}

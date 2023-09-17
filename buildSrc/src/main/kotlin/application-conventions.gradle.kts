@@ -34,7 +34,15 @@ tasks {
         archiveClassifier.set("")
         // this is important for using the remote client at the same time as other providers
         mergeServiceFiles()
+        minimize()  // TODO is this a good idea?
     }
+    // don't need any of these
+    jar { enabled = false }
+    startScripts { enabled = false }
+    distTar { enabled = false }
+    distZip { enabled = false }
+    shadowDistTar { enabled = false }
+    shadowDistZip { enabled = false }
 
     /**
      * Deploy said shadow-jar to a remote Pi for runtime fun

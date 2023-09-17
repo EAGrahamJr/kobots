@@ -77,14 +77,16 @@ object ArmMonitor : NeoKeyMenu.MenuDisplay, StatusColumnDisplay by StatusColumnD
         )
         joinTopic(
             SLEEP_TOPIC,
-            KobotsSubscriber { event -> if (event is AppCommon.SleepEvent) screen.setDisplayOn(!event.sleep) })
+            KobotsSubscriber { event -> if (event is AppCommon.SleepEvent) screen.setDisplayOn(!event.sleep) }
+        )
 
         future = checkRun(Duration.ofMillis(10)) {
             // if the arm is busy, show its status
             val lastState = lastStateReceived.get()
             val showStatus = lastState != null && lastState.busy || manualMode
-            if (showStatus) showLastStatus()
-            else {
+            if (showStatus) {
+                showLastStatus()
+            } else {
                 if (lastState != null) {
                     lastStateReceived.set(null)
                     displayItems(lastMenu.toList())

@@ -34,8 +34,12 @@ object RosetteStatus {
     val systemInfoInstance = LocalSystemInfo.getInstance()
 
     private val cpuColors = listOf(
-        Color.GREEN, Color.GREEN, Color.GREEN,
-        ORANGISH, ORANGISH, ORANGISH,
+        Color.GREEN,
+        Color.GREEN,
+        Color.GREEN,
+        ORANGISH,
+        ORANGISH,
+        ORANGISH,
         Color.ORANGE,
         Color.RED
     )
@@ -50,8 +54,11 @@ object RosetteStatus {
         get() = atomicSleep.get()
         set(value) {
             atomicSleep.set(value)
-            if (value) pixelStatus.fill(Color.BLACK)
-            else startColors()
+            if (value) {
+                pixelStatus.fill(Color.BLACK)
+            } else {
+                startColors()
+            }
         }
 
     internal fun stop() {
@@ -83,5 +90,4 @@ object RosetteStatus {
     private fun startColors() {
         cpuColors.forEachIndexed { index, color -> pixelStatus[index] = color }
     }
-
 }

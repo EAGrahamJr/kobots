@@ -63,29 +63,32 @@ object DieAufseherin {
     }
 
     private fun localStuff() {
-        joinTopic(DA_TOPIC,
-                  KobotsSubscriber<DasOverseerEvent> {
-                      logger.info("Got a DA event: $it")
-                      if (it.rtos && returnRequest != null) {
-                          TheArm.request(returnRequest!!)
-                          returnRequest = null
-                      } else if (it.dropOff) {
-                          returnRequest = PickUpAndMoveStuff.returnDropsToStorage
-                          TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
-                      }
-                  }
+        joinTopic(
+            DA_TOPIC,
+            KobotsSubscriber<DasOverseerEvent> {
+                logger.info("Got a DA event: $it")
+                if (it.rtos && returnRequest != null) {
+                    TheArm.request(returnRequest!!)
+                    returnRequest = null
+                } else if (it.dropOff) {
+                    returnRequest = PickUpAndMoveStuff.returnDropsToStorage
+                    TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
+                }
+            }
         )
-        joinTopic(INTERNAL_TOPIC,
-                  KobotsSubscriber<SequenceExecutor.SequenceCompleted> { msg ->
-                      logger.info("Sequence completed: $msg")
-                      when (msg.sequence) {
+        joinTopic(
+            INTERNAL_TOPIC,
+            KobotsSubscriber<SequenceExecutor.SequenceCompleted> { msg ->
+                logger.info("Sequence completed: $msg")
+                when (msg.sequence) {
 //                    ROTO_PICKUP -> _menuIndex.set(Menu.RETURN_PICK.ordinal)
-                          ROTO_RETURN -> ServoMaticCommand.DOWN.send()
-                          else -> {
-                              // do nothing
-                          }
-                      }
-                  })
+                    ROTO_RETURN -> ServoMaticCommand.DOWN.send()
+                    else -> {
+                        // do nothing
+                    }
+                }
+            }
+        )
     }
 
     private fun homeAssistantStuff() {
@@ -129,17 +132,19 @@ object DieAufseherin {
             }
         }
         // zwave/nodeID_14/48/0/Motion
-
     }
 
     /**
      * What to do when the Rotomatic is selected.
      */
     private fun handleRotomatc(payload: JSONObject) {
-        if (payload.optBoolean("liftIsUp", false)) LocalTime.now().hour.also { h ->
-            if (h < 8 || h == 22) publishToTopic(DA_TOPIC, dropOffRequested)
+        if (payload.optBoolean("liftIsUp", false)) {
+            LocalTime.now().hour.also { h ->
+                if (h < 8 || h == 22) publishToTopic(DA_TOPIC, dropOffRequested)
+            }
+        } else {
+            TheArm.request(homeSequence)
         }
-        else TheArm.request(homeSequence)
     }
 
     private fun haSub(s: String, handler: (JSONObject) -> Unit) {

@@ -46,7 +46,6 @@ val rotoMatic by lazy { ServoRotator(rotoServo, (0..180), (0..180)) }
 lateinit var liftServo: ServoDevice
 val liftoMatic by lazy { ServoLinearActuator(liftServo, 0f, 45f) }
 
-
 val logger = LoggerFactory.getLogger("Servomatic")
 val doneLatch = CountDownLatch(1)
 
@@ -95,17 +94,20 @@ fun main(args: Array<String>?) {
         rotoServo = hat.getServo(0, ServoTrim(1500, 1100), 0)
         liftServo = hat.getServo(1, ServoTrim.TOWERPRO_SG90, 0)
 
-        joinTopic(PROXIMITY_TOPIC, KobotsSubscriber<SensorSuite.ProximityTrigger> { trigger ->
-            if (liftLast) {
-                liftoMatic.move(if (liftoMatic.current() == 0) 100 else 0)
-            } else {
-                when (rotoMatic.current()) {
-                    0 -> rotoMatic.swing(90)
-                    90 -> rotoMatic.swing(180)
-                    180 -> rotoMatic.swing(0)
+        joinTopic(
+            PROXIMITY_TOPIC,
+            KobotsSubscriber<SensorSuite.ProximityTrigger> { trigger ->
+                if (liftLast) {
+                    liftoMatic.move(if (liftoMatic.current() == 0) 100 else 0)
+                } else {
+                    when (rotoMatic.current()) {
+                        0 -> rotoMatic.swing(90)
+                        90 -> rotoMatic.swing(180)
+                        180 -> rotoMatic.swing(0)
+                    }
                 }
             }
-        })
+        )
 
         doneLatch.await()
         logger.warn("Servomatic shutdown")

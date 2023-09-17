@@ -72,8 +72,9 @@ open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items
 
     private fun rotateMenu(proposed: Int) {
         var nextIndex = proposed
-        if (nextIndex >= menuItems.size) nextIndex = 0
-        else if (nextIndex + maxKeys >= menuItems.size) nextIndex = menuItems.size - maxKeys
+        if (nextIndex >= menuItems.size) {
+            nextIndex = 0
+        } else if (nextIndex + maxKeys >= menuItems.size) nextIndex = menuItems.size - maxKeys
         currentMenuItem.set(nextIndex)
         displayMenu()
     }

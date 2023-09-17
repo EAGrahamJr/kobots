@@ -52,7 +52,6 @@ private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
 
-
 private val gripperMenu = listOf(
     NeoKeyMenu.MenuItem("Home") { armRequest(homeSequence) },
     NeoKeyMenu.MenuItem("Say Hi", buttonColor = Color.BLUE) { armRequest(sayHi) },
