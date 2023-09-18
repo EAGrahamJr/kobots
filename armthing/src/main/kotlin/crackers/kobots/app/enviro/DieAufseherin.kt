@@ -55,11 +55,10 @@ object DieAufseherin {
     fun start() {
         localStuff()
         homeAssistantStuff()
-        RosetteStatus.start()
     }
 
     fun stop() {
-        RosetteStatus.stop()
+        // hmmm
     }
 
     private fun localStuff() {

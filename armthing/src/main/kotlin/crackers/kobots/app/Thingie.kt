@@ -25,6 +25,7 @@ import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.app.enviro.DieAufseherin.DA_TOPIC
 import crackers.kobots.app.enviro.DieAufseherin.dropOffRequested
 import crackers.kobots.app.enviro.DieAufseherin.returnRequested
+import crackers.kobots.app.enviro.RosetteStatus
 import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.goToSleep
@@ -34,7 +35,10 @@ import crackers.kobots.app.io.NeoKeyHandler
 import crackers.kobots.app.io.NeoKeyMenu
 import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.devices.io.GamepadQT
-import crackers.kobots.execution.*
+import crackers.kobots.execution.KobotsSubscriber
+import crackers.kobots.execution.executeWithMinTime
+import crackers.kobots.execution.joinTopic
+import crackers.kobots.execution.publishToTopic
 import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.PURPLE
 import org.slf4j.LoggerFactory
@@ -56,7 +60,7 @@ private val gripperMenu = listOf(
     NeoKeyMenu.MenuItem("Home") { armRequest(homeSequence) },
     NeoKeyMenu.MenuItem("Say Hi", buttonColor = Color.BLUE) { armRequest(sayHi) },
     NeoKeyMenu.MenuItem("Excuse Me", buttonColor = PURPLE) { armRequest(excuseMe) },
-    NeoKeyMenu.MenuItem("Manual", buttonColor = Color.ORANGE) { _manualMode.set(true) },
+//    NeoKeyMenu.MenuItem("Manual", buttonColor = Color.ORANGE) { _manualMode.set(true) },
     NeoKeyMenu.MenuItem("Lift It", buttonColor = Color.GREEN) { ServoMaticCommand.UP.send() },
     NeoKeyMenu.MenuItem("Get It", buttonColor = Color.CYAN) { publishToTopic(DA_TOPIC, dropOffRequested) },
     NeoKeyMenu.MenuItem("Return", buttonColor = GOLDENROD) { publishToTopic(DA_TOPIC, returnRequested) },
@@ -85,6 +89,7 @@ fun main(args: Array<String>? = null) {
         VeryDumbThermometer.start()
         TheArm.start()
         DieAufseherin.start()
+        RosetteStatus.start()
 
         // start auto-triggered stuff
         joinTopic(
@@ -99,19 +104,7 @@ fun main(args: Array<String>? = null) {
         // main loop!!!!!
         while (runFlag.get()) executeWithMinTime(WAIT_LOOP) {
             try {
-                val keys = neoMenu.execute()
-                // figure out if we're doing anything
-                when {
-                    manualMode -> joyRide()
-                    gamepad.xButton -> publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-                    keys.isNotEmpty() -> {
-                        keys.first().second.action()
-                    }
-
-                    else -> {
-                        // do nothing
-                    }
-                }
+                neoMenu.firstButton()
             } catch (e: Exception) {
                 Logger.error(e, "Exception")
             }
@@ -120,6 +113,7 @@ fun main(args: Array<String>? = null) {
         ServoMaticCommand.STOP.send()
 
         // stop all the things using the crickit
+        RosetteStatus.stop()
         TheArm.stop()
         VeryDumbThermometer.stop()
         DieAufseherin.stop()

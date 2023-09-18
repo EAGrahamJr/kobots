@@ -92,6 +92,14 @@ open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items
     }
 
     /**
+     * Executes the action described for the "first" button pressed.
+     */
+    @Synchronized
+    open fun firstButton() {
+        execute().firstOrNull()?.second?.action?.invoke()
+    }
+
+    /**
      * Sets up the sub-selection of menu items and displays them.
      */
     @Synchronized

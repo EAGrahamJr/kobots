@@ -19,7 +19,7 @@ package crackers.kobots.app.enviro
 import com.diozero.sbc.LocalSystemInfo
 import crackers.kobots.app.AppCommon.executor
 import crackers.kobots.app.crickitHat
-import crackers.kobots.utilities.ORANGISH
+import crackers.kobots.utilities.PURPLE
 import java.awt.Color
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
@@ -34,13 +34,13 @@ object RosetteStatus {
     val systemInfoInstance = LocalSystemInfo.getInstance()
 
     private val cpuColors = listOf(
+        PURPLE,
+        Color.BLUE,
         Color.GREEN,
         Color.GREEN,
-        Color.GREEN,
-        ORANGISH,
-        ORANGISH,
-        ORANGISH,
-        Color.ORANGE,
+        Color.YELLOW,
+        Color.YELLOW,
+        Color.YELLOW,
         Color.RED
     )
     internal val atomicSleep = AtomicBoolean(false)
@@ -75,7 +75,8 @@ object RosetteStatus {
             if (!goToSleep) {
                 systemInfoInstance.cpuTemperature.toDouble().let { temp ->
                     val x = ((temp - TEMPERATURE_OFFSET) * NUM_PIXELS / TEMPERATURE_RANGE).roundToInt()
-                    if (x in (0 until NUM_PIXELS) && x != lastTemp) {
+                        .coerceIn(0, NUM_PIXELS - 1)
+                    if (x != lastTemp) {
                         if (lastTemp != -1) pixelStatus[lastTemp] = cpuColors[lastTemp]
                         pixelStatus[x] = Color.WHITE
                         lastTemp = x

@@ -29,12 +29,12 @@ tasks {
      * Build a "shadow jar" for single-runnable deployment
      */
     shadowJar {
+        mustRunAfter("test")
         archiveBaseName.set(project.ext.get("jar.name").toString())
         archiveVersion.set("")
         archiveClassifier.set("")
         // this is important for using the remote client at the same time as other providers
         mergeServiceFiles()
-        minimize()  // TODO is this a good idea?
     }
     // don't need any of these
     jar { enabled = false }
