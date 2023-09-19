@@ -41,6 +41,7 @@ import crackers.kobots.execution.joinTopic
 import crackers.kobots.execution.publishToTopic
 import crackers.kobots.utilities.GOLDENROD
 import crackers.kobots.utilities.PURPLE
+import crackers.kobots.utilities.loadImage
 import org.slf4j.LoggerFactory
 import org.tinylog.Logger
 import java.awt.Color
@@ -56,16 +57,70 @@ private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
 
+private val smallMenu = listOf(
+    NeoKeyMenu.MenuItem(
+        "Home",
+        icon = loadImage("/home.png")
+    ) { armRequest(homeSequence) },
+    NeoKeyMenu.MenuItem(
+        "Say Hi",
+        icon = loadImage("/hail.png"),
+        buttonColor = Color.BLUE
+    ) { armRequest(sayHi) },
+    NeoKeyMenu.MenuItem(
+        "Return",
+        icon = loadImage("/redo.png"),
+        buttonColor = GOLDENROD
+    ) { publishToTopic(DA_TOPIC, returnRequested) },
+    NeoKeyMenu.MenuItem(
+        "Exit",
+        icon = loadImage("/dangerous.png"),
+        buttonColor = Color.RED
+    ) {
+        runFlag.set(false)
+    }
+)
 private val gripperMenu = listOf(
-    NeoKeyMenu.MenuItem("Home") { armRequest(homeSequence) },
-    NeoKeyMenu.MenuItem("Say Hi", buttonColor = Color.BLUE) { armRequest(sayHi) },
-    NeoKeyMenu.MenuItem("Excuse Me", buttonColor = PURPLE) { armRequest(excuseMe) },
+    NeoKeyMenu.MenuItem(
+        "Home",
+        icon = loadImage("/home.png")
+    ) { armRequest(homeSequence) },
+    NeoKeyMenu.MenuItem(
+        "Say Hi",
+        icon = loadImage("/hail.png"),
+        buttonColor = Color.BLUE
+    ) { armRequest(sayHi) },
+    NeoKeyMenu.MenuItem(
+        "Excuse Me",
+        abbrev = "Sorry",
+        icon = loadImage("/cancel.png"),
+        buttonColor = PURPLE
+    ) { armRequest(excuseMe) },
 //    NeoKeyMenu.MenuItem("Manual", buttonColor = Color.ORANGE) { _manualMode.set(true) },
-    NeoKeyMenu.MenuItem("Lift It", buttonColor = Color.GREEN) { ServoMaticCommand.UP.send() },
-    NeoKeyMenu.MenuItem("Get It", buttonColor = Color.CYAN) { publishToTopic(DA_TOPIC, dropOffRequested) },
-    NeoKeyMenu.MenuItem("Return", buttonColor = GOLDENROD) { publishToTopic(DA_TOPIC, returnRequested) },
-    NeoKeyMenu.MenuItem("Exit", buttonColor = Color.RED) { runFlag.set(false) },
-    NeoKeyMenu.MenuItem("Sleep", buttonColor = Color.BLUE.darker().darker()) { armRequest(goToSleep) }
+    NeoKeyMenu.MenuItem(
+        "Lift It",
+        icon = loadImage("/upload.png"),
+        buttonColor = Color.GREEN
+    ) { ServoMaticCommand.UP.send() },
+    NeoKeyMenu.MenuItem(
+        "Get It",
+        icon = loadImage("/symptoms.png"),
+        buttonColor = Color.CYAN
+    ) { publishToTopic(DA_TOPIC, dropOffRequested) },
+    NeoKeyMenu.MenuItem(
+        "Return",
+        icon = loadImage("/redo.png"),
+        buttonColor = GOLDENROD
+    ) { publishToTopic(DA_TOPIC, returnRequested) },
+    NeoKeyMenu.MenuItem(
+        "Exit",
+        icon = loadImage("/dangerous.png"),
+        buttonColor = Color.RED
+    ) { runFlag.set(false) },
+    NeoKeyMenu.MenuItem(
+        "Sleep", icon = loadImage("/bed.png"),
+        buttonColor = Color.BLUE.darker().darker()
+    ) { armRequest(goToSleep) }
 )
 
 private val WAIT_LOOP = Duration.ofMillis(50)
@@ -82,7 +137,7 @@ fun main(args: Array<String>? = null) {
     // these do not require the CRICKIT
     ArmMonitor.start()
     val keyboard = NeoKeyHandler()
-    val neoMenu = NeoKeyMenu(keyboard, ArmMonitor, gripperMenu)
+    val neoMenu = NeoKeyMenu(keyboard, ArmMonitor, smallMenu)
 
     crickitHat.use {
         // start all the things that require the CRICKIT

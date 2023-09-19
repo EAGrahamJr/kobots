@@ -16,6 +16,7 @@
 
 package crackers.kobots.app.io
 
+import crackers.kobots.utilities.loadImage
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.awt.Image
@@ -58,7 +59,7 @@ open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items
         val name: String,
         val abbrev: String? = null,
         val icon: Image? = null,
-        val buttonColor: Color = Color.GREEN,
+        val buttonColor: Color = Color.GRAY,
         val action: () -> Unit
     ) {
         override fun toString() = abbrev ?: name
@@ -66,7 +67,12 @@ open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items
 
     private val currentMenuItem = AtomicInteger(0)
 
-    private val nextMenuItem = MenuItem("Next", abbrev = "\u25B7", buttonColor = Color.BLUE) {
+    private val nextMenuItem = MenuItem(
+        "Next",
+        abbrev = "\u25B7",
+        buttonColor = Color.BLUE,
+        icon = loadImage("/arrow_forward.png")
+    ) {
         rotateMenu(currentMenuItem.get() + maxKeys)
     }
 
@@ -79,16 +85,18 @@ open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items
         displayMenu()
     }
 
+    private val NO_KEY = MenuItem("Ignored") {}
+
     /**
      * Reads the keyboard and maps buttons pressed to actions to be performed.
      */
     @Synchronized
     open fun execute(): List<Pair<Int, MenuItem>> {
-        val keys = neoKey.read()
-        val result = mutableListOf<Pair<Int, MenuItem>>()
-        for (i in 0..<maxKeys) if (keys[i]) result += i to menuItems[currentMenuItem.get() + i]
-        if (keys[3]) result += 3 to nextMenuItem
-        return result
+        return neoKey.read()
+            .mapIndexed { index, pressed ->
+                index to if (pressed) menuItems[currentMenuItem.get() + index] else NO_KEY
+            }
+            .filter { it.second != NO_KEY }
     }
 
     /**
@@ -105,8 +113,9 @@ open class NeoKeyMenu(val neoKey: NeoKeyHandler, val display: MenuDisplay, items
     @Synchronized
     fun displayMenu() {
         val fromIndex = currentMenuItem.get()
-        val toDisplay = menuItems.subList(fromIndex, fromIndex + maxKeys).toMutableList()
-        toDisplay += nextMenuItem
+        // if there's exactly 4, just return them, else get a sub-list and add "next"
+        val toDisplay = if (menuItems.size == 4) menuItems
+        else menuItems.subList(fromIndex, fromIndex + maxKeys).toMutableList().also { it.add(nextMenuItem) }
 
         // display the stuff and set the button colors
         display.displayItems(toDisplay)
