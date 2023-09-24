@@ -20,12 +20,12 @@ import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim
 import com.diozero.devices.ServoController
 import crackers.kobots.app.SensorSuite.PROXIMITY_TOPIC
-import crackers.kobots.execution.KobotsSubscriber
-import crackers.kobots.execution.joinTopic
 import crackers.kobots.mqtt.KobotsMQTT
-import crackers.kobots.parts.ServoLinearActuator
-import crackers.kobots.parts.ServoRotator
-import crackers.kobots.utilities.KobotSleep
+import crackers.kobots.parts.app.KobotSleep
+import crackers.kobots.parts.app.KobotsSubscriber
+import crackers.kobots.parts.app.joinTopic
+import crackers.kobots.parts.movement.ServoLinearActuator
+import crackers.kobots.parts.movement.ServoRotator
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.util.concurrent.CountDownLatch
@@ -49,29 +49,42 @@ val liftoMatic by lazy { ServoLinearActuator(liftServo, 0f, 45f) }
 val logger = LoggerFactory.getLogger("Servomatic")
 val doneLatch = CountDownLatch(1)
 
-val mqttClient = KobotsMQTT("marvin", "tcp://192.168.1.4:1883").apply {
-    startAliveCheck()
-    subscribe(SERVO_TOPIC) {
-        val payload = ServoMaticCommand.valueOf(it.uppercase())
-        when (payload) {
-            ServoMaticCommand.STOP -> {
-                logger.error("Stopping")
-                doneLatch.countDown()
-            }
+/**
+ * Whatever
+ */
+const val REMOTE_PI = "diozero.remote.hostname"
+const val SERVO_TOPIC = "kobots/servoMatic"
+const val EVENT_TOPIC = "kobots/events"
 
-            ServoMaticCommand.UP -> liftoMatic.move(100)
-            ServoMaticCommand.DOWN -> liftoMatic.move(0)
-            ServoMaticCommand.LEFT -> rotoMatic.swing(180)
-            ServoMaticCommand.RIGHT -> rotoMatic.swing(0)
-            ServoMaticCommand.CENTER -> rotoMatic.swing(90)
-            ServoMaticCommand.SLEEP -> {
-                ServoDisplay.sleep(true)
-                SensorSuite.disabled = true
-            }
+enum class ServoMaticCommand {
+    STOP, UP, DOWN, LEFT, RIGHT, CENTER, SLEEP, WAKEY;
+}
 
-            ServoMaticCommand.WAKEY -> {
-                ServoDisplay.sleep(false)
-                SensorSuite.disabled = false
+val mqttClient by lazy {
+    KobotsMQTT("marvin", "tcp://192.168.1.4:1883").apply {
+
+        subscribe(SERVO_TOPIC) {
+            val payload = ServoMaticCommand.valueOf(it.uppercase())
+            when (payload) {
+                ServoMaticCommand.STOP -> {
+                    logger.error("Stopping")
+                    doneLatch.countDown()
+                }
+
+                ServoMaticCommand.UP -> liftoMatic.move(100)
+                ServoMaticCommand.DOWN -> liftoMatic.move(0)
+                ServoMaticCommand.LEFT -> rotoMatic.swing(180)
+                ServoMaticCommand.RIGHT -> rotoMatic.swing(0)
+                ServoMaticCommand.CENTER -> rotoMatic.swing(90)
+                ServoMaticCommand.SLEEP -> {
+                    ServoDisplay.sleep(true)
+                    SensorSuite.disabled = true
+                }
+
+                ServoMaticCommand.WAKEY -> {
+                    ServoDisplay.sleep(false)
+                    SensorSuite.disabled = false
+                }
             }
         }
     }
@@ -87,6 +100,8 @@ fun main(args: Array<String>?) {
     // pass any arg and we'll use the remote pi
     // NOTE: this reqquires a diozero daemon running on the remote pi and the diozero remote jar in the classpath
     if (args?.isNotEmpty() == true) System.setProperty(REMOTE_PI, args[0])
+
+    mqttClient.startAliveCheck()
 
     SensorSuite.start()
     ServoDisplay.sleep(false)

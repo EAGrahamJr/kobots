@@ -21,11 +21,11 @@ import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.crickitHat
 import crackers.kobots.app.mqtt
 import crackers.kobots.devices.at
-import crackers.kobots.execution.*
-import crackers.kobots.parts.ActionSequence
-import crackers.kobots.parts.SequenceExecutor
-import crackers.kobots.parts.ServoLinearActuator
-import crackers.kobots.parts.ServoRotator
+import crackers.kobots.parts.app.KobotsAction
+import crackers.kobots.parts.app.KobotsSubscriber
+import crackers.kobots.parts.app.joinTopic
+import crackers.kobots.parts.app.publishToTopic
+import crackers.kobots.parts.movement.*
 import java.util.concurrent.atomic.AtomicReference
 
 /**

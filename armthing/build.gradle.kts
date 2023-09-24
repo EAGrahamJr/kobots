@@ -19,7 +19,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":parts"))
+    implementation("crackers.kobots:kobots-parts:0.0.1")
 //    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
 //    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
     // more HA craziness

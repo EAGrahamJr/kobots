@@ -16,6 +16,8 @@
 
 package crackers.kobots.app.arm
 
+import crackers.kobots.parts.app.KobotsEvent
+
 /**
  * Describes the basic data for an arm joint location.
  * TODO add in radii to try to calculate endpoint coordintes of things
@@ -35,4 +37,4 @@ data class ArmPosition(
 /**
  * Current state
  */
-class ArmState(val position: ArmPosition, val busy: Boolean = false) : crackers.kobots.execution.KobotsEvent
+class ArmState(val position: ArmPosition, val busy: Boolean = false) : KobotsEvent

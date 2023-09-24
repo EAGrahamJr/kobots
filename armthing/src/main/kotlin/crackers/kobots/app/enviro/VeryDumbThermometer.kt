@@ -20,8 +20,8 @@ import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.crickitHat
 import crackers.kobots.app.execution.excuseMe
-import crackers.kobots.parts.BasicStepperRotator
-import crackers.kobots.utilities.KobotSleep
+import crackers.kobots.parts.app.KobotSleep
+import crackers.kobots.parts.movement.BasicStepperRotator
 import org.tinylog.Logger
 
 /**

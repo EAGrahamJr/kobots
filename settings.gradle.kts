@@ -15,4 +15,4 @@
  */
 
 rootProject.name = "kobots"
-include("armthing", "parts", "adhoc", "servomatic")
+include("armthing", "servomatic")

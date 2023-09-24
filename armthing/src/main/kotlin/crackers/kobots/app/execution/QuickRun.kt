@@ -28,8 +28,8 @@ import crackers.kobots.app.arm.TheArm.elbow
 import crackers.kobots.app.arm.TheArm.extender
 import crackers.kobots.app.arm.TheArm.gripper
 import crackers.kobots.app.arm.TheArm.waist
-import crackers.kobots.parts.ActionSpeed
-import crackers.kobots.parts.sequence
+import crackers.kobots.parts.movement.ActionSpeed
+import crackers.kobots.parts.movement.sequence
 
 /**
  * Home the arm.

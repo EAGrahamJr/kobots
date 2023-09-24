@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package converter
+package crackers.kobots
 
 import java.awt.image.BufferedImage
 import java.nio.file.Files

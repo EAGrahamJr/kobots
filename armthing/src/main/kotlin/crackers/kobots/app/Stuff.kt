@@ -26,8 +26,16 @@ internal val mqtt = KobotsMQTT("brainz", "tcp://192.168.1.4:1883").apply {
 }
 
 /**
- * Send a servo command to the servoMatic topic
+ * Whatever
  */
-internal fun ServoMaticCommand.send() {
-    mqtt.publish(SERVO_TOPIC, name)
+const val REMOTE_PI = "diozero.remote.hostname"
+const val SERVO_TOPIC = "kobots/servoMatic"
+const val EVENT_TOPIC = "kobots/events"
+
+enum class ServoMaticCommand {
+    STOP, UP, DOWN, LEFT, RIGHT, CENTER, SLEEP, WAKEY;
+
+    internal fun send() {
+        mqtt.publish(SERVO_TOPIC, name)
+    }
 }

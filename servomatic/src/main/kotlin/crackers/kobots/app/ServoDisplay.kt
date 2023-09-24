@@ -19,8 +19,8 @@ package crackers.kobots.app
 import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel
-import crackers.kobots.app.io.StatusColumnDelegate
-import crackers.kobots.app.io.StatusColumnDisplay
+import crackers.kobots.parts.app.io.StatusColumnDelegate
+import crackers.kobots.parts.app.io.StatusColumnDisplay
 import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage

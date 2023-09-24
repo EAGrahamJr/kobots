@@ -8,6 +8,11 @@ This is a _learning_ experience for me, but it **might** produce something usefu
 
 ![Just Build](https://github.com/EAGrahamJr/kobots/actions/workflows/full-build.yaml/badge.svg) ![Kotlin](https://badgen.net/badge/Kotlin/1.8.22/purple)  ![Java](https://badgen.net/badge/Java/17/orange) ![Apache License](https://badgen.net/github/license/EAGrahamJr/kobots)
 
+Parts of this project have been either archived or spun off into library-like projects:
+
+- [Kobots Devices](https://github.com/EAGrahamJr/kobots-devices)
+- [Kobots Parts](https://github.com/EAGrahamJr/kobots-parts)
+
 ## In Memorium: Illy 5/2006 - 2/24/2023
 
 Goodbye, my friend.
@@ -42,6 +47,7 @@ This [pinout reference](https://pinout.xyz/) is also invaluable...
 
 - [diozero](https://www.diozero.com/) - a thorough and straight-forward implementation of GPIO interface, with a **wide** range of standard devices to boot.<sup>**2**</sup>
 - [kobots-devices](https://github.com/EAGrahamJr/kobots-devices) - extensions and new devices added onto `diozero`, but in **Kotlin**.
+- [kobots-parts](https://github.com/EAGrahamJr/kobots-parts) - application level stuff using the devices -- :bangbang: **HIGHLY OPINIONATED** :smiiling_imp:
 
 # Building
 

@@ -17,9 +17,9 @@
 package crackers.kobots.app
 
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.execution.KobotsEvent
-import crackers.kobots.execution.publishToTopic
-import crackers.kobots.utilities.KobotSleep
+import crackers.kobots.parts.app.KobotSleep
+import crackers.kobots.parts.app.KobotsEvent
+import crackers.kobots.parts.app.publishToTopic
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
