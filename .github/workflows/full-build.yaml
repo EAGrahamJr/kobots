@@ -66,6 +66,17 @@ jobs:
         run: |
           cd HAssK
           ./gradlew --no-daemon --quiet build libraryDistribution
+      # parts
+      - name: Checkout parts
+        uses: actions/checkout@v3
+        with:
+          repository: EAGrahamJr/kobots-parts
+          ref: main
+          path: kobots-parts
+      - name: Build parts
+        run: |
+          cd kobots-parts
+          ./gradlew --no-daemon --quiet build libraryDistribution
       # main act
       - name: Checkout kobots
         uses: actions/checkout@v3
