@@ -57,7 +57,6 @@ private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
 
-
 private val smallMenu by lazy {
     listOf(
         NeoKeyMenu.MenuItem(
@@ -122,7 +121,8 @@ private val gripperMenu by lazy {
             buttonColor = Color.RED
         ) { runFlag.set(false) },
         NeoKeyMenu.MenuItem(
-            "Sleep", icon = loadImage("/bed.png"),
+            "Sleep",
+            icon = loadImage("/bed.png"),
             buttonColor = Color.BLUE.darker().darker()
         ) { armRequest(goToSleep) }
     )

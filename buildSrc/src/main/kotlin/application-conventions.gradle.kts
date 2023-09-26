@@ -21,7 +21,7 @@ plugins {
 }
 
 dependencies {
-    implementation("crackers.kobots:kobots-parts:0.0.1")
+    implementation("crackers.kobots:kobots-parts:$PARTS_VER")
 
     implementation("org.eclipse.paho:org.eclipse.paho.mqttv5.client:1.2.5")
     implementation("org.json:json:20230227")
