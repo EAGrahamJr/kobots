@@ -18,46 +18,35 @@ package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.SLEEP_TOPIC
-import crackers.kobots.app.AppCommon.onOff
-import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.EVENT_TOPIC
-import crackers.kobots.app.ServoMaticCommand
 import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.execution.PickUpAndMoveStuff
-import crackers.kobots.app.execution.ROTO_RETURN
-import crackers.kobots.app.execution.goToSleep
-import crackers.kobots.app.execution.homeSequence
+import crackers.kobots.app.execution.*
 import crackers.kobots.app.mqtt
-import crackers.kobots.parts.app.KobotsEvent
+import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.parts.app.KobotsSubscriber
 import crackers.kobots.parts.app.joinTopic
 import crackers.kobots.parts.app.publishToTopic
-import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceExecutor
 import crackers.kobots.parts.movement.SequenceExecutor.Companion.INTERNAL_TOPIC
+import crackers.kobots.parts.onOff
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
+import java.util.concurrent.TimeUnit
 
 /*
  * Message central.
  */
 object DieAufseherin {
-    internal const val DA_TOPIC = "DieAufseherin"
-
-    data class DasOverseerEvent(val dropOff: Boolean, val rtos: Boolean) : KobotsEvent
-
-    // singletons events
-    internal val dropOffRequested = DasOverseerEvent(dropOff = true, rtos = false)
-    internal val returnRequested = DasOverseerEvent(dropOff = false, rtos = true)
+    enum class GripperActions {
+        PICKUP, RETURN, HOME, SAY_HI, STOP, EXCUSE_ME, SLEEP
+    }
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
 
-    private var returnRequest: ActionSequence? = null
-
     fun start() {
         localStuff()
-        homeAssistantStuff()
+        mqttStuff()
     }
 
     fun stop() {
@@ -66,38 +55,42 @@ object DieAufseherin {
 
     private fun localStuff() {
         joinTopic(
-            DA_TOPIC,
-            KobotsSubscriber<DasOverseerEvent> {
-                logger.info("Got a DA event: $it")
-                if (it.rtos && returnRequest != null) {
-                    TheArm.request(returnRequest!!)
-                    returnRequest = null
-                } else if (it.dropOff) {
-                    returnRequest = PickUpAndMoveStuff.returnDropsToStorage
-                    TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
-                }
-            }
-        )
-        joinTopic(
             INTERNAL_TOPIC,
             KobotsSubscriber<SequenceExecutor.SequenceCompleted> { msg ->
                 logger.info("Sequence completed: $msg")
-                when (msg.sequence) {
-//                    ROTO_PICKUP -> _menuIndex.set(Menu.RETURN_PICK.ordinal)
-                    ROTO_RETURN -> ServoMaticCommand.DOWN.send()
-                    else -> {
-                        // do nothing
-                    }
-                }
             }
         )
+        AppCommon.executor.scheduleAtFixedRate(::youHaveOneJob, 5000, 100, TimeUnit.MICROSECONDS)
     }
 
-    private fun homeAssistantStuff() {
+    const val CLOSE_ENOUGH = 15 // this is **approximately**  25mm
+    const val PROXIMITY_TOPIC = "Prox.TooClose"
+
+    private val sensor by lazy {
+        VCNL4040().apply {
+            proximityEnabled = true
+            ambientLightEnabled = true
+        }
+    }
+    private var wasTriggered = false
+    private fun youHaveOneJob() {
+        try {
+            val prox = sensor.proximity
+            wasTriggered = if (prox > CLOSE_ENOUGH) {
+                if (!wasTriggered) mqtt.publish("kobots/buttonboard", "NEXT_FRONTBENCH")
+                true
+            } else false
+
+        } catch (e: Exception) {
+            logger.error("Proximity sensor error: ${e.message}")
+        }
+    }
+
+    private fun mqttStuff() {
         haSub("homebody/bedroom/casey") { payload ->
             if (payload.has("lamp")) {
                 if (LocalTime.now().hour == 22) {
-                    ServoMaticCommand.UP.send()
+                    TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
                 }
             }
         }
@@ -107,11 +100,9 @@ object DieAufseherin {
                 RosetteStatus.goToSleep = sleepy
                 publishToTopic(SLEEP_TOPIC, AppCommon.SleepEvent(sleepy))
                 if (sleepy) {
-                    TheArm.request(goToSleep)
-                    ServoMaticCommand.SLEEP.send()
+                    TheArm.request(armSleep)
                 } else {
-                    ServoMaticCommand.WAKEY.send()
-                    if (LocalTime.now().hour < 10) ServoMaticCommand.UP.send()
+                    if (LocalTime.now().hour < 10) TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
                 }
             }
         }
@@ -122,34 +113,35 @@ object DieAufseherin {
             }
         }
         haSub(EVENT_TOPIC) { payload ->
-            if (payload.has("source")) {
-                when (payload.getString("source")) {
-                    "servomatic" -> handleRotomatc(payload)
-                    "proximity" -> if (runFlag.get()) {
-                        logger.error("Proximity sensor triggered")
-//                        publishToTopic(TheArm.REQUEST_TOPIC, allStop)
-//                        runFlag.set(false)
-                    }
+            logger.info("Got an event")
+        }
+
+        // subscribe to the command channel
+        mqtt.subscribe("kobots/gripOMatic") { payload ->
+            logger.info("Got a gripOMatic command: $payload")
+            when (GripperActions.valueOf(payload.uppercase())) {
+                GripperActions.PICKUP -> TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
+                GripperActions.RETURN -> TheArm.request(PickUpAndMoveStuff.returnDropsToStorage)
+                GripperActions.HOME -> TheArm.request(homeSequence)
+                GripperActions.SAY_HI -> TheArm.request(sayHi)
+                GripperActions.STOP -> AppCommon.applicationRunning = false
+                GripperActions.EXCUSE_ME -> TheArm.request(excuseMe)
+                GripperActions.SLEEP -> {
+                    RosetteStatus.goToSleep = true
+                    publishToTopic(SLEEP_TOPIC, AppCommon.SleepEvent(true))
+                    TheArm.request(armSleep)
                 }
             }
         }
-        // zwave/nodeID_14/48/0/Motion
-    }
 
-    /**
-     * What to do when the Rotomatic is selected.
-     */
-    private fun handleRotomatc(payload: JSONObject) {
-        if (payload.optBoolean("liftIsUp", false)) {
-            LocalTime.now().hour.also { h ->
-                if (h < 8 || h == 22) publishToTopic(DA_TOPIC, dropOffRequested)
-            }
-        } else {
-            TheArm.request(homeSequence)
-        }
+
+        // zwave/nodeID_14/48/0/Motion
     }
 
     private fun haSub(s: String, handler: (JSONObject) -> Unit) {
         mqtt.subscribe(s) { payload -> handler(JSONObject(payload)) }
     }
+
+    private val switcher by lazy { VCNL4040() }
+
 }

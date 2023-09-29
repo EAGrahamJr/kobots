@@ -83,7 +83,7 @@ val excuseMe by lazy {
     }
 }
 
-val goToSleep by lazy {
+val armSleep by lazy {
     sequence {
         name = "Go To Sleep"
         this += homeSequence

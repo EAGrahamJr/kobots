@@ -17,9 +17,9 @@
 package crackers.kobots.app.enviro
 
 import com.diozero.sbc.LocalSystemInfo
-import crackers.kobots.app.AppCommon.PURPLE
 import crackers.kobots.app.AppCommon.executor
 import crackers.kobots.app.crickitHat
+import crackers.kobots.parts.PURPLE
 import java.awt.Color
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit

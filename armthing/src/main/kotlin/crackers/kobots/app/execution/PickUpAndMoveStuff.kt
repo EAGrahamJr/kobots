@@ -29,7 +29,11 @@ import crackers.kobots.parts.movement.sequence
  * Picks up stuff from the places and returns it.
  */
 object PickUpAndMoveStuff {
-    private val dropMover = MoveStuffAround(extenderToPickupTarget = 75, elbowForPickupTarget = 0)
+    private val dropMover = MoveStuffAround(
+        closeOnItem = 93,
+        extenderToPickupTarget = 75,
+        elbowForPickupTarget = -7
+    )
     val moveEyeDropsToDropZone = dropMover.moveObjectToTarget()
     val returnDropsToStorage = dropMover.pickupAndReturn()
 }
@@ -38,8 +42,8 @@ object PickUpAndMoveStuff {
  * Magic things for transporting stuff.
  */
 const val MAGIC_EXTENDER = 15
-const val ROTO_PICKUP = "Pick Up From Location"
-const val ROTO_RETURN = "Return To Sender"
+const val ROTO_PICKUP = "LocationPickup"
+const val ROTO_RETURN = "ReturnPickup"
 
 class MoveStuffAround(
     val closeOnItem: Int = 90, // how much to close the gripper to grab the item - this stresses the technic a bit

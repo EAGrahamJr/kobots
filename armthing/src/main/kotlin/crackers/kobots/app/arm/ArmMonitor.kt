@@ -25,7 +25,6 @@ import crackers.kobots.app.AppCommon.checkRun
 import crackers.kobots.app.manualMode
 import crackers.kobots.parts.app.KobotsSubscriber
 import crackers.kobots.parts.app.io.NeoKeyMenu
-import crackers.kobots.parts.app.io.SmallMenuDisplay
 import crackers.kobots.parts.app.io.StatusColumnDelegate
 import crackers.kobots.parts.app.io.StatusColumnDisplay
 import crackers.kobots.parts.app.joinTopic
@@ -43,7 +42,7 @@ private const val MAX_HT = 32
 /**
  * Shows where the arm is on a timed basis.
  */
-object ArmMonitor : SmallMenuDisplay(DisplayMode.ICONS), StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) {
+object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) {
     private lateinit var lastMenu: List<NeoKeyMenu.MenuItem>
     private const val HALF_HT = MAX_HT / 2
 
@@ -87,12 +86,6 @@ object ArmMonitor : SmallMenuDisplay(DisplayMode.ICONS), StatusColumnDisplay by 
             val lastState = lastStateReceived.get()
             if (lastState != null && lastState.busy || manualMode) {
                 showLastStatus()
-            } else {
-                // not busy, restore menu
-                if (lastState != null) {
-                    lastStateReceived.set(null)
-                    displayItems(lastMenu.toList())
-                }
             }
         }
     }
@@ -115,14 +108,5 @@ object ArmMonitor : SmallMenuDisplay(DisplayMode.ICONS), StatusColumnDisplay by 
     fun stop() {
         future.get()
         screen.close()
-    }
-
-    override fun displayItems(items: List<NeoKeyMenu.MenuItem>) {
-        lastMenu = items
-        super.displayItems(items)
-    }
-
-    override fun drawMenuImage(menuImage: BufferedImage) {
-        screen.display(menuImage)
     }
 }

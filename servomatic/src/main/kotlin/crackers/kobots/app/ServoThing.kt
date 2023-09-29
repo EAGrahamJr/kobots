@@ -19,11 +19,9 @@ package crackers.kobots.app
 import com.diozero.api.ServoDevice
 import com.diozero.api.ServoTrim
 import com.diozero.devices.ServoController
-import crackers.kobots.app.SensorSuite.PROXIMITY_TOPIC
+import crackers.kobots.devices.expander.I2CMultiplexer
 import crackers.kobots.mqtt.KobotsMQTT
 import crackers.kobots.parts.app.KobotSleep
-import crackers.kobots.parts.app.KobotsSubscriber
-import crackers.kobots.parts.app.joinTopic
 import crackers.kobots.parts.movement.ServoLinearActuator
 import crackers.kobots.parts.movement.ServoRotator
 import org.json.JSONObject
@@ -45,6 +43,8 @@ val rotoMatic by lazy { ServoRotator(rotoServo, (0..180), (0..180)) }
 
 lateinit var liftServo: ServoDevice
 val liftoMatic by lazy { ServoLinearActuator(liftServo, 0f, 45f) }
+
+val multiplexer by lazy { I2CMultiplexer() }
 
 val logger = LoggerFactory.getLogger("Servomatic")
 val doneLatch = CountDownLatch(1)
@@ -77,13 +77,9 @@ val mqttClient by lazy {
                 ServoMaticCommand.RIGHT -> rotoMatic.swing(0)
                 ServoMaticCommand.CENTER -> rotoMatic.swing(90)
                 ServoMaticCommand.SLEEP -> {
-                    ServoDisplay.sleep(true)
-                    SensorSuite.disabled = true
                 }
 
                 ServoMaticCommand.WAKEY -> {
-                    ServoDisplay.sleep(false)
-                    SensorSuite.disabled = false
                 }
             }
         }
@@ -103,26 +99,9 @@ fun main(args: Array<String>?) {
 
     mqttClient.startAliveCheck()
 
-    SensorSuite.start()
-    ServoDisplay.sleep(false)
     ServoController().use { hat ->
         rotoServo = hat.getServo(0, ServoTrim(1500, 1100), 0)
         liftServo = hat.getServo(1, ServoTrim.TOWERPRO_SG90, 0)
-
-        joinTopic(
-            PROXIMITY_TOPIC,
-            KobotsSubscriber<SensorSuite.ProximityTrigger> { trigger ->
-                if (liftLast) {
-                    liftoMatic.move(if (liftoMatic.current() == 0) 100 else 0)
-                } else {
-                    when (rotoMatic.current()) {
-                        0 -> rotoMatic.swing(90)
-                        90 -> rotoMatic.swing(180)
-                        180 -> rotoMatic.swing(0)
-                    }
-                }
-            }
-        )
 
         doneLatch.await()
         logger.warn("Servomatic shutdown")
@@ -131,8 +110,6 @@ fun main(args: Array<String>?) {
         liftoMatic.move(0)
     }
     logger.warn("Servomatic exit")
-    ServoDisplay.sleep(true)
-    SensorSuite.close()
     exitProcess(0)
 }
 
@@ -145,7 +122,6 @@ fun ServoRotator.swing(target: Int) {
     if (busy.compareAndSet(false, true)) {
         executor.submit {
             while (!rotateTo(target)) {
-                ServoDisplay.show(this.current(), liftoMatic.current())
                 KobotSleep.millis(ROTO_SPEED)
             }
             liftLast = target == 0
@@ -164,7 +140,6 @@ fun ServoLinearActuator.move(target: Int) {
     if (busy.compareAndSet(false, true)) {
         executor.submit {
             while (!extendTo(target)) {
-                ServoDisplay.show(rotoMatic.current(), this.current())
                 KobotSleep.millis(LIFT_SPEED)
             }
             liftLast = target != 0
