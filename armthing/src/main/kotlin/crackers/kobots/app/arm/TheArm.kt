@@ -17,8 +17,11 @@
 package crackers.kobots.app.arm
 
 import com.diozero.api.ServoTrim
+import crackers.kobots.app.AppCommon
+import crackers.kobots.app.AppCommon.SLEEP_TOPIC
 import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.crickitHat
+import crackers.kobots.app.execution.armSleep
 import crackers.kobots.app.mqtt
 import crackers.kobots.devices.at
 import crackers.kobots.parts.app.KobotsAction
@@ -120,6 +123,12 @@ object TheArm : SequenceExecutor("TheArm", mqtt) {
             REQUEST_TOPIC,
             KobotsSubscriber<KobotsAction> {
                 handleRequest(it)
+            }
+        )
+        joinTopic(
+            SLEEP_TOPIC,
+            KobotsSubscriber { event ->
+                if (event is AppCommon.SleepEvent && event.sleep) handleRequest(SequenceRequest((armSleep)))
             }
         )
     }

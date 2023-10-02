@@ -17,7 +17,9 @@
 package crackers.kobots
 
 import java.awt.image.BufferedImage
+import java.io.FilenameFilter
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import javax.imageio.ImageIO
 import kotlin.io.path.exists
@@ -26,24 +28,33 @@ import kotlin.io.path.exists
  * Checks the download directory for material icon files and copy/converts them for use in my projects.
  */
 fun main() {
-    val materialDir = Paths.get(System.getProperty("user.home"), "projects/icons/material").also {
+    val iconDir = Paths.get(System.getProperty("user.home"), "projects/icons").also {
+        if (!it.exists()) Files.createDirectories(it)
+    }
+    val materialDir = Paths.get(iconDir.toString(), "material").also {
         if (!it.exists()) Files.createDirectories(it)
     }
 
     val FILL_TAG = "_FILL0"
-    Paths.get(System.getProperty("user.home"), "Downloads").toFile().listFiles()?.forEach {
-        if (it.name.contains(FILL_TAG)) {
-            val newFileName = it.name.let { name ->
-                name.substring(0, name.indexOf(FILL_TAG)) + ".png"
+    val filter = FilenameFilter { _, name -> name.endsWith(".png") }
+    Paths.get(System.getProperty("user.home"), "Downloads").toFile().listFiles(filter)?.forEach {
+        val newFilePath: Path = it.name.let {
+            if (it.contains(FILL_TAG)) {
+                materialDir.resolve(it.substring(0, it.indexOf(FILL_TAG)) + ".png")
+            } else {
+                iconDir.resolve(it)
             }
-            val output = materialDir.resolve(newFileName).toFile()
-            ImageIO.read(it).apply {
-                invert()
-                ImageIO.write(this, "png", output)
-            }
+        }
+
+        val output = newFilePath.toFile()
+        ImageIO.read(it).apply {
+            println("Converting ${it.name} to ${output.name}")
+            invert()
+            ImageIO.write(this, "png", output)
         }
     }
 }
+
 
 fun BufferedImage.invert(): BufferedImage {
     for (x in 0 until width) {

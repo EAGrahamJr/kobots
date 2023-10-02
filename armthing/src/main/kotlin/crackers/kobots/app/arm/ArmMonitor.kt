@@ -21,18 +21,22 @@ import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.SLEEP_TOPIC
-import crackers.kobots.app.AppCommon.checkRun
 import crackers.kobots.app.manualMode
 import crackers.kobots.parts.app.KobotsSubscriber
-import crackers.kobots.parts.app.io.NeoKeyMenu
 import crackers.kobots.parts.app.io.StatusColumnDelegate
 import crackers.kobots.parts.app.io.StatusColumnDisplay
 import crackers.kobots.parts.app.joinTopic
+import crackers.kobots.parts.loadImage
+import crackers.kobots.parts.movement.SequenceExecutor
+import crackers.kobots.parts.movement.SequenceExecutor.Companion.INTERNAL_TOPIC
+import org.slf4j.LoggerFactory
+import java.awt.Color
 import java.awt.Font
 import java.awt.FontMetrics
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicReference
 
@@ -43,9 +47,6 @@ private const val MAX_HT = 32
  * Shows where the arm is on a timed basis.
  */
 object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) {
-    private lateinit var lastMenu: List<NeoKeyMenu.MenuItem>
-    private const val HALF_HT = MAX_HT / 2
-
     private val screenGraphics: Graphics2D
 
     private val monitorFont = Font(Font.SANS_SERIF, Font.PLAIN, 12)
@@ -59,7 +60,9 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
         }
     }
 
-    private val screen by lazy {
+    private val randomImages: List<BufferedImage>
+    private val successImage: BufferedImage
+    private val screen = run {
         val i2CDevice =
             I2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
 //            multiplexer.channels[0]
@@ -71,6 +74,17 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
     private val lastStateReceived = AtomicReference<ArmState>()
     private lateinit var future: Future<*>
 
+    init {
+        randomImages = with(screen) {
+            listOf(
+                scaleImage(loadImage("/kissme.png")),
+                scaleImage(loadImage("/meh.png")),
+                scaleImage(loadImage("/oh-yeah.png")).also { successImage = it },
+                scaleImage(loadImage("/stuck-out-tongue.png"))
+            )
+        }
+    }
+
     fun start() {
         joinTopic(
             TheArm.STATE_TOPIC,
@@ -80,14 +94,23 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
             SLEEP_TOPIC,
             KobotsSubscriber { event -> if (event is AppCommon.SleepEvent) screen.setDisplayOn(!event.sleep) }
         )
+        joinTopic(
+            INTERNAL_TOPIC,
+            KobotsSubscriber { message ->
+                if (message is SequenceExecutor.SequenceCompleted) {
+                    drawAnImage(successImage)
+                }
+            }
+        )
 
-        future = checkRun(Duration.ofMillis(10)) {
+        val runner = {
             // if the arm is busy, show its status
             val lastState = lastStateReceived.get()
-            if (lastState != null && lastState.busy || manualMode) {
-                showLastStatus()
-            }
+            if (lastState != null && lastState.busy || manualMode) showLastStatus()
+            else showRandomImage()
         }
+
+        future = AppCommon.executor.scheduleAtFixedRate(runner, 10, 10, java.util.concurrent.TimeUnit.MILLISECONDS)
     }
 
     private fun showLastStatus() = with(screenGraphics) {
@@ -105,8 +128,30 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
         screen.display(monitorImage)
     }
 
+    // show a random image
+    private var lastChanged = Instant.EPOCH
+    private val CHANGE_IMAGE = Duration.ofSeconds(60)
+    private val logger = LoggerFactory.getLogger("ArmMonitor")
+    private fun showRandomImage() {
+        if (Duration.between(lastChanged, Instant.now()) < CHANGE_IMAGE) return
+        drawAnImage(randomImages.random())
+        lastChanged = Instant.now()
+    }
+
+    // copy to the graphics 2D in about the center
+    private fun drawAnImage(image: BufferedImage) {
+        with(screenGraphics) {
+            val ogColor = color
+            color = Color.BLACK
+            fillRect(0, 0, MAX_WD, MAX_HT)
+            color = ogColor
+            drawImage(image, (MAX_WD - image.width) / 2, (MAX_HT - image.height) / 2, null)
+        }
+        screen.display(monitorImage)
+    }
+
     fun stop() {
-        future.get()
+        if (::future.isInitialized) future.cancel(true)
         screen.close()
     }
 }

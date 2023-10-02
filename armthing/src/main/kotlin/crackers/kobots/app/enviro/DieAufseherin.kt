@@ -129,19 +129,14 @@ object DieAufseherin {
                 GripperActions.SLEEP -> {
                     RosetteStatus.goToSleep = true
                     publishToTopic(SLEEP_TOPIC, AppCommon.SleepEvent(true))
-                    TheArm.request(armSleep)
                 }
             }
         }
 
-
-        // zwave/nodeID_14/48/0/Motion
+        // TODO something when the motion sensor in the office is triggered
     }
 
     private fun haSub(s: String, handler: (JSONObject) -> Unit) {
         mqtt.subscribe(s) { payload -> handler(JSONObject(payload)) }
     }
-
-    private val switcher by lazy { VCNL4040() }
-
 }
