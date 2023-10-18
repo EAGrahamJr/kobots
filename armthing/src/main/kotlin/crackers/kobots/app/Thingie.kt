@@ -21,9 +21,8 @@ import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.app.enviro.RosetteStatus
-import crackers.kobots.app.enviro.VeryDumbThermometer
+import crackers.kobots.app.enviro.Segmenter
 import crackers.kobots.devices.expander.CRICKITHat
-import crackers.kobots.devices.io.GamepadQT
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.exitProcess
@@ -34,7 +33,10 @@ internal val crickitHat by lazy { CRICKITHat() }
 private val _manualMode = AtomicBoolean(false)
 val manualMode: Boolean
     get() = _manualMode.get()
+
 private val logger = LoggerFactory.getLogger("BRAINZ")
+
+const val REMOTE_PI = "diozero.remote.hostname"
 
 /**
  * Run this.
@@ -46,54 +48,27 @@ fun main(args: Array<String>? = null) {
 
     // these do not require the CRICKIT
     ArmMonitor.start()
+    Segmenter.start()
 
     crickitHat.use {
         // start all the things that require the CRICKIT
-        VeryDumbThermometer.start()
         TheArm.start()
         DieAufseherin.start()
         RosetteStatus.start()
 
+        // start alive-check
+        AppCommon.mqttClient.startAliveCheck()
+
         AppCommon.awaitTermination()
-        logger.error("Exiting")
+        logger.warn("Exiting")
 
         // stop all the things using the crickit
         RosetteStatus.stop()
         TheArm.stop()
-        VeryDumbThermometer.stop()
         DieAufseherin.stop()
     }
+    Segmenter.stop()
     ArmMonitor.stop()
     executor.shutdownNow()
     exitProcess(0)
-}
-
-private val gamepad by lazy { GamepadQT() }
-private var gpZeroX: Float = 0f
-private var gpZeroY: Float = 0f
-
-/**
- * Run a thing with the Gamepad
- *
- * TODO enable sending "remote" commands via MQTT - aka a selectable target with moving things
- */
-private fun joyRide() {
-    with(TheArm) {
-        val xAxis = gamepad.xAxis
-        if (gpZeroX == 0f) gpZeroX = xAxis
-        val yAxis = gamepad.yAxis
-        if (gpZeroY == 0f) gpZeroY = yAxis
-
-        if (gpZeroX - xAxis > 45f) waist += 2
-        if (gpZeroX - xAxis < -45f) waist -= 2
-        if (gpZeroY - yAxis > 45f) +elbow
-        if (gpZeroY - yAxis < -45f) -elbow
-        if (gamepad.aButton) +extender
-        if (gamepad.yButton) -extender
-        if (gamepad.xButton) -gripper
-        if (gamepad.bButton) +gripper
-        if (gamepad.startButton) _manualMode.set(false)
-
-        updateCurrentState()
-    }
 }

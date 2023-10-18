@@ -35,7 +35,7 @@ object VeryDumbThermometer {
     }
 
     private const val DEGREES_TO_ANGLES = 18f // this comes out to 5 degree temp change == 90 degree stepper change
-    private const val TEMP_OFFSET = 75f // median temperature
+    const val TEMP_OFFSET = 75f // median temperature
 
     private var okayImHot = false
 
@@ -45,12 +45,6 @@ object VeryDumbThermometer {
     fun setTemperature(temp: Float) {
         Logger.debug("Setting temp: {}", temp)
         handle(temp)
-    }
-
-    /**
-     * Placeholder for old-style start.
-     */
-    fun start() {
     }
 
     private fun handle(temp: Float) {
@@ -63,10 +57,6 @@ object VeryDumbThermometer {
 
         val angle = ((temp - TEMP_OFFSET) * DEGREES_TO_ANGLES).toInt()
         justGo(angle)
-    }
-
-    fun stop() {
-        justGo(0)
     }
 
     private fun justGo(angle: Int) {

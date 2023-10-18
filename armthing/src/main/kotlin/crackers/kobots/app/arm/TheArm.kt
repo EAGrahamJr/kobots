@@ -22,7 +22,6 @@ import crackers.kobots.app.AppCommon.SLEEP_TOPIC
 import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.crickitHat
 import crackers.kobots.app.execution.armSleep
-import crackers.kobots.app.mqtt
 import crackers.kobots.devices.at
 import crackers.kobots.parts.app.KobotsAction
 import crackers.kobots.parts.app.KobotsSubscriber
@@ -34,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * V5 iteration of a controlled "arm-like" structure.
  */
-object TheArm : SequenceExecutor("TheArm", mqtt) {
+object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
     const val STATE_TOPIC = "TheArm.State"
     const val REQUEST_TOPIC = "TheArm.Request"
 
@@ -95,16 +94,25 @@ object TheArm : SequenceExecutor("TheArm", mqtt) {
     }
 
     val waist by lazy {
-        val _HOME = 180
-        val _MAX = 0
+        val _HOME = 0
+        val _MAX = 180
 
         val servoRange = IntRange(_HOME, _MAX)
-        val physicalRange = IntRange(0, 128) // gear ratio 1.4:1
-        val servo = crickitHat.servo(4, ServoTrim.TOWERPRO_SG90).apply {
+        val physicalRange = IntRange(0, 140) // MG90S servo trim
+        val servo = crickitHat.servo(4, ServoTrim(1500, 1100)).apply {
             this at _HOME
         }
         ServoRotator(servo, physicalRange, servoRange)
     }
+
+    private val noodle by lazy { crickitHat.signalDigitalOut(8) }
+    private var noodValue = false
+    var nood: Boolean
+        get() = noodValue
+        set(value) {
+            noodValue = value
+            noodle.setValue(value)
+        }
 
     // manage the state of this construct =============================================================================
     private val _currentState = AtomicReference(ArmState(HOME_POSITION, false))
@@ -142,10 +150,11 @@ object TheArm : SequenceExecutor("TheArm", mqtt) {
 
     override fun preExecution() {
         state = ArmState(state.position, true)
+        nood = true
     }
 
     override fun postExecution() {
-//        waist.release()
+        nood = false
     }
 
     /**

@@ -20,11 +20,12 @@ import com.diozero.sbc.LocalSystemInfo
 import crackers.kobots.app.AppCommon.executor
 import crackers.kobots.app.crickitHat
 import crackers.kobots.parts.PURPLE
+import crackers.kobots.parts.scheduleAtFixedRate
 import java.awt.Color
 import java.util.concurrent.Future
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Blinken lights.
@@ -46,9 +47,9 @@ object RosetteStatus {
     internal val atomicSleep = AtomicBoolean(false)
     lateinit var future: Future<*>
 
-    private val NUM_PIXELS = 8
-    private val TEMPERATURE_OFFSET = 40
-    private val TEMPERATURE_RANGE = 40
+    private const val NUM_PIXELS = 8
+    private const val TEMPERATURE_OFFSET = 40
+    private const val TEMPERATURE_RANGE = 40
 
     internal var goToSleep: Boolean
         get() = atomicSleep.get()
@@ -71,11 +72,13 @@ object RosetteStatus {
 
         startColors()
 
-        val runner = Runnable {
+        future = executor.scheduleAtFixedRate(1.seconds, 15.seconds) {
             if (!goToSleep) {
                 systemInfoInstance.cpuTemperature.toDouble().let { temp ->
-                    val x = ((temp - TEMPERATURE_OFFSET) * NUM_PIXELS / TEMPERATURE_RANGE).roundToInt()
-                        .coerceIn(0, NUM_PIXELS - 1)
+                    val x = ((temp - TEMPERATURE_OFFSET) * NUM_PIXELS / TEMPERATURE_RANGE).let {
+                        // force it to fix
+                        it.roundToInt().coerceIn(0, NUM_PIXELS - 1)
+                    }
                     if (x != lastTemp) {
                         if (lastTemp != -1) pixelStatus[lastTemp] = cpuColors[lastTemp]
                         pixelStatus[x] = Color.WHITE
@@ -84,8 +87,6 @@ object RosetteStatus {
                 }
             }
         }
-
-        future = executor.scheduleAtFixedRate(runner, 0, 15, TimeUnit.SECONDS)
     }
 
     private fun startColors() {

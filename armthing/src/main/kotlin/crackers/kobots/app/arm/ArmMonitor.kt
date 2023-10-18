@@ -29,6 +29,7 @@ import crackers.kobots.parts.app.joinTopic
 import crackers.kobots.parts.loadImage
 import crackers.kobots.parts.movement.SequenceExecutor
 import crackers.kobots.parts.movement.SequenceExecutor.Companion.INTERNAL_TOPIC
+import crackers.kobots.parts.scheduleAtFixedRate
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.awt.Font
@@ -39,6 +40,7 @@ import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val MAX_WD = 128
 private const val MAX_HT = 32
@@ -103,14 +105,12 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
             }
         )
 
-        val runner = {
+        future = AppCommon.executor.scheduleAtFixedRate(10.milliseconds, 10.milliseconds) {
             // if the arm is busy, show its status
             val lastState = lastStateReceived.get()
             if (lastState != null && lastState.busy || manualMode) showLastStatus()
             else showRandomImage()
         }
-
-        future = AppCommon.executor.scheduleAtFixedRate(runner, 10, 10, java.util.concurrent.TimeUnit.MILLISECONDS)
     }
 
     private fun showLastStatus() = with(screenGraphics) {

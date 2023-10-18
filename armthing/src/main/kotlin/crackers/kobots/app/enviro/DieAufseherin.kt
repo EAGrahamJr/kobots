@@ -17,29 +17,29 @@
 package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
-import crackers.kobots.app.AppCommon.SLEEP_TOPIC
-import crackers.kobots.app.EVENT_TOPIC
 import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.execution.*
-import crackers.kobots.app.mqtt
+import crackers.kobots.app.enviro.VeryDumbThermometer.TEMP_OFFSET
+import crackers.kobots.app.execution.PickUpAndMoveStuff
+import crackers.kobots.app.execution.excuseMe
+import crackers.kobots.app.execution.homeSequence
+import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.parts.app.KobotsSubscriber
-import crackers.kobots.parts.app.joinTopic
+import crackers.kobots.mqtt.KobotsMQTT
 import crackers.kobots.parts.app.publishToTopic
-import crackers.kobots.parts.movement.SequenceExecutor
-import crackers.kobots.parts.movement.SequenceExecutor.Companion.INTERNAL_TOPIC
 import crackers.kobots.parts.onOff
+import crackers.kobots.parts.scheduleAtFixedRate
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
-import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 /*
  * Message central.
  */
 object DieAufseherin {
     enum class GripperActions {
-        PICKUP, RETURN, HOME, SAY_HI, STOP, EXCUSE_ME, SLEEP
+        PICKUP, RETURN, HOME, SAY_HI, STOP, EXCUSE_ME, SLEEP, FLASHLIGHT
     }
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
@@ -50,17 +50,11 @@ object DieAufseherin {
     }
 
     fun stop() {
-        // hmmm
+        VeryDumbThermometer.setTemperature(TEMP_OFFSET)
     }
 
     private fun localStuff() {
-        joinTopic(
-            INTERNAL_TOPIC,
-            KobotsSubscriber<SequenceExecutor.SequenceCompleted> { msg ->
-                logger.info("Sequence completed: $msg")
-            }
-        )
-        AppCommon.executor.scheduleAtFixedRate(::youHaveOneJob, 5000, 100, TimeUnit.MICROSECONDS)
+        AppCommon.executor.scheduleAtFixedRate(5.seconds, 100.milliseconds, ::youHaveOneJob)
     }
 
     const val CLOSE_ENOUGH = 15 // this is **approximately**  25mm
@@ -77,7 +71,10 @@ object DieAufseherin {
         try {
             val prox = sensor.proximity
             wasTriggered = if (prox > CLOSE_ENOUGH) {
-                if (!wasTriggered) mqtt.publish("kobots/buttonboard", "NEXT_FRONTBENCH")
+                if (!wasTriggered) {
+                    logger.info("Proximity sensor triggered: $prox")
+//                    publishToTopic(PROXIMITY_TOPIC, prox)
+                }
                 true
             } else false
 
@@ -86,24 +83,18 @@ object DieAufseherin {
         }
     }
 
-    private fun mqttStuff() {
+    private fun mqttStuff() = with(AppCommon.mqttClient) {
         haSub("homebody/bedroom/casey") { payload ->
-            if (payload.has("lamp")) {
-                if (LocalTime.now().hour == 22) {
-                    TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
-                }
-            }
+            // bedtime: do the eye drops thing
+            if (payload.has("lamp") && LocalTime.now().hour == 22) doTheEyeDropsThing()
         }
         haSub("homebody/office/paper") { payload ->
             if (payload.has("lamp")) {
                 val sleepy = !payload.onOff("lamp")
                 RosetteStatus.goToSleep = sleepy
-                publishToTopic(SLEEP_TOPIC, AppCommon.SleepEvent(sleepy))
-                if (sleepy) {
-                    TheArm.request(armSleep)
-                } else {
-                    if (LocalTime.now().hour < 10) TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
-                }
+                publishToTopic(AppCommon.SLEEP_TOPIC, AppCommon.SleepEvent(sleepy))
+                // on wakeup, get drops
+                if (!sleepy && LocalTime.now().hour < 10) doTheEyeDropsThing()
             }
         }
         haSub("zwave/Office/TriBaby/49/0/Air_temperature") { payload ->
@@ -112,15 +103,12 @@ object DieAufseherin {
                 VeryDumbThermometer.setTemperature(temp.toFloat())
             }
         }
-        haSub(EVENT_TOPIC) { payload ->
-            logger.info("Got an event")
-        }
 
         // subscribe to the command channel
-        mqtt.subscribe("kobots/gripOMatic") { payload ->
+        subscribe("kobots/gripOMatic") { payload ->
             logger.info("Got a gripOMatic command: $payload")
             when (GripperActions.valueOf(payload.uppercase())) {
-                GripperActions.PICKUP -> TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
+                GripperActions.PICKUP -> doTheEyeDropsThing()
                 GripperActions.RETURN -> TheArm.request(PickUpAndMoveStuff.returnDropsToStorage)
                 GripperActions.HOME -> TheArm.request(homeSequence)
                 GripperActions.SAY_HI -> TheArm.request(sayHi)
@@ -128,15 +116,21 @@ object DieAufseherin {
                 GripperActions.EXCUSE_ME -> TheArm.request(excuseMe)
                 GripperActions.SLEEP -> {
                     RosetteStatus.goToSleep = true
-                    publishToTopic(SLEEP_TOPIC, AppCommon.SleepEvent(true))
+                    publishToTopic(AppCommon.SLEEP_TOPIC, AppCommon.SleepEvent(true))
                 }
+
+                GripperActions.FLASHLIGHT -> TheArm.nood = !TheArm.nood
             }
         }
 
         // TODO something when the motion sensor in the office is triggered
     }
 
-    private fun haSub(s: String, handler: (JSONObject) -> Unit) {
-        mqtt.subscribe(s) { payload -> handler(JSONObject(payload)) }
+    private fun doTheEyeDropsThing() {
+        TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
+    }
+
+    fun KobotsMQTT.haSub(s: String, handler: (JSONObject) -> Unit) {
+        subscribe(s) { payload -> handler(JSONObject(payload)) }
     }
 }
