@@ -22,6 +22,7 @@ import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.app.enviro.RosetteStatus
 import crackers.kobots.app.enviro.Segmenter
+import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.devices.expander.CRICKITHat
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
@@ -61,6 +62,8 @@ fun main(args: Array<String>? = null) {
 
         AppCommon.awaitTermination()
         logger.warn("Exiting")
+        // always "home" the Arm
+        TheArm.request(homeSequence)
 
         // stop all the things using the crickit
         RosetteStatus.stop()

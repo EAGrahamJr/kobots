@@ -32,7 +32,14 @@ data class ArmPosition(
     val extender: JointPosition,
     val gripper: JointPosition,
     val elbow: JointPosition
-)
+) {
+    fun mapped(): Map<String, Int> = mapOf(
+        "WST" to waist.angle,
+        "XTN" to extender.angle,
+        "ELB" to elbow.angle,
+        "GRP" to gripper.angle
+    )
+}
 
 /**
  * Current state

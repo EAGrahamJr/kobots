@@ -39,7 +39,7 @@ object Segmenter : AutoCloseable {
     fun start() {
         joinTopic(
             SequenceExecutor.INTERNAL_TOPIC,
-            { msg: SequenceExecutor.SequenceCompleted ->
+            { msg: SequenceExecutor.SequenceEvent ->
                 logger.debug("Sequence completed: {}", msg)
                 when (msg.sequence) {
                     ROTO_PICKUP -> with(segmenter) {

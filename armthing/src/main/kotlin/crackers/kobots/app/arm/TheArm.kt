@@ -22,6 +22,7 @@ import crackers.kobots.app.AppCommon.SLEEP_TOPIC
 import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.crickitHat
 import crackers.kobots.app.execution.armSleep
+import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.devices.at
 import crackers.kobots.parts.app.KobotsAction
 import crackers.kobots.parts.app.KobotsSubscriber
@@ -141,7 +142,8 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
         )
     }
 
-    override fun canRun() = runFlag.get()
+    // allow the home sequence to run as well if termination has been called
+    override fun canRun() = runFlag.get() || currentSequence.get() == homeSequence.name
 
     override fun stop() {
         super.stop()
