@@ -16,136 +16,79 @@
 
 package crackers.kobots.app
 
-import com.diozero.api.ServoDevice
-import com.diozero.api.ServoTrim
 import com.diozero.devices.ServoController
-import crackers.kobots.devices.expander.I2CMultiplexer
-import crackers.kobots.mqtt.KobotsMQTT
+import crackers.kobots.app.AppCommon.mqttClient
 import crackers.kobots.parts.app.KobotSleep
-import crackers.kobots.parts.movement.ServoLinearActuator
-import crackers.kobots.parts.movement.ServoRotator
-import org.json.JSONObject
+import crackers.kobots.parts.app.publishToTopic
+import crackers.kobots.parts.movement.SequenceExecutor.Companion.MQTT_TOPIC
+import crackers.kobots.parts.movement.SequenceRequest
 import org.slf4j.LoggerFactory
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.exitProcess
 
 /**
  * Handles a bunch of different servos for various things. Everything should have an MQTT interface.
  *
- * - RotoMatic uses a Rotator to select a thing. Manual selections are through something with buttons via MQTT
- * - LiftOMatic uses a LinearActuator to raise and lower a thing: it's either up or down.
  */
-
-lateinit var rotoServo: ServoDevice
-val rotoMatic by lazy { ServoRotator(rotoServo, (0..180), (0..180)) }
-
-lateinit var liftServo: ServoDevice
-val liftoMatic by lazy { ServoLinearActuator(liftServo, 0f, 45f) }
-
-val multiplexer by lazy { I2CMultiplexer() }
+val hat by lazy { ServoController() }
 
 val logger = LoggerFactory.getLogger("Servomatic")
-val doneLatch = CountDownLatch(1)
 
 /**
  * Whatever
  */
 const val REMOTE_PI = "diozero.remote.hostname"
 const val SERVO_TOPIC = "kobots/servoMatic"
-const val EVENT_TOPIC = "kobots/events"
 
 enum class ServoMaticCommand {
     STOP, UP, DOWN, LEFT, RIGHT, CENTER, SLEEP, WAKEY;
 }
-
-val mqttClient by lazy {
-    KobotsMQTT("marvin", "tcp://192.168.1.4:1883").apply {
-
-        subscribe(SERVO_TOPIC) {
-            val payload = ServoMaticCommand.valueOf(it.uppercase())
-            when (payload) {
-                ServoMaticCommand.STOP -> {
-                    logger.error("Stopping")
-                    doneLatch.countDown()
-                }
-
-                ServoMaticCommand.UP -> liftoMatic.move(100)
-                ServoMaticCommand.DOWN -> liftoMatic.move(0)
-                ServoMaticCommand.LEFT -> rotoMatic.swing(180)
-                ServoMaticCommand.RIGHT -> rotoMatic.swing(0)
-                ServoMaticCommand.CENTER -> rotoMatic.swing(90)
-                ServoMaticCommand.SLEEP -> {
-                }
-
-                ServoMaticCommand.WAKEY -> {
-                }
-            }
-        }
-    }
-}
-
-private val executor = Executors.newSingleThreadExecutor()
-private val busy = AtomicBoolean(false)
-
-var liftLast = false
-fun ServoLinearActuator.isUp(): Boolean = current() > 80
 
 fun main(args: Array<String>?) {
     // pass any arg and we'll use the remote pi
     // NOTE: this reqquires a diozero daemon running on the remote pi and the diozero remote jar in the classpath
     if (args?.isNotEmpty() == true) System.setProperty(REMOTE_PI, args[0])
 
-    mqttClient.startAliveCheck()
+    mqttClient.apply {
+        subscribe(SERVO_TOPIC) {
+            val payload = ServoMaticCommand.valueOf(it.uppercase())
+            when (payload) {
+                ServoMaticCommand.STOP -> {
+                    logger.error("Stopping via MQTT")
+                    AppCommon.applicationRunning = false
+                }
 
-    ServoController().use { hat ->
-        rotoServo = hat.getServo(0, ServoTrim(1500, 1100), 0)
-        liftServo = hat.getServo(1, ServoTrim.TOWERPRO_SG90, 0)
+                else -> {}
+            }
+        }
 
-        doneLatch.await()
-        logger.warn("Servomatic shutdown")
-        rotoMatic.swing(0)
-        while (busy.get()) KobotSleep.millis(100)
-        liftoMatic.move(0)
+        subscribeJSON(MQTT_TOPIC) { payload ->
+            logger.info("Received $payload")
+            when (payload.getString("sequence")) {
+                "LocationPickup" -> if (payload.getBoolean("started")) publishToTopic(
+                    SuzerainOfServos.SERVO_TOPIC,
+                    SequenceRequest(steveTurns)
+                )
+
+                "ReturnPickup" -> if (!payload.getBoolean("started")) publishToTopic(
+                    SuzerainOfServos.SERVO_TOPIC,
+                    SequenceRequest(steveGoesHome)
+                )
+
+                else -> {}
+            }
+        }
+
+        startAliveCheck()
     }
+
+    PadPrincipal.start()
+    hat.use { hat ->
+//        logger.info("luminosity at start ${proxy.luminosity}")
+        AppCommon.awaitTermination()
+
+        KobotSleep.seconds(1)
+    }
+    PadPrincipal.stop()
     logger.warn("Servomatic exit")
     exitProcess(0)
-}
-
-class ServomaticEvent(val source: String = "servomatic", val rotoStatus: Int, val liftIsUp: Boolean)
-
-private const val ROTO_SPEED = 50L
-
-@Synchronized
-fun ServoRotator.swing(target: Int) {
-    if (busy.compareAndSet(false, true)) {
-        executor.submit {
-            while (!rotateTo(target)) {
-                KobotSleep.millis(ROTO_SPEED)
-            }
-            liftLast = target == 0
-            val event = ServomaticEvent(rotoStatus = this.current(), liftIsUp = liftoMatic.isUp())
-            val jsonObject = JSONObject(event).toString()
-            mqttClient.publish(EVENT_TOPIC, jsonObject)
-            busy.set(false)
-        }
-    }
-}
-
-private const val LIFT_SPEED = 35L
-
-@Synchronized
-fun ServoLinearActuator.move(target: Int) {
-    if (busy.compareAndSet(false, true)) {
-        executor.submit {
-            while (!extendTo(target)) {
-                KobotSleep.millis(LIFT_SPEED)
-            }
-            liftLast = target != 0
-            val jsonObject = JSONObject(ServomaticEvent(rotoStatus = rotoMatic.current(), liftIsUp = isUp()))
-            mqttClient.publish(EVENT_TOPIC, jsonObject.toString())
-            busy.set(false)
-        }
-    }
 }

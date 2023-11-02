@@ -19,7 +19,7 @@ plugins {
 }
 
 dependencies {
-
+    implementation("com.typesafe:config:1.4.1")
 //    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
 //    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
 }

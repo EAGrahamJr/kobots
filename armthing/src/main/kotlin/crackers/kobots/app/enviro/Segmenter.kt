@@ -18,10 +18,10 @@ package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.SLEEP_TOPIC
-import crackers.kobots.app.execution.ROTO_PICKUP
-import crackers.kobots.app.execution.ROTO_RETURN
+import crackers.kobots.app.execution.*
 import crackers.kobots.devices.display.HT16K33
 import crackers.kobots.devices.display.QwiicAlphanumericDisplay
+import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.app.joinTopic
 import crackers.kobots.parts.movement.SequenceExecutor
 import org.slf4j.LoggerFactory
@@ -41,27 +41,58 @@ object Segmenter : AutoCloseable {
             SequenceExecutor.INTERNAL_TOPIC,
             { msg: SequenceExecutor.SequenceEvent ->
                 logger.debug("Sequence completed: {}", msg)
-                when (msg.sequence) {
-                    ROTO_PICKUP -> with(segmenter) {
-                        print("DROP")
-                        blinkRate = HT16K33.BlinkRate.SLOW
-                        show()
-                    }
+                with(segmenter) {
+                    val started = msg.started
 
-                    ROTO_RETURN -> with(segmenter) {
-                        fill(false)
-                        blinkRate = HT16K33.BlinkRate.OFF
-                        show()
+                    when (msg.sequence) {
+                        ROTO_PICKUP -> {
+                            print("DROP")
+                            blinkRate = HT16K33.BlinkRate.MEDIUM
+                        }
+
+                        ROTO_RETURN -> clear()
+                        homeSequence.name -> clear()
+
+                        sayHi.name -> {
+                            if (started) print("Dude") else clear()
+                        }
+
+                        armSleep.name -> {
+                            if (started) {
+                                print("ZZZZ")
+                                blinkRate = HT16K33.BlinkRate.SLOW
+                            } else clear()
+                        }
+
+                        excuseMe.name -> {
+                            if (started) {
+                                print("SRRY")
+                                blinkRate = HT16K33.BlinkRate.FAST
+                            } else clear()
+                        }
+
+                        else -> {
+                            if (started) print(msg.sequence.substring(0, 4))
+                            else clear()
+                        }
                     }
+                    show()
                 }
             }
         )
         joinTopic(SLEEP_TOPIC, { it: AppCommon.SleepEvent ->
-            logger.debug("Sleeping")
-            segmenter.blinkRate = HT16K33.BlinkRate.OFF
-            segmenter.fill(false)
-            segmenter.show()
+            if (it.sleep) {
+                logger.debug("Sleeping")
+                KobotSleep.seconds(60)
+                segmenter.clear()
+                segmenter.show()
+            }
         })
+    }
+
+    private fun QwiicAlphanumericDisplay.clear() {
+        fill(false)
+        blinkRate = HT16K33.BlinkRate.OFF
     }
 
     override fun close() = stop()
