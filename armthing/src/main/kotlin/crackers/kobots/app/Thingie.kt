@@ -18,6 +18,7 @@ package crackers.kobots.app
 
 import crackers.kobots.app.AppCommon.executor
 import crackers.kobots.app.arm.ArmMonitor
+import crackers.kobots.app.arm.ManualController
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.app.enviro.RosetteStatus
@@ -32,8 +33,9 @@ import kotlin.system.exitProcess
 internal val crickitHat by lazy { CRICKITHat() }
 
 private val _manualMode = AtomicBoolean(false)
-val manualMode: Boolean
+var manualMode: Boolean
     get() = _manualMode.get()
+    set(value) = _manualMode.set(value)
 
 private val logger = LoggerFactory.getLogger("BRAINZ")
 
@@ -50,6 +52,7 @@ fun main(args: Array<String>? = null) {
     // these do not require the CRICKIT
     ArmMonitor.start()
     Segmenter.start()
+    ManualController.start()
 
     crickitHat.use {
         // start all the things that require the CRICKIT
@@ -70,6 +73,7 @@ fun main(args: Array<String>? = null) {
         TheArm.stop()
         DieAufseherin.stop()
     }
+    ManualController.stop()
     Segmenter.stop()
     ArmMonitor.stop()
     executor.shutdownNow()

@@ -30,8 +30,10 @@ import crackers.kobots.parts.movement.sequence
 object PickUpAndMoveStuff {
     private val dropMover = MoveStuffAround(
         closeOnItem = 93,
-        extenderToPickupTarget = 50,
-        dropOffExtender = 35
+        extenderToPickupTarget = 57,
+        elbowForPickupTarget = 5,
+        dropOffElbow = 5,
+        dropOffExtender = 15
     )
     val moveEyeDropsToDropZone = dropMover.moveObjectToTarget()
     val returnDropsToStorage = dropMover.pickupAndReturn()
@@ -116,7 +118,7 @@ class MoveStuffAround(
             gripper goTo GRIPPER_OPEN
         }
         action {
-            extender goTo dropOffExtender - 10
+            extender goTo if (dropOffExtender >= 10) dropOffExtender - 10 else dropOffExtender
             elbow rotate dropOffElbow
         }
         action { extender goTo dropOffExtender }

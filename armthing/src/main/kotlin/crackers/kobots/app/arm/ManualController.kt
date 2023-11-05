@@ -16,7 +16,13 @@
 
 package crackers.kobots.app.arm
 
+import crackers.kobots.app.AppCommon
+import crackers.kobots.app.manualMode
 import crackers.kobots.devices.io.GamepadQT
+import crackers.kobots.parts.scheduleWithFixedDelay
+import org.slf4j.LoggerFactory
+import java.util.concurrent.Future
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * TODO fill this in
@@ -25,11 +31,40 @@ object ManualController {
     private val gamepad by lazy { GamepadQT() }
     private var gpZeroX: Float = 0f
     private var gpZeroY: Float = 0f
+    private lateinit var joyRideTFuture: Future<*>
+    private var wasSelected = false
+
+    fun start() {
+        joyRideTFuture = AppCommon.executor.scheduleWithFixedDelay(20.milliseconds, 20.milliseconds) {
+            // if the start button is pressed and was **not** pressed last time (debounce)
+            try {
+                wasSelected = if (gamepad.startButton) {
+                    if (!wasSelected) {
+                        manualMode = !manualMode
+                        println("Manual mode is now $manualMode")
+                    }
+                    true
+                } else {
+                    if (manualMode) joyRide()
+                    false
+                }
+            } catch (_e: IllegalArgumentException) {
+
+            } catch (t: Throwable) {
+                LoggerFactory.getLogger("ManualController").error("Error in ManualController", t)
+            }
+        }
+
+    }
+
+    fun stop() {
+        gamepad.close()
+    }
 
     /**
      * Run a thing with the Gamepad
      *
-     * TODO enable sending "remote" commands via MQTT - aka a selectable target with moving things
+     * TODO enable sending "remote" commands via MQTT - aka a selectable target with moving things?
      */
     private fun joyRide() {
         with(TheArm) {
@@ -46,7 +81,6 @@ object ManualController {
             if (gamepad.yButton) -extender
             if (gamepad.xButton) -gripper
             if (gamepad.bButton) +gripper
-//            if (gamepad.startButton) _manualMode.set(false)
 
             updateCurrentState()
         }

@@ -27,12 +27,9 @@ import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.mqtt.KobotsMQTT
 import crackers.kobots.parts.app.publishToTopic
 import crackers.kobots.parts.onOff
-import crackers.kobots.parts.scheduleAtFixedRate
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.seconds
 
 /*
  * Message central.
@@ -54,7 +51,7 @@ object DieAufseherin {
     }
 
     private fun localStuff() {
-        AppCommon.executor.scheduleAtFixedRate(5.seconds, 100.milliseconds, ::youHaveOneJob)
+//        AppCommon.executor.scheduleAtFixedRate(5.seconds, 100.milliseconds, ::youHaveOneJob)
     }
 
     const val CLOSE_ENOUGH = 15 // this is **approximately**  25mm
