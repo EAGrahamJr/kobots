@@ -13,7 +13,7 @@ Parts of this project have been either archived or spun off into library-like pr
 - [Kobots Devices](https://github.com/EAGrahamJr/kobots-devices)
 - [Kobots Parts](https://github.com/EAGrahamJr/kobots-parts)
 
-## In Memorium: 5/2006 - 2/23/2023 (Illy), 5/6/2023 (Tully)
+## In Memorium: 5/2006 - 2/23/2023 (Illy), 11/6/2023 (Tully)
 
 Goodbye, my little coffee friends.
 
