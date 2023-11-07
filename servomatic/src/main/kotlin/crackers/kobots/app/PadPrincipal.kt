@@ -26,6 +26,8 @@ import kotlin.time.Duration.Companion.seconds
 
 /**
  * Button presses and things
+ *
+ * TODO the I2C port on the Sparkfun Servo hat seems to be busted.
  */
 
 object PadPrincipal {

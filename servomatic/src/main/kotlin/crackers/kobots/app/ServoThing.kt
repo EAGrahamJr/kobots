@@ -81,14 +81,15 @@ fun main(args: Array<String>?) {
         startAliveCheck()
     }
 
-    PadPrincipal.start()
+    // TODO the Sparkfun I2c port on the servo hat is not working
+//    PadPrincipal.start()
     hat.use { hat ->
 //        logger.info("luminosity at start ${proxy.luminosity}")
         AppCommon.awaitTermination()
 
         KobotSleep.seconds(1)
     }
-    PadPrincipal.stop()
+//    PadPrincipal.stop()
     logger.warn("Servomatic exit")
     exitProcess(0)
 }
