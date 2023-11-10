@@ -30,9 +30,10 @@ import crackers.kobots.parts.movement.sequence
 object PickUpAndMoveStuff {
     private val dropMover = MoveStuffAround(
         closeOnItem = 93,
-        extenderToPickupTarget = 57,
-        elbowForPickupTarget = 5,
-        dropOffElbow = 5,
+        extenderToPickupTarget = 75,
+        elbowForPickupTarget = 15,
+        waistForPickupTarget = 5,
+        dropOffElbow = 0,
         dropOffExtender = 15
     )
     val moveEyeDropsToDropZone = dropMover.moveObjectToTarget()

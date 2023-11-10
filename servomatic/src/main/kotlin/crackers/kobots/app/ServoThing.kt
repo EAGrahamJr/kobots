@@ -17,17 +17,19 @@
 package crackers.kobots.app
 
 import com.diozero.devices.ServoController
+import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
+import crackers.kobots.mqtt.KobotsMQTT.Companion.KOBOTS_EVENTS
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.app.publishToTopic
-import crackers.kobots.parts.movement.SequenceExecutor.Companion.MQTT_TOPIC
+import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceRequest
+import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
 
 /**
  * Handles a bunch of different servos for various things. Everything should have an MQTT interface.
- *
  */
 val hat by lazy { ServoController() }
 
@@ -36,7 +38,6 @@ val logger = LoggerFactory.getLogger("Servomatic")
 /**
  * Whatever
  */
-const val REMOTE_PI = "diozero.remote.hostname"
 const val SERVO_TOPIC = "kobots/servoMatic"
 
 enum class ServoMaticCommand {
@@ -50,35 +51,32 @@ fun main(args: Array<String>?) {
 
     mqttClient.apply {
         subscribe(SERVO_TOPIC) {
-            val payload = ServoMaticCommand.valueOf(it.uppercase())
+            val payload: ServoMaticCommand = enumValueOf(it)
             when (payload) {
                 ServoMaticCommand.STOP -> {
                     logger.error("Stopping via MQTT")
                     AppCommon.applicationRunning = false
                 }
 
+                ServoMaticCommand.CENTER -> servoRequest(swirlyCenter)
+                ServoMaticCommand.LEFT -> servoRequest(swirlyMax)
+                ServoMaticCommand.RIGHT -> servoRequest(swirlyHome)
+
                 else -> {}
             }
         }
 
-        subscribeJSON(MQTT_TOPIC) { payload ->
+        subscribeJSON(KOBOTS_EVENTS) { payload: JSONObject ->
             logger.info("Received $payload")
-            when (payload.getString("sequence")) {
-                "LocationPickup" -> if (payload.getBoolean("started")) publishToTopic(
-                    SuzerainOfServos.SERVO_TOPIC,
-                    SequenceRequest(steveTurns)
-                )
-
-                "ReturnPickup" -> if (!payload.getBoolean("started")) publishToTopic(
-                    SuzerainOfServos.SERVO_TOPIC,
-                    SequenceRequest(steveGoesHome)
-                )
-
+            when (payload.optString("sequence")) {
+                "LocationPickup" -> if (payload.optBoolean("started")) servoRequest(steveTurns)
+                "ReturnPickup" -> if (!payload.optBoolean("started")) servoRequest(steveGoesHome)
                 else -> {}
             }
         }
 
         startAliveCheck()
+        allowEmergencyStop()
     }
 
     // TODO the Sparkfun I2c port on the servo hat is not working
@@ -93,3 +91,5 @@ fun main(args: Array<String>?) {
     logger.warn("Servomatic exit")
     exitProcess(0)
 }
+
+private fun servoRequest(sequence: ActionSequence) = publishToTopic(SERVO_TOPIC, SequenceRequest(sequence))

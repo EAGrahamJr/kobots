@@ -18,7 +18,6 @@ package crackers.kobots.app
 
 import com.diozero.api.ServoTrim
 import crackers.kobots.app.SuzerainOfServos.primaryPivot
-import crackers.kobots.app.SuzerainOfServos.thingieSwirlie
 import crackers.kobots.parts.app.KobotsAction
 import crackers.kobots.parts.app.KobotsSubscriber
 import crackers.kobots.parts.app.joinTopic
@@ -53,8 +52,11 @@ val steveTurns by lazy {
     sequence {
         name = "Steve Turns"
         action {
-            primaryPivot rotate 180
-            requestedSpeed = ActionSpeed.VERY_FAST
+//            primaryPivot rotate 180
+//            requestedSpeed = ActionSpeed.VERY_FAST
+            execute {
+                println("Steve turns"); true
+            }
         }
     }
 }
@@ -63,7 +65,10 @@ val steveGoesHome by lazy {
     sequence {
         name = "Steve Goes Home"
         action {
-            primaryPivot rotate 0
+//            primaryPivot rotate 0
+            execute {
+                println("Steve home"); true
+            }
         }
     }
 }
@@ -72,7 +77,8 @@ val swirlyMax by lazy {
     sequence {
         name = "Swirly Max"
         action {
-            thingieSwirlie rotate 140
+            primaryPivot rotate 130
+            requestedSpeed = ActionSpeed.SLOW
         }
     }
 }
@@ -81,7 +87,18 @@ val swirlyHome by lazy {
     sequence {
         name = "Swirly Home"
         action {
-            thingieSwirlie rotate 0
+            primaryPivot rotate 0
+            requestedSpeed = ActionSpeed.SLOW
+        }
+    }
+}
+
+val swirlyCenter by lazy {
+    sequence {
+        name = "Swirly Center"
+        action {
+            primaryPivot rotate 65
+            requestedSpeed = ActionSpeed.SLOW
         }
     }
 }

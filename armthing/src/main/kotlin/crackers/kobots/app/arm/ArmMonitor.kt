@@ -21,6 +21,7 @@ import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.SLEEP_TOPIC
+import crackers.kobots.app.AppCommon.whileRunning
 import crackers.kobots.app.manualMode
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.app.io.StatusColumnDelegate
@@ -91,16 +92,18 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
         screenOnAt = Instant.now()
 
         future = AppCommon.executor.scheduleWithFixedDelay(10.milliseconds, 10.milliseconds) {
-            // if the arm is busy, show its status
-            val lastState = lastStateReceived.get()
-            if (lastState != null && lastState.busy || manualMode) {
-                screen.setDisplayOn(true)
-                screenOnAt = Instant.now()
+            whileRunning {
+                // if the arm is busy, show its status
+                val lastState = lastStateReceived.get()
+                if (lastState != null && lastState.busy || manualMode) {
+                    screen.setDisplayOn(true)
+                    screenOnAt = Instant.now()
 
-                if (manualMode) showLastStatus()
-            } else {
-                val random = (CannedExpressions.entries - CannedExpressions.CLOSED).random().expression
-                showEyes(random)
+                    if (manualMode) showLastStatus()
+                } else {
+                    val random = (CannedExpressions.entries - CannedExpressions.CLOSED).random().expression
+                    showEyes(random)
+                }
             }
         }
     }

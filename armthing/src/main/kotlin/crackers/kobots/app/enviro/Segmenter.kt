@@ -18,6 +18,7 @@ package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.SLEEP_TOPIC
+import crackers.kobots.app.AppCommon.whileRunning
 import crackers.kobots.app.execution.*
 import crackers.kobots.devices.display.HT16K33
 import crackers.kobots.devices.display.QwiicAlphanumericDisplay
@@ -96,23 +97,25 @@ object Segmenter : AutoCloseable {
         })
 
         cluckFuture = AppCommon.executor.scheduleWithFixedDelay(10.seconds, 10.seconds) {
-            // every 5 minutes, display "Clck" for 15 seconds, followed by the time for 45 seconds
-            val now = LocalTime.now()
-            if (now.minute % 5 == 0) {
-                if (!busy.get()) {
-                    with(segmenter) {
-                        print("Clck")
-                        KobotSleep.seconds(15)
-                        var colon = true
-                        for (i in 1..45) {
-                            // only display if not busy (e.g. with something else)
-                            if (!busy.get()) clock(now, colon)
-                            colon = !colon
-                            KobotSleep.seconds(1)
+            whileRunning {
+                // every 5 minutes, display "Clck" for 15 seconds, followed by the time for 45 seconds
+                val now = LocalTime.now()
+                if (now.minute % 5 == 0) {
+                    if (!busy.get()) {
+                        with(segmenter) {
+                            print("Clck")
+                            KobotSleep.seconds(15)
+                            var colon = true
+                            for (i in 1..45) {
+                                // only display if not busy (e.g. with something else)
+                                if (!busy.get()) clock(now, colon)
+                                colon = !colon
+                                KobotSleep.seconds(1)
+                            }
+                            // sleep an extra 2 seconds then clear: this should be enough time for the next minute to start
+                            KobotSleep.seconds(2)
+                            if (!busy.get()) fill(false)
                         }
-                        // sleep an extra 2 seconds then clear: this should be enough time for the next minute to start
-                        KobotSleep.seconds(2)
-                        if (!busy.get()) fill(false)
                     }
                 }
             }

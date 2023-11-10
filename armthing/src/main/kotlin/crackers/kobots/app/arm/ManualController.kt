@@ -17,10 +17,10 @@
 package crackers.kobots.app.arm
 
 import crackers.kobots.app.AppCommon
+import crackers.kobots.app.AppCommon.whileRunning
 import crackers.kobots.app.manualMode
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.parts.scheduleWithFixedDelay
-import org.slf4j.LoggerFactory
 import java.util.concurrent.Future
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -29,15 +29,15 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 object ManualController {
     private val gamepad by lazy { GamepadQT() }
-    private var gpZeroX: Float = 0f
-    private var gpZeroY: Float = 0f
+    private var gpZeroX: Float? = null
+    private var gpZeroY: Float? = null
     private lateinit var joyRideTFuture: Future<*>
     private var wasSelected = false
 
     fun start() {
         joyRideTFuture = AppCommon.executor.scheduleWithFixedDelay(20.milliseconds, 20.milliseconds) {
             // if the start button is pressed and was **not** pressed last time (debounce)
-            try {
+            whileRunning {
                 wasSelected = if (gamepad.startButton) {
                     if (!wasSelected) {
                         manualMode = !manualMode
@@ -48,16 +48,12 @@ object ManualController {
                     if (manualMode) joyRide()
                     false
                 }
-            } catch (_e: IllegalArgumentException) {
-
-            } catch (t: Throwable) {
-                LoggerFactory.getLogger("ManualController").error("Error in ManualController", t)
             }
         }
-
     }
 
     fun stop() {
+        joyRideTFuture.cancel(true)
         gamepad.close()
     }
 
@@ -66,17 +62,24 @@ object ManualController {
      *
      * TODO enable sending "remote" commands via MQTT - aka a selectable target with moving things?
      */
-    private fun joyRide() {
+    private fun joyRide() = try {
         with(TheArm) {
             val xAxis = gamepad.xAxis
-            if (gpZeroX == 0f) gpZeroX = xAxis
+            if (gpZeroX == null) gpZeroX = xAxis
+            else {
+                val diff = gpZeroX!! - xAxis
+                if (diff > 45f) waist -= 2
+                if (diff < -45f) waist += 2
+            }
             val yAxis = gamepad.yAxis
-            if (gpZeroY == 0f) gpZeroY = yAxis
+            if (gpZeroY == null) gpZeroY = yAxis
+            else {
+                val diff = gpZeroY!! - yAxis
+                if (diff > 45f) elbow += 2 // rounding errors?
+                if (diff < -45f) -elbow
+            }
 
-            if (gpZeroX - xAxis > 45f) waist += 2
-            if (gpZeroX - xAxis < -45f) waist -= 2
-            if (gpZeroY - yAxis > 45f) +elbow
-            if (gpZeroY - yAxis < -45f) -elbow
+
             if (gamepad.aButton) +extender
             if (gamepad.yButton) -extender
             if (gamepad.xButton) -gripper
@@ -84,6 +87,7 @@ object ManualController {
 
             updateCurrentState()
         }
+    } catch (_: IllegalArgumentException) {
+        // ignore
     }
-
 }
