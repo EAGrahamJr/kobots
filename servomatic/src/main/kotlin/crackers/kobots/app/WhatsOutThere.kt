@@ -53,11 +53,11 @@ val proxy by lazy {
 
                 sensor.proximity.let { d ->
                     if (d > 5 && !tripped) {
-                        publishToTopic(SuzerainOfServos.SERVO_TOPIC, SequenceRequest(steveTurns))
+                        publishToTopic(SuzerainOfServos.INTERNAL_TOPIC, SequenceRequest(steveTurns))
                         tripped = true
                     } else if (tTime != null && now.isAfter(tTime.plusSeconds(5))) {
                         if (tripped) {
-                            publishToTopic(SuzerainOfServos.SERVO_TOPIC, SequenceRequest(steveGoesHome))
+                            publishToTopic(SuzerainOfServos.INTERNAL_TOPIC, SequenceRequest(steveGoesHome))
                             lastTriggered.set(null)
                         }
                         tripped = false

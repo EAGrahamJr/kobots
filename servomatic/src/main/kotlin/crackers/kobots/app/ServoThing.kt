@@ -19,9 +19,11 @@ package crackers.kobots.app
 import com.diozero.devices.ServoController
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
+import crackers.kobots.app.SuzerainOfServos.INTERNAL_TOPIC
 import crackers.kobots.mqtt.KobotsMQTT.Companion.KOBOTS_EVENTS
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.app.publishToTopic
+import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceRequest
 import org.json.JSONObject
@@ -51,7 +53,8 @@ fun main(args: Array<String>?) {
 
     mqttClient.apply {
         subscribe(SERVO_TOPIC) {
-            val payload: ServoMaticCommand = enumValueOf(it)
+            logger.info("Received command $it")
+            val payload = enumValue<ServoMaticCommand>(it.uppercase())
             when (payload) {
                 ServoMaticCommand.STOP -> {
                     logger.error("Stopping via MQTT")
@@ -62,17 +65,12 @@ fun main(args: Array<String>?) {
                 ServoMaticCommand.LEFT -> servoRequest(swirlyMax)
                 ServoMaticCommand.RIGHT -> servoRequest(swirlyHome)
 
-                else -> {}
+                else -> logger.warn("No clue about $payload")
             }
         }
 
         subscribeJSON(KOBOTS_EVENTS) { payload: JSONObject ->
             logger.info("Received $payload")
-            when (payload.optString("sequence")) {
-                "LocationPickup" -> if (payload.optBoolean("started")) servoRequest(steveTurns)
-                "ReturnPickup" -> if (!payload.optBoolean("started")) servoRequest(steveGoesHome)
-                else -> {}
-            }
         }
 
         startAliveCheck()
@@ -92,4 +90,4 @@ fun main(args: Array<String>?) {
     exitProcess(0)
 }
 
-private fun servoRequest(sequence: ActionSequence) = publishToTopic(SERVO_TOPIC, SequenceRequest(sequence))
+private fun servoRequest(sequence: ActionSequence) = publishToTopic(INTERNAL_TOPIC, SequenceRequest(sequence))

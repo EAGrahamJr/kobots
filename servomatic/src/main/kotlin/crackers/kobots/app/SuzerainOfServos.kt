@@ -30,7 +30,7 @@ import crackers.kobots.parts.movement.sequence
  * All the things
  */
 object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient) {
-    const val SERVO_TOPIC = "Servo.Suzie"
+    internal const val INTERNAL_TOPIC = "Servo.Suzie"
 
     override fun canRun() = AppCommon.applicationRunning
     val primaryPivot by lazy {
@@ -43,41 +43,16 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient) {
     }
 
     init {
-        joinTopic(SERVO_TOPIC, KobotsSubscriber<KobotsAction> { handleRequest(it) })
+        joinTopic(INTERNAL_TOPIC, KobotsSubscriber<KobotsAction> { handleRequest(it) })
     }
 
-}
-
-val steveTurns by lazy {
-    sequence {
-        name = "Steve Turns"
-        action {
-//            primaryPivot rotate 180
-//            requestedSpeed = ActionSpeed.VERY_FAST
-            execute {
-                println("Steve turns"); true
-            }
-        }
-    }
-}
-
-val steveGoesHome by lazy {
-    sequence {
-        name = "Steve Goes Home"
-        action {
-//            primaryPivot rotate 0
-            execute {
-                println("Steve home"); true
-            }
-        }
-    }
 }
 
 val swirlyMax by lazy {
     sequence {
         name = "Swirly Max"
         action {
-            primaryPivot rotate 130
+            primaryPivot rotate 110
             requestedSpeed = ActionSpeed.SLOW
         }
     }

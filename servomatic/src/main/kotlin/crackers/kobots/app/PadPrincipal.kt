@@ -72,8 +72,8 @@ object PadPrincipal {
                         start -> AppCommon.applicationRunning = false
                         a -> AppCommon.mqttClient.publish(BBOARD_TOPIC, "STOP")
                         y -> AppCommon.mqttClient.publish(ARMTHING_TOPIC, "STOP")
-                        b -> publishToTopic(SuzerainOfServos.SERVO_TOPIC, SequenceRequest(swirlyMax))
-                        x -> publishToTopic(SuzerainOfServos.SERVO_TOPIC, SequenceRequest(swirlyHome))
+                        b -> publishToTopic(SuzerainOfServos.INTERNAL_TOPIC, SequenceRequest(swirlyMax))
+                        x -> publishToTopic(SuzerainOfServos.INTERNAL_TOPIC, SequenceRequest(swirlyHome))
 
                         else -> {
                             // do nothing
