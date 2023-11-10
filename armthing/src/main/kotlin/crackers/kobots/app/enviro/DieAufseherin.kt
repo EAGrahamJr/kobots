@@ -20,16 +20,19 @@ import crackers.kobots.app.AppCommon
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.enviro.VeryDumbThermometer.TEMP_OFFSET
 import crackers.kobots.app.execution.PickUpAndMoveStuff
+import crackers.kobots.app.execution.PickUpAndMoveStuff.moveEyeDropsToDropZone
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.mqtt.KobotsMQTT
+import crackers.kobots.mqtt.KobotsMQTT.Companion.KOBOTS_EVENTS
 import crackers.kobots.parts.app.publishToTopic
+import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.onOff
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
+import java.util.concurrent.atomic.AtomicBoolean
 
 /*
  * Message central.
@@ -81,20 +84,20 @@ object DieAufseherin {
     }
 
     private fun mqttStuff() = with(AppCommon.mqttClient) {
-        haSub("homebody/bedroom/casey") { payload ->
+        allowEmergencyStop()
+
+        subscribeJSON("homebody/bedroom/casey") { payload ->
             // bedtime: do the eye drops thing
             if (payload.has("lamp") && LocalTime.now().hour == 22) doTheEyeDropsThing()
         }
-        haSub("homebody/office/paper") { payload ->
-            if (payload.has("lamp")) {
-                val sleepy = !payload.onOff("lamp")
-                RosetteStatus.goToSleep = sleepy
-                publishToTopic(AppCommon.SLEEP_TOPIC, AppCommon.SleepEvent(sleepy))
-                // on wakeup, get drops
-                if (!sleepy && LocalTime.now().hour < 10) doTheEyeDropsThing()
-            }
+        subscribeJSON("homebody/office/paper") { payload ->
+            val sleepy = !payload.onOff("lamp")
+            RosetteStatus.goToSleep = sleepy
+            publishToTopic(AppCommon.SLEEP_TOPIC, AppCommon.SleepEvent(sleepy))
+            // on wakeup, get drops
+            if (!sleepy && LocalTime.now().hour < 10) doTheEyeDropsThing()
         }
-        haSub("zwave/Office/TriBaby/49/0/Air_temperature") { payload ->
+        subscribeJSON("zwave/Office/TriBaby/49/0/Air_temperature") { payload ->
             if (payload.has("value")) {
                 val temp = payload.getDouble("value")
                 VeryDumbThermometer.setTemperature(temp.toFloat())
@@ -104,9 +107,9 @@ object DieAufseherin {
         // subscribe to the command channel
         subscribe("kobots/gripOMatic") { payload ->
             logger.info("Got a gripOMatic command: $payload")
-            when (GripperActions.valueOf(payload.uppercase())) {
+            when (enumValue<GripperActions>(payload.uppercase())) {
                 GripperActions.PICKUP -> doTheEyeDropsThing()
-                GripperActions.RETURN -> TheArm.request(PickUpAndMoveStuff.returnDropsToStorage)
+                GripperActions.RETURN -> doTheEyeDropsReturnThing()
                 GripperActions.HOME -> TheArm.request(homeSequence)
                 GripperActions.SAY_HI -> TheArm.request(sayHi)
                 GripperActions.STOP -> AppCommon.applicationRunning = false
@@ -117,17 +120,46 @@ object DieAufseherin {
                 }
 
                 GripperActions.FLASHLIGHT -> TheArm.nood = !TheArm.nood
+                else -> logger.warn("Unknown command: $payload")
             }
+        }
+
+        subscribeJSON(KOBOTS_EVENTS) { payload ->
+            logger.info("Received $payload")
+            if (payload.optString("source") == "Suzie") manageSwirly(payload)
         }
 
         // TODO something when the motion sensor in the office is triggered
     }
 
-    private fun doTheEyeDropsThing() {
-        TheArm.request(PickUpAndMoveStuff.moveEyeDropsToDropZone)
+
+    private val doingDrops = AtomicBoolean(false)
+
+    private fun manageSwirly(payload: JSONObject) {
+        when (payload.optString("sequence")) {
+            "Swirly Max" -> {
+                if (doingDrops.get() && !payload.optBoolean("started")) TheArm.request(moveEyeDropsToDropZone)
+                else logger.info("Ignoring Swirly Max")
+            }
+
+            "Swirly Home" -> if (doingDrops.get() && !payload.optBoolean("started")) {
+                logger.info("Eye drops done")
+                doingDrops.set(false)
+            }
+
+            else -> {}
+        }
     }
 
-    fun KobotsMQTT.haSub(s: String, handler: (JSONObject) -> Unit) {
-        subscribe(s) { payload -> handler(JSONObject(payload)) }
+    private val SERVO_TOPIC = "kobots/servoMatic"
+
+    private fun doTheEyeDropsThing() {
+        logger.info("Doing the eye drops thing")
+        doingDrops.set(true)
+        AppCommon.mqttClient.publish(SERVO_TOPIC, "left")
+    }
+
+    private fun doTheEyeDropsReturnThing() {
+        TheArm.request(PickUpAndMoveStuff.returnDropsToStorage)
     }
 }
