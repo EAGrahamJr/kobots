@@ -26,7 +26,10 @@ import crackers.kobots.app.manualMode
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.app.io.StatusColumnDelegate
 import crackers.kobots.parts.app.io.StatusColumnDisplay
-import crackers.kobots.parts.app.io.graphics.*
+import crackers.kobots.parts.app.io.graphics.CannedExpressions
+import crackers.kobots.parts.app.io.graphics.Expression
+import crackers.kobots.parts.app.io.graphics.Eye
+import crackers.kobots.parts.app.io.graphics.PairOfEyes
 import crackers.kobots.parts.app.joinTopic
 import crackers.kobots.parts.elapsed
 import crackers.kobots.parts.movement.SequenceExecutor
@@ -81,7 +84,7 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
         )
         joinTopic(INTERNAL_TOPIC, { message: SequenceExecutor.SequenceEvent ->
             if (message.started) {
-                showEyes(CannedExpressions.WHATS_THIS.expression shift Pupil.Position.HALF_RIGHT, true)
+                showEyes(CannedExpressions.LOOK_UP.expression, true)
                 needsClear.set(true)
             } else {
                 showEyes(Expression(lidPosition = Eye.LidPosition.ONE_QUARTER), true)
