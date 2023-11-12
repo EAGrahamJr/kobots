@@ -16,6 +16,7 @@
 
 package crackers.kobots.app
 
+import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.executor
 import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.ManualController
@@ -39,8 +40,6 @@ var manualMode: Boolean
 
 private val logger = LoggerFactory.getLogger("BRAINZ")
 
-const val REMOTE_PI = "diozero.remote.hostname"
-
 /**
  * Run this.
  */
@@ -59,9 +58,6 @@ fun main(args: Array<String>? = null) {
         TheArm.start()
         DieAufseherin.start()
         RosetteStatus.start()
-
-        // start alive-check
-        AppCommon.mqttClient.startAliveCheck()
 
         AppCommon.awaitTermination()
         logger.warn("Exiting")

@@ -25,27 +25,8 @@ import crackers.kobots.app.arm.TheArm.waist
 import crackers.kobots.parts.movement.sequence
 
 /**
- * Picks up stuff from the places and returns it.
+ * Defines how to pick something up from a place and put it somewhere else, with the reverse also available.
  */
-object PickUpAndMoveStuff {
-    private val dropMover = MoveStuffAround(
-        closeOnItem = 93,
-        extenderToPickupTarget = 85,
-        elbowForPickupTarget = 15,
-        dropOffElbow = 10,
-        dropOffExtender = 15
-    )
-    val moveEyeDropsToDropZone = dropMover.moveObjectToTarget()
-    val returnDropsToStorage = dropMover.pickupAndReturn()
-}
-
-/**
- * Magic things for transporting stuff.
- */
-const val MAGIC_EXTENDER = 15
-const val ROTO_PICKUP = "LocationPickup"
-const val ROTO_RETURN = "ReturnPickup"
-
 class MoveStuffAround(
     val closeOnItem: Int = 90, // how much to close the gripper to grab the item - this stresses the technic a bit
 
@@ -129,5 +110,11 @@ class MoveStuffAround(
             elbow rotate elbowForTransport
         }
         this += returnToPickupLocation
+    }
+
+    companion object {
+        const val MAGIC_EXTENDER = 15
+        const val ROTO_PICKUP = "LocationPickup"
+        const val ROTO_RETURN = "ReturnPickup"
     }
 }

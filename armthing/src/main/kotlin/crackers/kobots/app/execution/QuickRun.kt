@@ -32,8 +32,19 @@ import crackers.kobots.parts.movement.ActionSpeed
 import crackers.kobots.parts.movement.sequence
 
 /**
- * Home the arm.
+ * Picks up stuff from the places and returns it.
  */
+object PickUpAndMoveStuff {
+    val dropMover = MoveStuffAround(
+        closeOnItem = 93,
+        extenderToPickupTarget = 80,
+        elbowForPickupTarget = 10,
+        dropOffElbow = 0,
+        dropOffExtender = 15
+    )
+    val moveEyeDropsToDropZone = dropMover.moveObjectToTarget()
+    val returnDropsToStorage = dropMover.pickupAndReturn()
+}
 
 /**
  * Wave hello kinda.
@@ -61,6 +72,9 @@ val sayHi by lazy {
     }
 }
 
+/**
+ * Get attention
+ */
 val excuseMe by lazy {
     sequence {
         name = "Excuse Me"
@@ -83,6 +97,9 @@ val excuseMe by lazy {
     }
 }
 
+/**
+ * Kinda sorta sleepy
+ */
 val armSleep by lazy {
     sequence {
         name = "Go To Sleep"
@@ -99,6 +116,9 @@ val armSleep by lazy {
     }
 }
 
+/**
+ * Send it home
+ */
 val homeSequence by lazy {
     sequence {
         name = "Home"

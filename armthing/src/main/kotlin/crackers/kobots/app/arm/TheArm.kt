@@ -16,13 +16,13 @@
 
 package crackers.kobots.app.arm
 
-import com.diozero.api.ServoTrim
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.SLEEP_TOPIC
 import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.crickitHat
 import crackers.kobots.app.execution.armSleep
 import crackers.kobots.app.execution.homeSequence
+import crackers.kobots.devices.MG90S_TRIM
 import crackers.kobots.devices.at
 import crackers.kobots.parts.app.KobotsAction
 import crackers.kobots.parts.app.KobotsSubscriber
@@ -68,7 +68,7 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
         val _OPEN = 0f
         val _CLOSE = 65f
 
-        val servo = crickitHat.servo(3, ServoTrim.TOWERPRO_SG90).apply {
+        val servo = crickitHat.servo(3, MG90S_TRIM).apply {
             this at _CLOSE
         }
 
@@ -77,16 +77,16 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
     }
 
     val extender by lazy {
-        val _IN = 180f
-        val _OUT = 0f
-        val servo = crickitHat.servo(1, ServoTrim.TOWERPRO_SG90).apply {
+        val _IN = 0f
+        val _OUT = 90f
+        val servo = crickitHat.servo(1, MG90S_TRIM).apply {
             this at _IN
         }
         ServoLinearActuator(servo, _IN, _OUT)
     }
 
     val elbow by lazy {
-        val servo2 = crickitHat.servo(2, ServoTrim.TOWERPRO_SG90).apply {
+        val servo2 = crickitHat.servo(2, MG90S_TRIM).apply {
             this at 0
         }
         val physicalRange = IntRange(ELBOW_DOWN, ELBOW_UP)
@@ -95,13 +95,10 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
     }
 
     val waist by lazy {
-        val _HOME = 0
-        val _MAX = 180
-
-        val servoRange = IntRange(_HOME, _MAX)
-        val physicalRange = IntRange(0, 140) // MG90S servo trim
-        val servo = crickitHat.servo(4, ServoTrim(1500, 1100)).apply {
-            this at _HOME
+        val servoRange = IntRange(0, 180)
+        val physicalRange = IntRange(0, 140)
+        val servo = crickitHat.servo(4, MG90S_TRIM).apply {
+            this at 0
         }
         ServoRotator(servo, physicalRange, servoRange)
     }

@@ -24,7 +24,6 @@ import crackers.kobots.app.execution.PickUpAndMoveStuff.moveEyeDropsToDropZone
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.app.execution.sayHi
-import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.mqtt.KobotsMQTT.Companion.KOBOTS_EVENTS
 import crackers.kobots.parts.app.publishToTopic
 import crackers.kobots.parts.enumValue
@@ -57,33 +56,8 @@ object DieAufseherin {
 //        AppCommon.executor.scheduleAtFixedRate(5.seconds, 100.milliseconds, ::youHaveOneJob)
     }
 
-    const val CLOSE_ENOUGH = 15 // this is **approximately**  25mm
-    const val PROXIMITY_TOPIC = "Prox.TooClose"
-
-    private val sensor by lazy {
-        VCNL4040().apply {
-            proximityEnabled = true
-            ambientLightEnabled = true
-        }
-    }
-    private var wasTriggered = false
-    private fun youHaveOneJob() {
-        try {
-            val prox = sensor.proximity
-            wasTriggered = if (prox > CLOSE_ENOUGH) {
-                if (!wasTriggered) {
-                    logger.info("Proximity sensor triggered: $prox")
-//                    publishToTopic(PROXIMITY_TOPIC, prox)
-                }
-                true
-            } else false
-
-        } catch (e: Exception) {
-            logger.error("Proximity sensor error: ${e.message}")
-        }
-    }
-
     private fun mqttStuff() = with(AppCommon.mqttClient) {
+        startAliveCheck()
         allowEmergencyStop()
 
         subscribeJSON("homebody/bedroom/casey") { payload ->
