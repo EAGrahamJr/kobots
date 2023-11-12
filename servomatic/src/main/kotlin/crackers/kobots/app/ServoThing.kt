@@ -54,7 +54,7 @@ fun main(args: Array<String>?) {
     mqttClient.apply {
         subscribe(SERVO_TOPIC) {
             logger.info("Servo received command $it")
-            val payload = enumValue<ServoMaticCommand>(it.uppercase())
+            val payload = enumValue<ServoMaticCommand>(it.uppercase().trim())
             when (payload) {
                 ServoMaticCommand.STOP -> {
                     logger.error("Stopping via MQTT")
@@ -70,13 +70,11 @@ fun main(args: Array<String>?) {
         }
 
         subscribeJSON(KOBOTS_EVENTS) { payload: JSONObject ->
-            if (payload.optString("source") == "TheArm" && payload.optString("sequence") == "ReturnPickup" && !payload.optBoolean(
-                    "started"
-                )
-            ) {
-                logger.info("Drops done")
-                servoRequest(swirlyHome)
-            } else logger.info("Received $payload")
+            when (payload.optString("source")) {
+                "TheArm" -> doArmThing(payload)
+                "Proximity" -> doAlertThing(payload)
+                else -> logger.info("Received $payload")
+            }
         }
 
         startAliveCheck()
@@ -96,4 +94,4 @@ fun main(args: Array<String>?) {
     exitProcess(0)
 }
 
-private fun servoRequest(sequence: ActionSequence) = publishToTopic(INTERNAL_TOPIC, SequenceRequest(sequence))
+internal fun servoRequest(sequence: ActionSequence) = publishToTopic(INTERNAL_TOPIC, SequenceRequest(sequence))

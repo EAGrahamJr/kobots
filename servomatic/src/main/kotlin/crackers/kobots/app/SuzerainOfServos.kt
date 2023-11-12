@@ -16,8 +16,9 @@
 
 package crackers.kobots.app
 
-import com.diozero.api.ServoTrim
 import crackers.kobots.app.SuzerainOfServos.primaryPivot
+import crackers.kobots.app.SuzerainOfServos.wavyRotor
+import crackers.kobots.devices.MG90S_TRIM
 import crackers.kobots.parts.app.KobotsAction
 import crackers.kobots.parts.app.KobotsSubscriber
 import crackers.kobots.parts.app.joinTopic
@@ -34,12 +35,14 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient) {
 
     override fun canRun() = AppCommon.applicationRunning
     val primaryPivot by lazy {
-        val servo = hat.getServo(0, ServoTrim.TOWERPRO_SG90, 0)
-        ServoRotator(servo, 0..180, 0..180)
+        val servo = hat.getServo(0, MG90S_TRIM, 0)
+        // 1 to 1 gear ratio
+        ServoRotator(servo, 0..90, 0..90)
     }
-    val thingieSwirlie by lazy {
-        val servo = hat.getServo(1, ServoTrim.TOWERPRO_SG90, 0)
-        ServoRotator(servo, 0..140, 0..180)
+    val wavyRotor by lazy {
+        val wavyServo = hat.getServo(1, MG90S_TRIM, 0)
+        // 12/20 - 0.6 gear ratio
+        ServoRotator(wavyServo, 0..90, 0..150)
     }
 
     init {
@@ -52,7 +55,7 @@ val swirlyMax by lazy {
     sequence {
         name = "Swirly Max"
         action {
-            primaryPivot rotate 110
+            primaryPivot rotate 90
             requestedSpeed = ActionSpeed.SLOW
         }
     }
@@ -72,7 +75,27 @@ val swirlyCenter by lazy {
     sequence {
         name = "Swirly Center"
         action {
-            primaryPivot rotate 65
+            primaryPivot rotate 45
+            requestedSpeed = ActionSpeed.SLOW
+        }
+    }
+}
+
+val wavyUp by lazy {
+    sequence {
+        name = "Wavy Up"
+        action {
+            wavyRotor rotate 90
+            requestedSpeed = ActionSpeed.VERY_FAST
+        }
+    }
+}
+
+val wavyDown by lazy {
+    sequence {
+        name = "Wavy Down"
+        action {
+            wavyRotor rotate 0
             requestedSpeed = ActionSpeed.SLOW
         }
     }
