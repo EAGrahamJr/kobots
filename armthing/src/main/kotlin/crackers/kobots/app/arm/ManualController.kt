@@ -75,8 +75,16 @@ object ManualController {
             if (gpZeroY == null) gpZeroY = yAxis
             else {
                 val diff = gpZeroY!! - yAxis
-                if (diff > 45f) elbow += 2 // rounding errors?
-                if (diff < -45f) -elbow
+                if (diff > 45f) {
+                    val current = elbow.current()
+//                    println ("elbow $current")
+                    elbow.rotateTo(current - 3)
+                }
+                if (diff < -45f) {
+                    val current = elbow.current()
+//                    println ("elbow $current")
+                    elbow.rotateTo(current + 3)
+                }
             }
 
 

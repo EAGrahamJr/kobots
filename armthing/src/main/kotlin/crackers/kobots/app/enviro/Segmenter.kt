@@ -21,7 +21,6 @@ import crackers.kobots.app.AppCommon.SLEEP_TOPIC
 import crackers.kobots.app.AppCommon.whileRunning
 import crackers.kobots.app.execution.MoveStuffAround.Companion.ROTO_PICKUP
 import crackers.kobots.app.execution.MoveStuffAround.Companion.ROTO_RETURN
-import crackers.kobots.app.execution.armSleep
 import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.app.execution.sayHi
@@ -69,13 +68,6 @@ object Segmenter : AutoCloseable {
                             if (started) output("Dude") else clear()
                         }
 
-                        armSleep.name -> {
-                            if (started) {
-                                output("ZZZZ")
-                                blinkRate = HT16K33.BlinkRate.SLOW
-                            } else clear()
-                        }
-
                         excuseMe.name -> {
                             if (started) {
                                 output("SRRY")
@@ -95,9 +87,13 @@ object Segmenter : AutoCloseable {
             if (it.sleep) {
                 // once this goes to sleep, one of the above things has to occur to re-enable the display
                 logger.debug("Sleeping")
-                busy.set(true)
-                KobotSleep.seconds(60)
-                segmenter.clear()
+                with(segmenter) {
+                    output("ZZZZ")
+                    blinkRate = HT16K33.BlinkRate.SLOW
+                    KobotSleep.seconds(60)
+                    fill(false)
+                    blinkRate = HT16K33.BlinkRate.OFF
+                }
             }
         })
 

@@ -26,10 +26,7 @@ import crackers.kobots.app.manualMode
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.app.io.StatusColumnDelegate
 import crackers.kobots.parts.app.io.StatusColumnDisplay
-import crackers.kobots.parts.app.io.graphics.CannedExpressions
-import crackers.kobots.parts.app.io.graphics.Expression
-import crackers.kobots.parts.app.io.graphics.Eye
-import crackers.kobots.parts.app.io.graphics.PairOfEyes
+import crackers.kobots.parts.app.io.graphics.*
 import crackers.kobots.parts.app.joinTopic
 import crackers.kobots.parts.elapsed
 import crackers.kobots.parts.movement.SequenceExecutor
@@ -44,7 +41,6 @@ import java.awt.image.BufferedImage
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.Future
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -58,54 +54,98 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
     private val logger = LoggerFactory.getLogger("ArmMonitor")
     private val screenGraphics: Graphics2D
 
-    private val monitorImage = BufferedImage(MAX_WD, MAX_HT, BufferedImage.TYPE_BYTE_GRAY).also { img: BufferedImage ->
+    private val screenImage = BufferedImage(MAX_WD, MAX_HT, BufferedImage.TYPE_BYTE_GRAY).also { img: BufferedImage ->
         screenGraphics = (img.graphics as Graphics2D).apply {
             font = Font(Font.SANS_SERIF, Font.PLAIN, 12)
         }
     }
 
-    private val screen = run {
+    private val screen by lazy {
         val i2CDevice = I2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
         SSD1306(I2cCommunicationChannel(i2CDevice), SSD1306.Height.SHORT).apply { setContrast(0x20.toByte()) }
     }
 
-    private lateinit var future: Future<*>
+    private enum class Mode {
+        MANUAL, IDLE, SCAN, SLEEP, MOVING, COMPLETED
+    }
 
-    private val lastStateReceived = AtomicReference<ArmState>()
+    private lateinit var future: Future<*>
+    private val atomicMode = AtomicReference(Mode.IDLE)
+    private var mode: Mode
+        get() = atomicMode.get()
+        set(value) = atomicMode.set(value)
+
     private var lastChanged = Instant.EPOCH
     private var screenOnAt = Instant.EPOCH
-    private val needsClear = AtomicBoolean(true)
+
+    private val LOOK_RIGHT = Expression(
+        lidPosition = Eye.LidPosition.ONE_QUARTER,
+        pupilPosition = Pupil.Position.RIGHT + Pupil.Position.CENTER
+    )
+    private val LOOK_LEFT = Expression(
+        lidPosition = Eye.LidPosition.ONE_QUARTER,
+        pupilPosition = Pupil.Position.LEFT + Pupil.Position.CENTER
+    )
 
     fun start() {
-        joinTopic(TheArm.STATE_TOPIC, { message: ArmState -> lastStateReceived.set(message) })
-        joinTopic(
-            SLEEP_TOPIC,
-            { event: AppCommon.SleepEvent -> if (event.sleep) showEyes(CannedExpressions.CLOSED.expression, true) }
-        )
+        joinTopic(SLEEP_TOPIC, { event: AppCommon.SleepEvent -> if (event.sleep) mode = Mode.SLEEP })
         joinTopic(INTERNAL_TOPIC, { message: SequenceExecutor.SequenceEvent ->
-            if (message.started) {
-                showEyes(CannedExpressions.LOOK_UP.expression, true)
-                needsClear.set(true)
+            mode = if (message.started) {
+                if (message.sequence.lowercase().contains("scan")) Mode.SCAN
+                else {
+                    showEyes(CannedExpressions.LOOK_UP.expression, true)
+                    Mode.MOVING
+                }
             } else {
-                showEyes(Expression(lidPosition = Eye.LidPosition.ONE_QUARTER), true)
-                needsClear.set(true)
+                Mode.COMPLETED
             }
         }
         )
         screenOnAt = Instant.now()
 
         future = AppCommon.executor.scheduleWithFixedDelay(10.milliseconds, 10.milliseconds) {
+            var lastScanLocation = 0
+
             whileRunning {
-                // if the arm is busy, show its status
-                val lastState = lastStateReceived.get()
-                if (lastState != null && lastState.busy || manualMode) {
+                // manual mode, show where the arm is at
+                if (manualMode) {
                     screen.setDisplayOn(true)
                     screenOnAt = Instant.now()
-
-                    if (manualMode) showLastStatus()
+                    showLastStatus()
+                    mode = Mode.MANUAL
                 } else {
-                    val random = (CannedExpressions.entries - CannedExpressions.CLOSED).random().expression
-                    showEyes(random)
+                    when (mode) {
+                        // the showEyes function controls screen on/off and expression changes
+                        Mode.IDLE -> {
+                            val random = (CannedExpressions.entries - CannedExpressions.CLOSED).random().expression
+                            showEyes(random)
+                        }
+
+                        Mode.SCAN -> {
+                            screenOnAt = Instant.now()
+                            // if the waist location is greater than the last location, look to the right otherwise left
+                            val current = TheArm.state.position.waist.angle
+                            if (current > lastScanLocation) showEyes(LOOK_RIGHT)
+                            else showEyes(LOOK_LEFT)
+                            lastScanLocation = current
+                        }
+
+                        Mode.MOVING -> {
+                            // above
+                        }
+
+                        Mode.COMPLETED -> {
+                            showEyes(Expression(lidPosition = Eye.LidPosition.ONE_QUARTER), true)
+                            mode = Mode.IDLE
+                        }
+
+                        Mode.SLEEP -> {
+                            showEyes(CannedExpressions.CLOSED.expression, true)
+                            mode = Mode.IDLE
+                        }
+
+                        else -> mode = Mode.IDLE
+                    }
                 }
             }
         }
@@ -113,11 +153,8 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
 
     private fun showLastStatus() = with(screenGraphics) {
         // show last recorded status
-        lastStateReceived.get()?.let { state ->
-            displayStatuses(state.position.mapped())
-        }
-        screen.display(monitorImage)
-        needsClear.set(true)
+        displayStatuses(TheArm.state.position.mapped())
+        screen.display(screenImage)
     }
 
     // show a random image
@@ -128,6 +165,10 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
     private val rightEye = Eye(Point(82, 15), 15)
     private val eyes = PairOfEyes(leftEye, rightEye)
 
+    /**
+     * Show the eyes -- if time has elapsed for showing anything, turn off the screen unless forced.
+     */
+    @Synchronized
     fun showEyes(expression: Expression, force: Boolean = false) {
         if (!force) {
             screenOnAt.elapsed().also { elapsed ->
@@ -141,11 +182,15 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
                     return
                 }
             }
+            // time to change expression or not?
             if (lastChanged.elapsed() < CHANGE_EYES) return
         }
-        if (force) screenOnAt = Instant.now()
 
-        checkAndClear()
+        if (force) screenOnAt = Instant.now()
+        screen.setDisplayOn(true)
+
+        screenGraphics.color = Color.BLACK
+        screenGraphics.fillRect(0, 0, MAX_WD, MAX_HT)
 
         eyes(CannedExpressions.CLOSED.expression)
         drawEyes()
@@ -156,17 +201,10 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
         lastChanged = Instant.now()
     }
 
-    private fun checkAndClear() {
-        if (needsClear.get()) {
-            screenGraphics.color = Color.BLACK
-            screenGraphics.fillRect(0, 0, MAX_WD, MAX_HT)
-            needsClear.set(false)
-        }
-    }
 
     private fun drawEyes() {
         eyes.draw(screenGraphics)
-        screen.display(monitorImage)
+        screen.display(screenImage)
     }
 
     fun stop() {

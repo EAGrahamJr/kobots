@@ -17,10 +17,8 @@
 package crackers.kobots.app.arm
 
 import crackers.kobots.app.AppCommon
-import crackers.kobots.app.AppCommon.SLEEP_TOPIC
 import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.crickitHat
-import crackers.kobots.app.execution.armSleep
 import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.devices.MG90S_TRIM
 import crackers.kobots.devices.at
@@ -35,7 +33,6 @@ import java.util.concurrent.atomic.AtomicReference
  * V5 iteration of a controlled "arm-like" structure.
  */
 object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
-    const val STATE_TOPIC = "TheArm.State"
     const val REQUEST_TOPIC = "TheArm.Request"
 
     fun request(sequence: ActionSequence) {
@@ -43,7 +40,7 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
     }
 
     const val ELBOW_UP = 90
-    const val ELBOW_DOWN = -10
+    const val ELBOW_DOWN = -9
 
     const val WAIST_HOME = 0
     const val WAIST_MAX = 110
@@ -90,17 +87,17 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
             this at 0
         }
         val physicalRange = IntRange(ELBOW_DOWN, ELBOW_UP)
-        val servoRange = IntRange(180, 0)
+        val servoRange = IntRange(150, 0)
         ServoRotator(servo2, physicalRange, servoRange)
     }
 
+    val waistServo by lazy {
+        crickitHat.servo(4, MG90S_TRIM).apply { this at 0 }
+    }
     val waist by lazy {
         val servoRange = IntRange(0, 180)
         val physicalRange = IntRange(0, 140)
-        val servo = crickitHat.servo(4, MG90S_TRIM).apply {
-            this at 0
-        }
-        ServoRotator(servo, physicalRange, servoRange)
+        ServoRotator(waistServo, physicalRange, servoRange)
     }
 
     private val noodle by lazy { crickitHat.signalDigitalOut(8) }
@@ -119,7 +116,6 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
         get() = _currentState.get()
         private set(s) {
             _currentState.set(s)
-            publishToTopic(STATE_TOPIC, s)
         }
     val home: Boolean
         get() = state.position == HOME_POSITION
@@ -129,12 +125,6 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
             REQUEST_TOPIC,
             KobotsSubscriber<KobotsAction> {
                 handleRequest(it)
-            }
-        )
-        joinTopic(
-            SLEEP_TOPIC,
-            KobotsSubscriber { event ->
-                if (event is AppCommon.SleepEvent && event.sleep) handleRequest(SequenceRequest((armSleep)))
             }
         )
     }

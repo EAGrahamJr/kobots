@@ -19,11 +19,8 @@ package crackers.kobots.app.enviro
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.enviro.VeryDumbThermometer.TEMP_OFFSET
-import crackers.kobots.app.execution.PickUpAndMoveStuff
+import crackers.kobots.app.execution.*
 import crackers.kobots.app.execution.PickUpAndMoveStuff.moveEyeDropsToDropZone
-import crackers.kobots.app.execution.excuseMe
-import crackers.kobots.app.execution.homeSequence
-import crackers.kobots.app.execution.sayHi
 import crackers.kobots.mqtt.KobotsMQTT.Companion.KOBOTS_EVENTS
 import crackers.kobots.parts.app.publishToTopic
 import crackers.kobots.parts.enumValue
@@ -38,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 object DieAufseherin {
     enum class GripperActions {
-        PICKUP, RETURN, HOME, SAY_HI, STOP, EXCUSE_ME, SLEEP, FLASHLIGHT
+        PICKUP, RETURN, HOME, SAY_HI, STOP, EXCUSE_ME, SLEEP, FLASHLIGHT, SIMPLESCAN
     }
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
@@ -94,6 +91,7 @@ object DieAufseherin {
                 }
 
                 GripperActions.FLASHLIGHT -> TheArm.nood = !TheArm.nood
+                GripperActions.SIMPLESCAN -> TheArm.request(simpleScan)
                 else -> logger.warn("Unknown command: $payload")
             }
         }
