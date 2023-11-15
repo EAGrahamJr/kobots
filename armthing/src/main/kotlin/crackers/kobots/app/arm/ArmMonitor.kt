@@ -50,7 +50,10 @@ private const val MAX_HT = 32
 /**
  * Shows where the arm is on a timed basis.
  */
-object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) {
+object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT), KobotRadar by SimpleRadar(
+    Point(0, 0),
+    MAX_HT.toDouble()
+) {
     private val logger = LoggerFactory.getLogger("ArmMonitor")
     private val screenGraphics: Graphics2D
 
@@ -102,9 +105,9 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
         }
         )
         screenOnAt = Instant.now()
+        var lastMode = Mode.IDLE
 
         future = AppCommon.executor.scheduleWithFixedDelay(10.milliseconds, 10.milliseconds) {
-            var lastScanLocation = 0
 
             whileRunning {
                 // manual mode, show where the arm is at
@@ -122,12 +125,16 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
                         }
 
                         Mode.SCAN -> {
+                            // just make sure the screen is on
+                            if (lastMode != Mode.SCAN) {
+                                screen.setDisplayOn(true)
+                                clearImage()
+                            }
                             screenOnAt = Instant.now()
-                            // if the waist location is greater than the last location, look to the right otherwise left
-                            val current = TheArm.state.position.waist.angle
-                            if (current > lastScanLocation) showEyes(LOOK_RIGHT)
-                            else showEyes(LOOK_LEFT)
-                            lastScanLocation = current
+                            lastChanged = Instant.now()
+                            // update the radar image
+                            screenGraphics.paintRadar()
+                            screen.display(screenImage)
                         }
 
                         Mode.MOVING -> {
@@ -135,7 +142,7 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
                         }
 
                         Mode.COMPLETED -> {
-                            showEyes(Expression(lidPosition = Eye.LidPosition.ONE_QUARTER), true)
+                            showEyes(Expression(lidPosition = Eye.LidPosition.ONE_QUARTER), lastMode != Mode.SCAN)
                             mode = Mode.IDLE
                         }
 
@@ -147,13 +154,21 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
                         else -> mode = Mode.IDLE
                     }
                 }
+                lastMode = mode
             }
         }
     }
 
-    private fun showLastStatus() = with(screenGraphics) {
+    fun ping(angle: Int, distance: Float) {
+        // TODO make this not so hard-waired
+        // scale the distance based on percentage of max (25.5)
+        val scaled = MAX_HT * (distance / 25.5f)
+        updateScan(KobotRadar.RadarScan(angle + 45, scaled))
+    }
+
+    private fun showLastStatus() {
         // show last recorded status
-        displayStatuses(TheArm.state.position.mapped())
+        screenGraphics.displayStatuses(TheArm.state.position.mapped())
         screen.display(screenImage)
     }
 
@@ -169,7 +184,8 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
      * Show the eyes -- if time has elapsed for showing anything, turn off the screen unless forced.
      */
     @Synchronized
-    fun showEyes(expression: Expression, force: Boolean = false) {
+    private fun showEyes(expression: Expression, force: Boolean = false) {
+        require(mode != Mode.SCAN)
         if (!force) {
             screenOnAt.elapsed().also { elapsed ->
                 if (elapsed > TURN_OFF) {
@@ -189,8 +205,7 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
         if (force) screenOnAt = Instant.now()
         screen.setDisplayOn(true)
 
-        screenGraphics.color = Color.BLACK
-        screenGraphics.fillRect(0, 0, MAX_WD, MAX_HT)
+        clearImage()
 
         eyes(CannedExpressions.CLOSED.expression)
         drawEyes()
@@ -199,6 +214,11 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT) 
         eyes(expression)
         drawEyes()
         lastChanged = Instant.now()
+    }
+
+    private fun clearImage() {
+        screenGraphics.color = Color.BLACK
+        screenGraphics.fillRect(0, 0, MAX_WD, MAX_HT)
     }
 
 

@@ -16,7 +16,8 @@
 
 package crackers.kobots.app.execution
 
-import crackers.kobots.app.arm.TheArm.elbow
+import crackers.kobots.app.arm.ArmMonitor
+import crackers.kobots.app.arm.TheArm.waist
 import crackers.kobots.app.arm.TheArm.waistServo
 import crackers.kobots.devices.at
 import crackers.kobots.devices.sensors.VL6180X
@@ -35,24 +36,40 @@ val simpleScan by lazy {
     sequence {
         name = "Simple Scan"
         this += homeSequence
-        // drop the arm horizontally
-        action { elbow rotate 0 }
 
         // sweep the waist to 90 degrees, one degree at a time, then back to 0 the same way
         action {
-            execute {
-                for (i in 0..140 step 2) snapShot(i)
-                for (i in 140 downTo 0 step 2) snapShot(i)
-                true
+//            execute { runWithServo() }
+            waist forwardUntil {
+                KobotSleep.millis(5)
+                println("Angle ${waistServo.angle} waist ${waist.current()}- ${toffle.distance()}")
+                ArmMonitor.ping(waist.current(), toffle.distance())
+                KobotSleep.millis(15)
+                waist.current() == 90
+            }
+        }
+        action {
+            waist backwardUntil {
+                KobotSleep.millis(5)
+                println("Angle ${waistServo.angle} waist ${waist.current()}- ${toffle.distance()}")
+                ArmMonitor.ping(waist.current(), toffle.distance())
+                KobotSleep.millis(15)
+                waist.current() == 0
             }
         }
         this += homeSequence
     }
 }
 
-private fun snapShot(i: Int) {
-    waistServo at i
-    KobotSleep.millis(5)
-    println("Angle $i - ${toffle.distance()}")
-    KobotSleep.millis(15)
+private fun runWithServo(): Boolean {
+    fun snapShot(i: Int) {
+        waistServo at i
+        KobotSleep.millis(5)
+        println("Angle $i waist ${waist.current()}- ${toffle.distance()}")
+        KobotSleep.millis(15)
+    }
+
+    for (i in 0..140 step 2) snapShot(i)
+    for (i in 140 downTo 0 step 2) snapShot(i)
+    return true
 }

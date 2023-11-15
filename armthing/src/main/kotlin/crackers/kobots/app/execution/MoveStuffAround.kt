@@ -26,6 +26,8 @@ import crackers.kobots.parts.movement.sequence
 
 /**
  * Defines how to pick something up from a place and put it somewhere else, with the reverse also available.
+ *
+ * TODO rethink the approach and grab/drop motions: more interim steps?
  */
 class MoveStuffAround(
     val closeOnItem: Int = 90, // how much to close the gripper to grab the item - this stresses the technic a bit
@@ -70,7 +72,7 @@ class MoveStuffAround(
     // assumes something is in the gripper
     private val returnToPickupLocation = sequence {
         action { waist rotate waistForPickupTarget }
-//        action { elbow rotate elbowForPickupTarget + 25 }
+        action { elbow rotate elbowForPickupTarget + 25 }
         action { extender goTo extenderToPickupTarget }
         action { elbow rotate elbowForPickupTarget }
         action { gripper goTo GRIPPER_OPEN }

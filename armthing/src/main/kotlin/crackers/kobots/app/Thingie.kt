@@ -25,6 +25,7 @@ import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.app.enviro.RosetteStatus
 import crackers.kobots.app.enviro.Segmenter
 import crackers.kobots.app.execution.homeSequence
+import crackers.kobots.app.execution.toffle
 import crackers.kobots.devices.expander.CRICKITHat
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
@@ -52,6 +53,9 @@ fun main(args: Array<String>? = null) {
     ArmMonitor.start()
     Segmenter.start()
     ManualController.start()
+
+    // fire off the sensor just to make sure it's working
+    toffle.distanceCm
 
     crickitHat.use {
         // start all the things that require the CRICKIT

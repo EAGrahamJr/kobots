@@ -96,7 +96,7 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
     }
     val waist by lazy {
         val servoRange = IntRange(0, 180)
-        val physicalRange = IntRange(0, 140)
+        val physicalRange = IntRange(0, 130)
         ServoRotator(waistServo, physicalRange, servoRange)
     }
 
