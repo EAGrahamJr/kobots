@@ -136,6 +136,7 @@ object Segmenter : AutoCloseable {
 
     override fun close() = stop()
     fun stop() {
+        segmenter.fill(false)
         segmenter.close()
     }
 }

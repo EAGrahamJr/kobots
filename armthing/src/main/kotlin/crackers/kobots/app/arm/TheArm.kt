@@ -43,7 +43,7 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
     const val ELBOW_DOWN = -9
 
     const val WAIST_HOME = 0
-    const val WAIST_MAX = 110
+    const val WAIST_MAX = 140
 
     const val EXTENDER_HOME = 0
     const val EXTENDER_FULL = 100
@@ -96,7 +96,7 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
     }
     val waist by lazy {
         val servoRange = IntRange(0, 180)
-        val physicalRange = IntRange(0, 130)
+        val physicalRange = IntRange(0, 140)    // round "down" gear ratio (1.28 == 1.2)
         ServoRotator(waistServo, physicalRange, servoRange)
     }
 
