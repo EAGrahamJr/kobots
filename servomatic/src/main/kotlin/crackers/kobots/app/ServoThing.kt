@@ -18,7 +18,9 @@ package crackers.kobots.app
 
 import com.diozero.devices.ServoController
 import crackers.kobots.app.AppCommon.REMOTE_PI
+import crackers.kobots.app.AppCommon.hasskClient
 import crackers.kobots.app.AppCommon.mqttClient
+import crackers.kobots.app.AppCommon.whileRunning
 import crackers.kobots.app.SuzerainOfServos.INTERNAL_TOPIC
 import crackers.kobots.mqtt.KobotsMQTT.Companion.KOBOTS_EVENTS
 import crackers.kobots.parts.app.KobotSleep
@@ -26,9 +28,12 @@ import crackers.kobots.parts.app.publishToTopic
 import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceRequest
+import crackers.kobots.parts.scheduleAtFixedRate
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Handles a bunch of different servos for various things. Everything should have an MQTT interface.
@@ -73,7 +78,7 @@ fun main(args: Array<String>?) {
             when (payload.optString("source")) {
                 "TheArm" -> doArmThing(payload)
                 "Proximity" -> doAlertThing(payload)
-                else -> logger.info("Received $payload")
+                else -> logger.debug("Received $payload")
             }
         }
 
@@ -81,15 +86,22 @@ fun main(args: Array<String>?) {
         allowEmergencyStop()
     }
 
-    // TODO the Sparkfun I2c port on the servo hat is not working
-//    PadPrincipal.start()
-    hat.use { hat ->
-//        logger.info("luminosity at start ${proxy.luminosity}")
-        AppCommon.awaitTermination()
-
-        KobotSleep.seconds(1)
+    AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
+        whileRunning {
+            with(hasskClient) {
+                val rising = sensor("sun_solar_rising").state().state.toBoolean()
+                val elevation = sensor("sun_solar_elevation").state().state.toFloat().let {
+                    if (it < 0) 0f else if (rising) it else -it
+                }
+                OrreryThing.sunElevation = elevation
+            }
+        }
     }
-//    PadPrincipal.stop()
+
+    // TODO the Sparkfun I2c port on the servo hat is not working
+    AppCommon.awaitTermination()
+    KobotSleep.seconds(1)
+    hat.close()
     logger.warn("Servomatic exit")
     exitProcess(0)
 }

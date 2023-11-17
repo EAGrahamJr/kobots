@@ -20,6 +20,9 @@ plugins {
 
 dependencies {
     implementation("com.typesafe:config:1.4.1")
+    implementation("crackers.automation:hassk:0.0.1") {
+        exclude(group = "ch.qos.logback")
+    }
 //    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
 //    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
 }

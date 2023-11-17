@@ -22,10 +22,7 @@ import crackers.kobots.devices.MG90S_TRIM
 import crackers.kobots.parts.app.KobotsAction
 import crackers.kobots.parts.app.KobotsSubscriber
 import crackers.kobots.parts.app.joinTopic
-import crackers.kobots.parts.movement.ActionSpeed
-import crackers.kobots.parts.movement.SequenceExecutor
-import crackers.kobots.parts.movement.ServoRotator
-import crackers.kobots.parts.movement.sequence
+import crackers.kobots.parts.movement.*
 
 /**
  * All the things
@@ -45,10 +42,13 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient) {
         ServoRotator(wavyServo, 0..90, 0..150)
     }
 
+    val orreryRotor by lazy {
+        SimpleServoRotator(hat.getServo(2, MG90S_TRIM, 180), 0..180)
+    }
+
     init {
         joinTopic(INTERNAL_TOPIC, KobotsSubscriber<KobotsAction> { handleRequest(it) })
     }
-
 }
 
 val swirlyMax by lazy {
