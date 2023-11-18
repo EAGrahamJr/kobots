@@ -16,6 +16,7 @@
 
 package crackers.kobots.app.arm
 
+import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.crickitHat
@@ -100,6 +101,11 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
         ServoRotator(waistServo, physicalRange, servoRange)
     }
 
+    val slowMoe by lazy {
+        val stepper = BasicStepperMotor(2048, crickitHat.unipolarStepperPort())
+        BasicStepperRotator(stepper)
+    }
+
     private val noodle by lazy { crickitHat.signalDigitalOut(8) }
     private var noodValue = false
     var nood: Boolean
@@ -144,6 +150,8 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
 
     override fun postExecution() {
         nood = false
+        // just in case, release steppers
+        slowMoe.release()
     }
 
     /**

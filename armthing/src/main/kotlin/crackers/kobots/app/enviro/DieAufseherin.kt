@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 object DieAufseherin {
     enum class GripperActions {
-        PICKUP, RETURN, HOME, SAY_HI, STOP, EXCUSE_ME, SLEEP, FLASHLIGHT, SIMPLESCAN
+        PICKUP, RETURN, HOME, SAY_HI, STOP, EXCUSE_ME, SLEEP, FLASHLIGHT
     }
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
@@ -75,25 +75,11 @@ object DieAufseherin {
             }
         }
 
-        // subscribe to the command channel
+        // subscribe to the command channel -- just get the payload as a string
         subscribe("kobots/gripOMatic") { payload ->
             logger.info("Got a gripOMatic command: $payload")
-            when (enumValue<GripperActions>(payload.uppercase())) {
-                GripperActions.PICKUP -> doTheEyeDropsThing()
-                GripperActions.RETURN -> doTheEyeDropsReturnThing()
-                GripperActions.HOME -> TheArm.request(homeSequence)
-                GripperActions.SAY_HI -> TheArm.request(sayHi)
-                GripperActions.STOP -> AppCommon.applicationRunning = false
-                GripperActions.EXCUSE_ME -> TheArm.request(excuseMe)
-                GripperActions.SLEEP -> {
-                    RosetteStatus.goToSleep = true
-                    publishToTopic(AppCommon.SLEEP_TOPIC, AppCommon.SleepEvent(true))
-                }
-
-                GripperActions.FLASHLIGHT -> TheArm.nood = !TheArm.nood
-                GripperActions.SIMPLESCAN -> TheArm.request(simpleScan)
-                else -> logger.warn("Unknown command: $payload")
-            }
+            if (payload.startsWith("!")) BangCommands.figureThisOut(payload.substring(1))
+            else doGripperThings(payload)
         }
 
         subscribeJSON(KOBOTS_EVENTS) { payload ->
@@ -104,6 +90,28 @@ object DieAufseherin {
         // TODO something when the motion sensor in the office is triggered
     }
 
+    /**
+     * Processes simple commands from MQTT messages.
+     *
+     * TODO not sure where to put this yet
+     */
+    internal fun doGripperThings(payload: String) {
+        when (enumValue<GripperActions>(payload.uppercase())) {
+            GripperActions.PICKUP -> doTheEyeDropsThing()
+            GripperActions.RETURN -> doTheEyeDropsReturnThing()
+            GripperActions.HOME -> TheArm.request(homeSequence)
+            GripperActions.SAY_HI -> TheArm.request(sayHi)
+            GripperActions.STOP -> AppCommon.applicationRunning = false
+            GripperActions.EXCUSE_ME -> TheArm.request(excuseMe)
+            GripperActions.SLEEP -> {
+                RosetteStatus.goToSleep = true
+                publishToTopic(AppCommon.SLEEP_TOPIC, AppCommon.SleepEvent(true))
+            }
+
+            GripperActions.FLASHLIGHT -> TheArm.nood = !TheArm.nood
+            else -> logger.warn("Unknown command: $payload")
+        }
+    }
 
     private val doingDrops = AtomicBoolean(false)
 
@@ -128,7 +136,7 @@ object DieAufseherin {
     private fun doTheEyeDropsThing() {
         logger.info("Doing the eye drops thing")
         doingDrops.set(true)
-        AppCommon.mqttClient.publish(SERVO_TOPIC, "left")
+        AppCommon.mqttClient.publish(SERVO_TOPIC, "drops")
     }
 
     private fun doTheEyeDropsReturnThing() {

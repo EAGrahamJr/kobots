@@ -29,7 +29,7 @@ import org.tinylog.Logger
  * temperature is 18 degrees of stepper rotation, with the median temperature being 75 degrees.
  */
 object VeryDumbThermometer {
-    private val thermoStepper by lazy {
+    val thermoStepper by lazy {
         val stepper = BasicStepperMotor(200, crickitHat.motorStepperPort())
         BasicStepperRotator(stepper, gearRatio = 1.11f, reversed = true)
     }
@@ -59,7 +59,7 @@ object VeryDumbThermometer {
         justGo(angle)
     }
 
-    private fun justGo(angle: Int) {
+    fun justGo(angle: Int) {
         while (!thermoStepper.rotateTo(angle)) {
             KobotSleep.millis(50)
         }
