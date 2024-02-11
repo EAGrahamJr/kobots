@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,23 +20,13 @@ import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.executor
 import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.ManualController
-import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.enviro.DieAufseherin
-import crackers.kobots.app.enviro.RosetteStatus
-import crackers.kobots.app.enviro.Segmenter
-import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.devices.expander.CRICKITHat
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.system.exitProcess
 
 // shared devices
 internal val crickitHat by lazy { CRICKITHat() }
-
-private val _manualMode = AtomicBoolean(false)
-var manualMode: Boolean
-    get() = _manualMode.get()
-    set(value) = _manualMode.set(value)
 
 private val logger = LoggerFactory.getLogger("BRAINZ")
 
@@ -50,28 +40,31 @@ fun main(args: Array<String>? = null) {
 
     // these do not require the CRICKIT
     ArmMonitor.start()
-    Segmenter.start()
+//    Segmenter.start()
     ManualController.start()
 
     crickitHat.use {
         // start all the things that require the CRICKIT
-        TheArm.start()
+//        TheArm.start()
         DieAufseherin.start()
-        RosetteStatus.start()
+//        RosetteStatus.start()
 
         AppCommon.awaitTermination()
         logger.warn("Exiting")
         // always "home" the Arm
-        TheArm.request(homeSequence)
+//        TheArm.request(homeSequence)
 
         // stop all the things using the crickit
-        RosetteStatus.stop()
-        TheArm.stop()
+//        RosetteStatus.stop()
+//        TheArm.stop()
         DieAufseherin.stop()
     }
     ManualController.stop()
-    Segmenter.stop()
+//    Segmenter.stop()
     ArmMonitor.stop()
+
+    logger.warn("Waiting 5 seconds for all background processes to clear...")
     executor.shutdownNow()
+    logger.warn("Shutdown")
     exitProcess(0)
 }

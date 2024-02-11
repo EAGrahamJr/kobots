@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package crackers.kobots.app
 
 import com.diozero.devices.ServoController
 import crackers.kobots.app.AppCommon.REMOTE_PI
-import crackers.kobots.app.AppCommon.hasskClient
 import crackers.kobots.app.AppCommon.mqttClient
-import crackers.kobots.app.AppCommon.whileRunning
+import crackers.kobots.app.Sensei.simpleScan
+import crackers.kobots.app.Sensei.toffle
 import crackers.kobots.app.SuzerainOfServos.INTERNAL_TOPIC
 import crackers.kobots.mqtt.KobotsMQTT.Companion.KOBOTS_EVENTS
 import crackers.kobots.parts.app.KobotSleep
@@ -28,12 +28,9 @@ import crackers.kobots.parts.app.publishToTopic
 import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceRequest
-import crackers.kobots.parts.scheduleAtFixedRate
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import kotlin.system.exitProcess
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 
 /**
  * Handles a bunch of different servos for various things. Everything should have an MQTT interface.
@@ -48,13 +45,16 @@ val logger = LoggerFactory.getLogger("Servomatic")
 const val SERVO_TOPIC = "kobots/servoMatic"
 
 enum class ServoMaticCommand {
-    STOP, UP, DOWN, LEFT, RIGHT, CENTER, SLEEP, WAKEY;
+    STOP, HOME, DROPS, SCAN;
 }
 
 fun main(args: Array<String>?) {
     // pass any arg and we'll use the remote pi
     // NOTE: this reqquires a diozero daemon running on the remote pi and the diozero remote jar in the classpath
     if (args?.isNotEmpty() == true) System.setProperty(REMOTE_PI, args[0])
+
+    // fire off the sensor just to make sure it's working
+    toffle.distanceCm
 
     mqttClient.apply {
         subscribe(SERVO_TOPIC) {
@@ -66,9 +66,9 @@ fun main(args: Array<String>?) {
                     AppCommon.applicationRunning = false
                 }
 
-                ServoMaticCommand.CENTER -> servoRequest(swirlyCenter)
-                ServoMaticCommand.LEFT -> servoRequest(swirlyMax)
-                ServoMaticCommand.RIGHT -> servoRequest(swirlyHome)
+                ServoMaticCommand.DROPS -> servoRequest(swirlyMax)
+                ServoMaticCommand.HOME -> servoRequest(swirlyHome)
+                ServoMaticCommand.SCAN -> servoRequest(simpleScan)
 
                 else -> logger.warn("No clue about $payload")
             }
@@ -86,18 +86,7 @@ fun main(args: Array<String>?) {
         allowEmergencyStop()
     }
 
-    AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
-        whileRunning {
-            with(hasskClient) {
-                val rising = sensor("sun_solar_rising").state().state.toBoolean()
-                val elevation = sensor("sun_solar_elevation").state().state.toFloat().let {
-                    if (it < 0) 0f else if (rising) it else -it
-                }
-                OrreryThing.sunElevation = elevation
-            }
-        }
-    }
-
+//    OrreryThing.start()
     // TODO the Sparkfun I2c port on the servo hat is not working
     AppCommon.awaitTermination()
     KobotSleep.seconds(1)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,12 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient) {
         ServoRotator(wavyServo, 0..90, 0..150)
     }
 
-    val orreryRotor by lazy {
-        SimpleServoRotator(hat.getServo(2, MG90S_TRIM, 180), 0..180)
+    const val SENSAI_MIN = -45
+    const val SENSAI_MAX = 225
+    val senseiServo by lazy { hat.getServo(2, MG90S_TRIM, 0) }
+    val senseiRotor by lazy {
+        // 1.67:1 gear ratio with full rotation, offset by -45 degrees
+        ServoRotator(senseiServo, SENSAI_MIN..SENSAI_MAX, 0..180)
     }
 
     init {

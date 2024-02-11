@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,14 @@
 
 package crackers.kobots.app.arm
 
+import com.diozero.api.ServoTrim
+import com.diozero.api.ServoTrim.DEFAULT_MID_US
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.crickitHat
+import crackers.kobots.app.enviro.nood
 import crackers.kobots.app.execution.homeSequence
-import crackers.kobots.devices.MG90S_TRIM
 import crackers.kobots.devices.at
 import crackers.kobots.parts.app.KobotsAction
 import crackers.kobots.parts.app.KobotsSubscriber
@@ -34,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference
  * V5 iteration of a controlled "arm-like" structure.
  */
 object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
+    private val MG90S_TRIM = ServoTrim(DEFAULT_MID_US, 1100) // 400,2600
     const val REQUEST_TOPIC = "TheArm.Request"
 
     fun request(sequence: ActionSequence) {
@@ -106,14 +109,6 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
         BasicStepperRotator(stepper)
     }
 
-    private val noodle by lazy { crickitHat.signalDigitalOut(8) }
-    private var noodValue = false
-    var nood: Boolean
-        get() = noodValue
-        set(value) {
-            noodValue = value
-            noodle.setValue(value)
-        }
 
     // manage the state of this construct =============================================================================
     private val _currentState = AtomicReference(ArmState(HOME_POSITION, false))

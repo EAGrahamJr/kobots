@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,31 @@
 package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
-import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.enviro.VeryDumbThermometer.TEMP_OFFSET
-import crackers.kobots.app.execution.*
-import crackers.kobots.app.execution.PickUpAndMoveStuff.moveEyeDropsToDropZone
-import crackers.kobots.mqtt.KobotsMQTT.Companion.KOBOTS_EVENTS
-import crackers.kobots.parts.app.publishToTopic
-import crackers.kobots.parts.enumValue
-import crackers.kobots.parts.onOff
-import org.json.JSONObject
 import org.slf4j.LoggerFactory
-import java.time.LocalTime
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 /*
- * Message central.
+ * Central control, of a sorts.
  */
 object DieAufseherin {
+    // system-wide "wat the hell is going on" stuff
+    enum class SystemMode {
+        IDLE,
+        IN_MOTION,
+        MANUAL,
+        SHUTDOWN
+    }
+
+    private val theMode = AtomicReference(SystemMode.IDLE)
+    var currentMode: SystemMode
+        get() = theMode.get()
+        private set(v) {
+            theMode.set(v)
+        }
+
+
     enum class GripperActions {
-        PICKUP, RETURN, HOME, SAY_HI, STOP, EXCUSE_ME, SLEEP, FLASHLIGHT
+        HOME, SAY_HI, STOP, SLEEP, MANUAL
     }
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
@@ -43,103 +49,46 @@ object DieAufseherin {
     fun start() {
         localStuff()
         mqttStuff()
+        // HA stuff
+        noodSwitch.start()
+        selector.start()
     }
 
     fun stop() {
-        VeryDumbThermometer.setTemperature(TEMP_OFFSET)
+        VeryDumbThermometer.reset()
+        noodSwitch.handleCommand("OFF")
     }
 
     private fun localStuff() {
-//        AppCommon.executor.scheduleAtFixedRate(5.seconds, 100.milliseconds, ::youHaveOneJob)
-    }
-
-    private fun mqttStuff() = with(AppCommon.mqttClient) {
-        startAliveCheck()
-        allowEmergencyStop()
-
-        subscribeJSON("homebody/bedroom/casey") { payload ->
-            // bedtime: do the eye drops thing
-            if (payload.has("lamp") && LocalTime.now().hour == 22) doTheEyeDropsThing()
-        }
-        subscribeJSON("homebody/office/paper") { payload ->
-            val sleepy = !payload.onOff("lamp")
-            RosetteStatus.goToSleep = sleepy
-            publishToTopic(AppCommon.SLEEP_TOPIC, AppCommon.SleepEvent(sleepy))
-            // on wakeup, get drops
-            if (!sleepy && LocalTime.now().hour < 10) doTheEyeDropsThing()
-        }
-        subscribeJSON("zwave/Office/TriBaby/49/0/Air_temperature") { payload ->
-            if (payload.has("value")) {
-                val temp = payload.getDouble("value")
-                VeryDumbThermometer.setTemperature(temp.toFloat())
+        with(AppCommon.hasskClient) {
+            sensor("office_enviro_temperature").state().let { fullState ->
+                VeryDumbThermometer.setTemperature(fullState.state.toFloat())
             }
         }
-
-        // subscribe to the command channel -- just get the payload as a string
-        subscribe("kobots/gripOMatic") { payload ->
-            logger.info("Got a gripOMatic command: $payload")
-            if (payload.startsWith("!")) BangCommands.figureThisOut(payload.substring(1))
-            else doGripperThings(payload)
-        }
-
-        subscribeJSON(KOBOTS_EVENTS) { payload ->
-            logger.info("Received $payload")
-            if (payload.optString("source") == "Suzie") manageSwirly(payload)
-        }
-
-        // TODO something when the motion sensor in the office is triggered
     }
 
-    /**
-     * Processes simple commands from MQTT messages.
-     *
-     * TODO not sure where to put this yet
-     */
-    internal fun doGripperThings(payload: String) {
-        when (enumValue<GripperActions>(payload.uppercase())) {
-            GripperActions.PICKUP -> doTheEyeDropsThing()
-            GripperActions.RETURN -> doTheEyeDropsReturnThing()
-            GripperActions.HOME -> TheArm.request(homeSequence)
-            GripperActions.SAY_HI -> TheArm.request(sayHi)
+    private fun mqttStuff() {
+        with(AppCommon.mqttClient) {
+            startAliveCheck()
+            allowEmergencyStop()
+
+            subscribeJSON("kobots_auto/office_enviro_temperature/state") { payload ->
+                if (payload.has("state")) {
+                    val temp = payload.optString("state", "75").toFloat()
+                    VeryDumbThermometer.setTemperature(temp)
+                }
+            }
+        }
+    }
+
+
+    fun actionTime(payload: GripperActions?) {
+        when (payload) {
             GripperActions.STOP -> AppCommon.applicationRunning = false
-            GripperActions.EXCUSE_ME -> TheArm.request(excuseMe)
-            GripperActions.SLEEP -> {
-                RosetteStatus.goToSleep = true
-                publishToTopic(AppCommon.SLEEP_TOPIC, AppCommon.SleepEvent(true))
-            }
-
-            GripperActions.FLASHLIGHT -> TheArm.nood = !TheArm.nood
+            GripperActions.HOME -> currentMode = SystemMode.IDLE
+            GripperActions.MANUAL -> currentMode = SystemMode.MANUAL
+            GripperActions.SLEEP -> currentMode = SystemMode.IDLE
             else -> logger.warn("Unknown command: $payload")
         }
-    }
-
-    private val doingDrops = AtomicBoolean(false)
-
-    private fun manageSwirly(payload: JSONObject) {
-        when (payload.optString("sequence")) {
-            "Swirly Max" -> {
-                if (doingDrops.get() && !payload.optBoolean("started")) TheArm.request(moveEyeDropsToDropZone)
-                else logger.info("Ignoring Swirly Max")
-            }
-
-            "Swirly Home" -> if (doingDrops.get() && !payload.optBoolean("started")) {
-                logger.info("Eye drops done")
-                doingDrops.set(false)
-            }
-
-            else -> {}
-        }
-    }
-
-    private val SERVO_TOPIC = "kobots/servoMatic"
-
-    private fun doTheEyeDropsThing() {
-        logger.info("Doing the eye drops thing")
-        doingDrops.set(true)
-        AppCommon.mqttClient.publish(SERVO_TOPIC, "drops")
-    }
-
-    private fun doTheEyeDropsReturnThing() {
-        TheArm.request(PickUpAndMoveStuff.returnDropsToStorage)
     }
 }

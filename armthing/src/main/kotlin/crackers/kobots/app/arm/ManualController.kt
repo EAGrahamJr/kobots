@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,10 @@ package crackers.kobots.app.arm
 
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.whileRunning
-import crackers.kobots.app.manualMode
+import crackers.kobots.app.enviro.DieAufseherin
+import crackers.kobots.app.enviro.DieAufseherin.GripperActions
+import crackers.kobots.app.enviro.DieAufseherin.SystemMode
+import crackers.kobots.app.enviro.VeryDumbThermometer.thermoStepper
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.parts.scheduleWithFixedDelay
 import java.util.concurrent.Future
@@ -32,21 +35,23 @@ object ManualController {
     private var gpZeroX: Float? = null
     private var gpZeroY: Float? = null
     private lateinit var joyRideTFuture: Future<*>
-    private var wasSelected = false
+    private var wasPressed = false
 
     fun start() {
         joyRideTFuture = AppCommon.executor.scheduleWithFixedDelay(20.milliseconds, 20.milliseconds) {
-            // if the start button is pressed and was **not** pressed last time (debounce)
+            // looking for button _release_
             whileRunning {
-                wasSelected = if (gamepad.startButton) {
-                    if (!wasSelected) {
-                        manualMode = !manualMode
-                        println("Manual mode is now $manualMode")
-                    }
-                    true
-                } else {
-                    if (manualMode) joyRide()
-                    false
+                val manualMode = DieAufseherin.currentMode == SystemMode.MANUAL
+
+                wasPressed = gamepad.startButton.also {
+                    if (!it && wasPressed) {
+                        val switchThis = if (manualMode) {
+                            thermoStepper.release()
+                            GripperActions.HOME
+                        } else GripperActions.MANUAL
+                        DieAufseherin.actionTime(switchThis)
+                    } else if (!it && manualMode)
+                        joyRide()
                 }
             }
         }
@@ -57,45 +62,67 @@ object ManualController {
         gamepad.close()
     }
 
+    private var armSelected = false
+    private var selectDebounce = false
+
     /**
      * Run a thing with the Gamepad
-     *
-     * TODO enable sending "remote" commands via MQTT - aka a selectable target with moving things?
      */
-    private fun joyRide() = try {
-        with(TheArm) {
-            val xAxis = gamepad.xAxis
-            if (gpZeroX == null) gpZeroX = xAxis
-            else {
-                val diff = gpZeroX!! - xAxis
-                if (diff > 45f) waist -= 2
-                if (diff < -45f) waist += 2
-            }
-            val yAxis = gamepad.yAxis
-            if (gpZeroY == null) gpZeroY = yAxis
-            else {
-                val diff = gpZeroY!! - yAxis
-                if (diff > 45f) {
-                    val current = elbow.current()
-//                    println ("elbow $current")
-                    elbow.rotateTo(current - 3)
-                }
-                if (diff < -45f) {
-                    val current = elbow.current()
-//                    println ("elbow $current")
-                    elbow.rotateTo(current + 3)
-                }
-            }
-
-
-            if (gamepad.aButton) +extender
-            if (gamepad.yButton) -extender
-            if (gamepad.xButton) -gripper
-            if (gamepad.bButton) +gripper
-
-            updateCurrentState()
+    private fun joyRide() {
+        // select button changes the "mode" - TODO right now it's binary
+        selectDebounce = gamepad.selectButton.also {
+            if (!it && selectDebounce) armSelected = !armSelected
+            if (it) return
         }
-    } catch (_: IllegalArgumentException) {
-        // ignore
+
+        if (armSelected) armThing()
+        else otherThing()
+    }
+
+    private fun otherThing() = with(gamepad) {
+        if (xButton) thermoStepper += 5
+        else if (bButton) thermoStepper -= 5
+        else if (yButton) thermoStepper.reset()
+    }
+
+    private fun armThing() {
+//        with(TheArm) {
+//            val xAxis = gamepad.xAxis
+//            if (gpZeroX == null) gpZeroX = xAxis
+//            else {
+//                val diff = gpZeroX!! - xAxis
+//                if (diff > 45f) waist -= 2
+//                if (diff < -45f) waist += 2
+//            }
+//            val yAxis = gamepad.yAxis
+//            if (gpZeroY == null) gpZeroY = yAxis
+//            else {
+//                val diff = gpZeroY!! - yAxis
+//                if (diff > 45f) {
+//                    val current = elbow.current()
+////                    println ("elbow $current")
+//                    elbow.rotateTo(current - 3)
+//                }
+//                if (diff < -45f) {
+//                    val current = elbow.current()
+////                    println ("elbow $current")
+//                    elbow.rotateTo(current + 3)
+//                }
+//            }
+//
+//
+//            if (gamepad.aButton) +extender
+//            if (gamepad.yButton) -extender
+//            if (gamepad.xButton) -gripper
+//            if (gamepad.bButton) +gripper
+//
+//            updateCurrentState()
+//        }
+    }
+
+    fun statuses(): Map<String, Any> {
+        return if (armSelected) TheArm.state.position.mapped() else {
+            mapOf("THM" to thermoStepper.current(), "HI MOM" to 0.0f)
+        }
     }
 }

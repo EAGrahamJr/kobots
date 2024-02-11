@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,7 @@
 package crackers.kobots.app.enviro
 
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
-import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.crickitHat
-import crackers.kobots.app.execution.excuseMe
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.movement.BasicStepperRotator
 import org.tinylog.Logger
@@ -30,39 +28,35 @@ import org.tinylog.Logger
  */
 object VeryDumbThermometer {
     val thermoStepper by lazy {
-        val stepper = BasicStepperMotor(200, crickitHat.motorStepperPort())
-        BasicStepperRotator(stepper, gearRatio = 1.11f, reversed = true)
+        val stepper = BasicStepperMotor(2048, crickitHat.unipolarStepperPort())
+        BasicStepperRotator(stepper, gearRatio = 1.28f, reversed = true)
     }
 
     private const val DEGREES_TO_ANGLES = 18f // this comes out to 5 degree temp change == 90 degree stepper change
-    const val TEMP_OFFSET = 75f // median temperature
+    private const val TEMP_OFFSET = 75f // median temperature
 
     private var okayImHot = false
+
+    fun reset() = setTemperature(TEMP_OFFSET)
 
     /**
      * Allow for setting from external events.
      */
     fun setTemperature(temp: Float) {
-        Logger.debug("Setting temp: {}", temp)
-        handle(temp)
-    }
+        if (DieAufseherin.currentMode != DieAufseherin.SystemMode.MANUAL) {
+            Logger.debug("Setting temp: {}", temp)
 
-    private fun handle(temp: Float) {
-        okayImHot = if (temp > 80f) {
-            if (!okayImHot) TheArm.request(excuseMe)
-            true
-        } else {
-            false
+//        okayImHot = if (temp > 80f) {
+//            if (!okayImHot) TheArm.request(excuseMe)
+//            true
+//        } else {
+//            false
+//        }
+            val angle = ((temp - TEMP_OFFSET) * DEGREES_TO_ANGLES).toInt()
+            while (!thermoStepper.rotateTo(angle)) {
+                KobotSleep.millis(10)
+            }
+            thermoStepper.release()
         }
-
-        val angle = ((temp - TEMP_OFFSET) * DEGREES_TO_ANGLES).toInt()
-        justGo(angle)
-    }
-
-    fun justGo(angle: Int) {
-        while (!thermoStepper.rotateTo(angle)) {
-            KobotSleep.millis(50)
-        }
-        thermoStepper.release()
     }
 }
