@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ dependencies {
     implementation("crackers.kobots:kobots-parts:$PARTS_VER")
 
     implementation("org.eclipse.paho:org.eclipse.paho.mqttv5.client:1.2.5")
-    implementation("org.json:json:20230227")
+    implementation("org.json:json:20231013")
 }
 
 tasks {

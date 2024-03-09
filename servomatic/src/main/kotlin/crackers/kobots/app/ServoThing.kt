@@ -19,33 +19,26 @@ package crackers.kobots.app
 import com.diozero.devices.ServoController
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
-import crackers.kobots.app.Sensei.simpleScan
-import crackers.kobots.app.Sensei.toffle
 import crackers.kobots.app.SuzerainOfServos.INTERNAL_TOPIC
-import crackers.kobots.mqtt.KobotsMQTT.Companion.KOBOTS_EVENTS
+import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.app.publishToTopic
 import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceRequest
-import org.json.JSONObject
 import org.slf4j.LoggerFactory
+import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
 /**
  * Handles a bunch of different servos for various things. Everything should have an MQTT interface.
  */
-val hat by lazy { ServoController() }
+lateinit var hat: ServoController
 
 val logger = LoggerFactory.getLogger("Servomatic")
 
-/**
- * Whatever
- */
-const val SERVO_TOPIC = "kobots/servoMatic"
-
-enum class ServoMaticCommand {
-    STOP, HOME, DROPS, SCAN;
+enum class Mode {
+    IDLE, STOP, CLUCK, TEXT
 }
 
 fun main(args: Array<String>?) {
@@ -53,46 +46,47 @@ fun main(args: Array<String>?) {
     // NOTE: this reqquires a diozero daemon running on the remote pi and the diozero remote jar in the classpath
     if (args?.isNotEmpty() == true) System.setProperty(REMOTE_PI, args[0])
 
-    // fire off the sensor just to make sure it's working
-    toffle.distanceCm
+    // add the shutdown hook
+    Runtime.getRuntime().addShutdownHook(thread(start = false, block = ::stopEverything))
 
+
+
+    HAJunk.start()
     mqttClient.apply {
-        subscribe(SERVO_TOPIC) {
-            logger.info("Servo received command $it")
-            val payload = enumValue<ServoMaticCommand>(it.uppercase().trim())
-            when (payload) {
-                ServoMaticCommand.STOP -> {
-                    logger.error("Stopping via MQTT")
-                    AppCommon.applicationRunning = false
-                }
-
-                ServoMaticCommand.DROPS -> servoRequest(swirlyMax)
-                ServoMaticCommand.HOME -> servoRequest(swirlyHome)
-                ServoMaticCommand.SCAN -> servoRequest(simpleScan)
-
-                else -> logger.warn("No clue about $payload")
-            }
-        }
-
-        subscribeJSON(KOBOTS_EVENTS) { payload: JSONObject ->
-            when (payload.optString("source")) {
-                "TheArm" -> doArmThing(payload)
-                "Proximity" -> doAlertThing(payload)
-                else -> logger.debug("Received $payload")
-            }
-        }
-
         startAliveCheck()
         allowEmergencyStop()
     }
 
-//    OrreryThing.start()
-    // TODO the Sparkfun I2c port on the servo hat is not working
     AppCommon.awaitTermination()
     KobotSleep.seconds(1)
-    hat.close()
-    logger.warn("Servomatic exit")
+    stopEverything()
     exitProcess(0)
 }
 
+fun stopEverything() {
+    HAJunk.close()
+//    hat.close()
+
+    logger.warn("Servomatic exit")
+}
+
 internal fun servoRequest(sequence: ActionSequence) = publishToTopic(INTERNAL_TOPIC, SequenceRequest(sequence))
+
+internal val selectHandler = object : KobotSelectEntity.Companion.SelectHandler {
+    override val options = Mode.entries.map { it.name }
+    override fun executeOption(select: String) {
+        when (enumValue<Mode>(select)) {
+            Mode.IDLE -> {
+
+            }
+
+            Mode.STOP -> AppCommon.applicationRunning = false
+            Mode.CLUCK -> {
+
+            }
+
+            else -> logger.warn("No clue what to do with $select")
+        }
+
+    }
+}

@@ -19,10 +19,10 @@ package crackers.kobots.app
 import crackers.kobots.app.SuzerainOfServos.primaryPivot
 import crackers.kobots.app.SuzerainOfServos.wavyRotor
 import crackers.kobots.devices.MG90S_TRIM
-import crackers.kobots.parts.app.KobotsAction
-import crackers.kobots.parts.app.KobotsSubscriber
-import crackers.kobots.parts.app.joinTopic
-import crackers.kobots.parts.movement.*
+import crackers.kobots.parts.movement.ActionSpeed
+import crackers.kobots.parts.movement.SequenceExecutor
+import crackers.kobots.parts.movement.ServoRotator
+import crackers.kobots.parts.movement.sequence
 
 /**
  * All the things
@@ -48,10 +48,6 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient) {
     val senseiRotor by lazy {
         // 1.67:1 gear ratio with full rotation, offset by -45 degrees
         ServoRotator(senseiServo, SENSAI_MIN..SENSAI_MAX, 0..180)
-    }
-
-    init {
-        joinTopic(INTERNAL_TOPIC, KobotsSubscriber<KobotsAction> { handleRequest(it) })
     }
 }
 

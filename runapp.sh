@@ -29,7 +29,7 @@ RUNTHIS="-jar $JAR"
 
 ARGS="-ea"
 # Uncomment to get debugging
-#ARGS="$ARGS -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=*:5005"
+ARGS="$ARGS -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=*:5005"
 # Uncomment to get remote monitoring
 #ARGS="$ARGS -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=8080"
 #ARGS="$ARGS  -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
