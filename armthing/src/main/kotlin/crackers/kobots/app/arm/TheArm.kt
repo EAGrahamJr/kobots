@@ -16,18 +16,15 @@
 
 package crackers.kobots.app.arm
 
-import com.diozero.api.ServoTrim
-import com.diozero.api.ServoTrim.DEFAULT_MID_US
-import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.runFlag
+import crackers.kobots.app.Startable
 import crackers.kobots.app.crickitHat
-import crackers.kobots.app.enviro.nood
+import crackers.kobots.app.enviro.DieAufseherin
+import crackers.kobots.app.enviro.HAStuff
 import crackers.kobots.app.execution.homeSequence
+import crackers.kobots.devices.MG90S_TRIM
 import crackers.kobots.devices.at
-import crackers.kobots.parts.app.KobotsAction
-import crackers.kobots.parts.app.KobotsSubscriber
-import crackers.kobots.parts.app.joinTopic
 import crackers.kobots.parts.app.publishToTopic
 import crackers.kobots.parts.movement.*
 import java.util.concurrent.atomic.AtomicReference
@@ -35,8 +32,7 @@ import java.util.concurrent.atomic.AtomicReference
 /**
  * V5 iteration of a controlled "arm-like" structure.
  */
-object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
-    private val MG90S_TRIM = ServoTrim(DEFAULT_MID_US, 1100) // 400,2600
+object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
     const val REQUEST_TOPIC = "TheArm.Request"
 
     fun request(sequence: ActionSequence) {
@@ -98,15 +94,11 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
     val waistServo by lazy {
         crickitHat.servo(4, MG90S_TRIM).apply { this at 0 }
     }
+
     val waist by lazy {
         val servoRange = IntRange(0, 180)
-        val physicalRange = IntRange(0, 140)    // round "down" gear ratio (1.28 == 1.2)
+        val physicalRange = IntRange(-45, 200)    // TODO check this
         ServoRotator(waistServo, physicalRange, servoRange)
-    }
-
-    val slowMoe by lazy {
-        val stepper = BasicStepperMotor(2048, crickitHat.unipolarStepperPort())
-        BasicStepperRotator(stepper)
     }
 
 
@@ -121,13 +113,9 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
     val home: Boolean
         get() = state.position == HOME_POSITION
 
-    fun start() {
-        joinTopic(
-            REQUEST_TOPIC,
-            KobotsSubscriber<KobotsAction> {
-                handleRequest(it)
-            }
-        )
+    override fun start() {
+        // TODO do we need the interna bus?
+//        joinTopic(REQUEST_TOPIC, KobotsSubscriber<KobotsAction> { handleRequest(it) })
     }
 
     // allow the home sequence to run as well if termination has been called
@@ -140,13 +128,15 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient) {
 
     override fun preExecution() {
         state = ArmState(state.position, true)
-        nood = true
+        HAStuff.noodSwitch.handleCommand("ON")
+        DieAufseherin.currentMode = DieAufseherin.SystemMode.IN_MOTION
     }
 
     override fun postExecution() {
-        nood = false
+        HAStuff.noodSwitch.handleCommand("OFF")
+        HAStuff.numberWaistEntity.sendCurrentState()
         // just in case, release steppers
-        slowMoe.release()
+        DieAufseherin.currentMode = DieAufseherin.SystemMode.IDLE
     }
 
     /**

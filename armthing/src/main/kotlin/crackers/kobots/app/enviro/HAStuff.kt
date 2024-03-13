@@ -16,42 +16,73 @@
 
 package crackers.kobots.app.enviro
 
+import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.arm.TheArm.waist
 import crackers.kobots.app.crickitHat
-import crackers.kobots.mqtt.homeassistant.DeviceIdentifier
-import crackers.kobots.mqtt.homeassistant.KobotSelect
-import crackers.kobots.mqtt.homeassistant.KobotSwitch
+import crackers.kobots.mqtt.homeassistant.*
 import crackers.kobots.parts.enumValue
+import crackers.kobots.parts.movement.SequenceRequest
+import crackers.kobots.parts.movement.sequence
+import kotlin.math.roundToInt
 
-val haIdentifier = DeviceIdentifier("Kobots", "CRICKIT", "mdi:list")
+object HAStuff {
+    val haIdentifier = DeviceIdentifier("Kobots", "CRICKIT")
 
-private val noodle by lazy { crickitHat.signalDigitalOut(8) }
-private var noodValue = false
+    private val noodle by lazy { crickitHat.signalDigitalOut(8) }
+    private var noodValue = false
 
-/**
- * Nood attached to crickit hat.
- */
-var nood: Boolean
-    get() = noodValue
-    set(value) {
-        noodValue = value
-        noodle.setValue(value)
-    }
-
-val noodSwitch: KobotSwitch = KobotSwitch(object : KobotSwitch.Companion.OnOffDevice {
-    override var isOn: Boolean
-        get() = nood
-        set(v) {
-            nood = v
+    /**
+     * Nood attached to crickit hat.
+     */
+    private var nood: Boolean
+        get() = noodValue
+        set(value) {
+            noodValue = value
+            noodle.setValue(value)
         }
-    override val name = "CrickitHat 8"
-}, "crickit_nood", "Crickit Hat Nood", deviceIdentifier = haIdentifier)
 
-private val selectorHandler = object : KobotSelect.Companion.SelectHandler {
-    override val options: List<String> = DieAufseherin.GripperActions.entries.map { it.name }.sorted()
+    val noodSwitch: KobotSwitch = KobotSwitch(object : KobotSwitch.Companion.OnOffDevice {
+        override var isOn: Boolean
+            get() = nood
+            set(v) {
+                nood = v
+            }
+        override val name = "CrickitHat 8"
+    }, "crickit_nood", "Crickit Hat Nood", deviceIdentifier = haIdentifier)
 
-    override fun executeOption(select: String) {
-        val payloadToEnum = enumValue<DieAufseherin.GripperActions>(select.uppercase())
-        DieAufseherin.actionTime(payloadToEnum)
+    private val selectorHandler = object : KobotSelectEntity.Companion.SelectHandler {
+        override val options = DieAufseherin.GripperActions.entries.map { it.name }.sorted()
+
+        override fun executeOption(select: String) {
+            val payloadToEnum = enumValue<DieAufseherin.GripperActions>(select.uppercase())
+            DieAufseherin.actionTime(payloadToEnum)
+        }
+    }
+    val selector = KobotSelectEntity(selectorHandler, "arm_thing", "Arm Thing", deviceIdentifier = haIdentifier)
+
+    val crickitNeoPixel = crickitHat.neoPixel(8).apply { brightness = .005f }
+    private val rosetteController = PixelBufController(crickitNeoPixel)
+    val rosetteStrand = KobotRGBLight("crickit_rosette", rosetteController, "Crickit Neopixel", haIdentifier)
+
+    val textDosEntity = KobotTextEntity(DisplayDos::text, "second_display", "Dos Display", haIdentifier)
+
+    private val waistHandler = object : KobotNumberEntity.Companion.NumberHandler {
+        override fun currentState() = waist.current().toFloat()
+
+        override fun move(target: Float) {
+            val seq = sequence {
+                name = "HA Move Waist"
+                action {
+                    waist rotate target.roundToInt()
+                }
+            }
+            TheArm.handleRequest(SequenceRequest(seq))
+        }
+    }
+    val numberWaistEntity = object : KobotNumberEntity(
+        waistHandler, "arm_waist", "Arm: Waist", haIdentifier,
+        min = -45, max = 200, mode = Companion.DisplayMode.box, unitOfMeasurement = "degrees"
+    ) {
+        override val icon = "mdi:rotate-360"
     }
 }
-val selector = KobotSelect(selectorHandler, "arm_thing", "Arm Thing", deviceIdentifier = haIdentifier)

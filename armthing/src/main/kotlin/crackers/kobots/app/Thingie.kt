@@ -21,14 +21,28 @@ import crackers.kobots.app.AppCommon.executor
 import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.ManualController
 import crackers.kobots.app.enviro.DieAufseherin
+import crackers.kobots.app.enviro.DisplayDos
 import crackers.kobots.devices.expander.CRICKITHat
+import crackers.kobots.devices.expander.I2CMultiplexer
 import org.slf4j.LoggerFactory
+import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
+private val crickitDelegate = lazy { CRICKITHat() }
+private val muxDelegate = lazy { I2CMultiplexer() }
+
 // shared devices
-internal val crickitHat by lazy { CRICKITHat() }
+internal val crickitHat by crickitDelegate
+internal val multiplexor by muxDelegate
 
 private val logger = LoggerFactory.getLogger("BRAINZ")
+
+internal interface Startable {
+    fun start()
+    fun stop()
+}
+
+private val startables = listOf(ArmMonitor, DisplayDos, ManualController, DieAufseherin)
 
 /**
  * Run this.
@@ -38,33 +52,23 @@ fun main(args: Array<String>? = null) {
     // NOTE: this requires a diozero daemon running on the remote pi and the diozero remote jar in the classpath
     if (args?.isNotEmpty() == true) System.setProperty(REMOTE_PI, args[0])
 
-    // these do not require the CRICKIT
-    ArmMonitor.start()
-//    Segmenter.start()
-    ManualController.start()
+    // start all the things to be started
+    startables.forEach { it.start() }
 
-    crickitHat.use {
-        // start all the things that require the CRICKIT
-//        TheArm.start()
-        DieAufseherin.start()
-//        RosetteStatus.start()
+    // and then we wait and stop
+    Runtime.getRuntime().addShutdownHook(thread(start = false) { stopAll() })
+    AppCommon.awaitTermination()
+    logger.warn("Exiting")
 
-        AppCommon.awaitTermination()
-        logger.warn("Exiting")
-        // always "home" the Arm
-//        TheArm.request(homeSequence)
-
-        // stop all the things using the crickit
-//        RosetteStatus.stop()
-//        TheArm.stop()
-        DieAufseherin.stop()
-    }
-    ManualController.stop()
-//    Segmenter.stop()
-    ArmMonitor.stop()
-
-    logger.warn("Waiting 5 seconds for all background processes to clear...")
     executor.shutdownNow()
+    stopAll()
     logger.warn("Shutdown")
     exitProcess(0)
+}
+
+private fun stopAll() {
+    startables.forEach { AppCommon.ignoreErrors { it::stop } }
+
+    if (muxDelegate.isInitialized()) multiplexor.close()
+    if (crickitDelegate.isInitialized()) crickitHat.close()
 }

@@ -17,13 +17,20 @@
 package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
+import crackers.kobots.app.Startable
+import crackers.kobots.app.enviro.HAStuff.crickitNeoPixel
+import crackers.kobots.app.enviro.HAStuff.noodSwitch
+import crackers.kobots.app.enviro.HAStuff.numberWaistEntity
+import crackers.kobots.app.enviro.HAStuff.rosetteStrand
+import crackers.kobots.app.enviro.HAStuff.selector
+import crackers.kobots.app.enviro.HAStuff.textDosEntity
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 
 /*
  * Central control, of a sorts.
  */
-object DieAufseherin {
+object DieAufseherin : Startable {
     // system-wide "wat the hell is going on" stuff
     enum class SystemMode {
         IDLE,
@@ -33,30 +40,34 @@ object DieAufseherin {
     }
 
     private val theMode = AtomicReference(SystemMode.IDLE)
+
+    // TODO this needs a semaphore so that only one thing can manipulate it at a time
     var currentMode: SystemMode
         get() = theMode.get()
-        private set(v) {
+        set(v) {
             theMode.set(v)
         }
 
 
     enum class GripperActions {
-        HOME, SAY_HI, STOP, SLEEP, MANUAL
+        HOME, SAY_HI, STOP, CLUCK, MANUAL
     }
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
 
-    fun start() {
+    // rock 'n' roll ================================================================================================
+
+    override fun start() {
         localStuff()
         mqttStuff()
-        // HA stuff
-        noodSwitch.start()
-        selector.start()
+        startDevices()
     }
 
-    fun stop() {
+    override fun stop() {
         VeryDumbThermometer.reset()
         noodSwitch.handleCommand("OFF")
+//        rosetteStrand.handleCommand("OFF")
+        crickitNeoPixel.off()
     }
 
     private fun localStuff() {
@@ -69,7 +80,7 @@ object DieAufseherin {
 
     private fun mqttStuff() {
         with(AppCommon.mqttClient) {
-            startAliveCheck()
+//            startAliveCheck()
             allowEmergencyStop()
 
             subscribeJSON("kobots_auto/office_enviro_temperature/state") { payload ->
@@ -81,14 +92,23 @@ object DieAufseherin {
         }
     }
 
-
-    fun actionTime(payload: GripperActions?) {
+    internal fun actionTime(payload: GripperActions?) {
         when (payload) {
             GripperActions.STOP -> AppCommon.applicationRunning = false
             GripperActions.HOME -> currentMode = SystemMode.IDLE
             GripperActions.MANUAL -> currentMode = SystemMode.MANUAL
-            GripperActions.SLEEP -> currentMode = SystemMode.IDLE
+            GripperActions.CLUCK -> DisplayDos.cluck()
             else -> logger.warn("Unknown command: $payload")
         }
+    }
+
+
+    private fun startDevices() {
+        // HA stuff
+        noodSwitch.start()
+        selector.start()
+        rosetteStrand.start()
+        textDosEntity.start()
+        numberWaistEntity.start()
     }
 }

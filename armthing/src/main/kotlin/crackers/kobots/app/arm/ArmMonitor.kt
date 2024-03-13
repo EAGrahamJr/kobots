@@ -16,17 +16,17 @@
 
 package crackers.kobots.app.arm
 
-import com.diozero.api.I2CDevice
 import com.diozero.devices.oled.SH1106
-import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel.I2cCommunicationChannel
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.whileRunning
+import crackers.kobots.app.Startable
 import crackers.kobots.app.enviro.DieAufseherin
+import crackers.kobots.app.multiplexor
+import crackers.kobots.graphics.animation.*
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.app.io.StatusColumnDelegate
 import crackers.kobots.parts.app.io.StatusColumnDisplay
-import crackers.kobots.parts.app.io.graphics.*
 import crackers.kobots.parts.elapsed
 import crackers.kobots.parts.scheduleWithFixedDelay
 import org.slf4j.LoggerFactory
@@ -47,7 +47,7 @@ private const val MAX_HT = 32
 /**
  * Shows where the arm is on a timed basis.
  */
-object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT), KobotRadar by SimpleRadar(
+object ArmMonitor : Startable, StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT), KobotRadar by SimpleRadar(
     Point(0, 0),
     MAX_HT.toDouble()
 ) {
@@ -76,8 +76,9 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT),
     }
 
     private val screen by lazy {
-        val i2CDevice = I2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
-        SH1106(I2cCommunicationChannel(i2CDevice)).apply { setContrast(0x20.toByte()) }
+//        val i2CDevice = I2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
+        val i2CDevice = multiplexor.getI2CDevice(0, SH1106.DEFAULT_I2C_ADDRESS)
+        SH1106(I2cCommunicationChannel(i2CDevice)).apply { setContrast(0f) }
     }
 
 
@@ -94,7 +95,7 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT),
         pupilPosition = Pupil.Position.LEFT + Pupil.Position.CENTER
     )
 
-    fun start() {
+    override fun start() {
         screenOnAt = Instant.now()
         var screenOn = true
         future = AppCommon.executor.scheduleWithFixedDelay(10.milliseconds, 10.milliseconds) {
@@ -103,15 +104,23 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT),
                 var drawStats = false
                 val screenDirty = when (DieAufseherin.currentMode) {
                     DieAufseherin.SystemMode.IDLE -> {
+                        LiftStatus.sleep()
                         val random = (CannedExpressions.entries - CannedExpressions.CLOSED).random().expression
                         showEyes(random)
                     }
 
-                    DieAufseherin.SystemMode.IN_MOTION -> TODO()
+                    DieAufseherin.SystemMode.IN_MOTION -> {
+                        drawStats = true
+                        statsGraphics.displayStatuses(TheArm.state.position.mapped())
+//                        LiftStatus.update(TheArm.elevator.current())
+                        true
+                    }
+
                     DieAufseherin.SystemMode.MANUAL -> {
                         // screen is always dirty amd enabled
                         screenOnAt = Instant.now()
                         statsGraphics.displayStatuses(ManualController.statuses())
+//                        LiftStatus.update(TheArm.elevator.current())
                         showEyes(LOOK_LEFT)
                         drawStats = true
                         true
@@ -200,7 +209,9 @@ object ArmMonitor : StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT),
         screen.display(screenImage)
     }
 
-    fun stop() {
+    override fun stop() {
+//        LiftStatus.close()
+
         if (::future.isInitialized) future.cancel(true)
         screen.close()
     }

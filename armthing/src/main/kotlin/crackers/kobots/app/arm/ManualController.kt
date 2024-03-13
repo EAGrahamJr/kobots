@@ -18,28 +18,37 @@ package crackers.kobots.app.arm
 
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.whileRunning
+import crackers.kobots.app.Startable
 import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.app.enviro.DieAufseherin.GripperActions
 import crackers.kobots.app.enviro.DieAufseherin.SystemMode
 import crackers.kobots.app.enviro.VeryDumbThermometer.thermoStepper
+import crackers.kobots.app.multiplexor
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.parts.scheduleWithFixedDelay
+import org.slf4j.LoggerFactory
 import java.util.concurrent.Future
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * TODO fill this in
  */
-object ManualController {
-    private val gamepad by lazy { GamepadQT() }
+object ManualController : Startable {
+    private lateinit var gamepad: GamepadQT
     private var gpZeroX: Float? = null
     private var gpZeroY: Float? = null
     private lateinit var joyRideTFuture: Future<*>
     private var wasPressed = false
 
-    fun start() {
+    override fun start() {
+        try {
+            gamepad = GamepadQT(multiplexor.getI2CDevice(7, GamepadQT.DEFAULT_I2C_ADDRESS))
+        } catch (t: Throwable) {
+            LoggerFactory.getLogger("ManualController").error("Unable to init manual controller", t)
+            return
+        }
+
         joyRideTFuture = AppCommon.executor.scheduleWithFixedDelay(20.milliseconds, 20.milliseconds) {
-            // looking for button _release_
             whileRunning {
                 val manualMode = DieAufseherin.currentMode == SystemMode.MANUAL
 
@@ -57,9 +66,11 @@ object ManualController {
         }
     }
 
-    fun stop() {
-        joyRideTFuture.cancel(true)
-        gamepad.close()
+    override fun stop() {
+        if (::gamepad.isInitialized) {
+            joyRideTFuture.cancel(true)
+            gamepad.close()
+        }
     }
 
     private var armSelected = false
@@ -69,24 +80,24 @@ object ManualController {
      * Run a thing with the Gamepad
      */
     private fun joyRide() {
-        // select button changes the "mode" - TODO right now it's binary
+        // select button changes the "mode"
         selectDebounce = gamepad.selectButton.also {
             if (!it && selectDebounce) armSelected = !armSelected
-            if (it) return
         }
+        if (selectDebounce) return
 
         if (armSelected) armThing()
         else otherThing()
     }
 
     private fun otherThing() = with(gamepad) {
-        if (xButton) thermoStepper += 5
-        else if (bButton) thermoStepper -= 5
-        else if (yButton) thermoStepper.reset()
+        if (xButton) +thermoStepper
+        else if (bButton) -thermoStepper
+        else if (aButton) thermoStepper.reset()
     }
 
     private fun armThing() {
-//        with(TheArm) {
+        with(TheArm) {
 //            val xAxis = gamepad.xAxis
 //            if (gpZeroX == null) gpZeroX = xAxis
 //            else {
@@ -94,22 +105,14 @@ object ManualController {
 //                if (diff > 45f) waist -= 2
 //                if (diff < -45f) waist += 2
 //            }
-//            val yAxis = gamepad.yAxis
-//            if (gpZeroY == null) gpZeroY = yAxis
-//            else {
-//                val diff = gpZeroY!! - yAxis
-//                if (diff > 45f) {
-//                    val current = elbow.current()
-////                    println ("elbow $current")
-//                    elbow.rotateTo(current - 3)
-//                }
-//                if (diff < -45f) {
-//                    val current = elbow.current()
-////                    println ("elbow $current")
-//                    elbow.rotateTo(current + 3)
-//                }
-//            }
-//
+            val yAxis = gamepad.yAxis
+            if (gpZeroY == null) gpZeroY = yAxis
+            else {
+                val diff = gpZeroY!! - yAxis
+//                if (diff > 45f) elevator.extendTo(100)
+//                if (diff < -45f) elevator.extendTo(0)
+//                elevator.release()
+            }
 //
 //            if (gamepad.aButton) +extender
 //            if (gamepad.yButton) -extender
@@ -117,7 +120,7 @@ object ManualController {
 //            if (gamepad.bButton) +gripper
 //
 //            updateCurrentState()
-//        }
+        }
     }
 
     fun statuses(): Map<String, Any> {
