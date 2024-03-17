@@ -15,7 +15,7 @@
  */
 
 plugins {
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "1.9.23"
     `kotlin-dsl`
 }
 
@@ -25,7 +25,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.23")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("org.jmailen.gradle:kotlinter-gradle:3.12.0")
 }
