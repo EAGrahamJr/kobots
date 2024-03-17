@@ -18,7 +18,9 @@ package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.Startable
+import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.enviro.HAStuff.crickitNeoPixel
+import crackers.kobots.app.enviro.HAStuff.extenderEntity
 import crackers.kobots.app.enviro.HAStuff.noodSwitch
 import crackers.kobots.app.enviro.HAStuff.numberWaistEntity
 import crackers.kobots.app.enviro.HAStuff.rosetteStrand
@@ -48,9 +50,8 @@ object DieAufseherin : Startable {
             theMode.set(v)
         }
 
-
     enum class GripperActions {
-        HOME, SAY_HI, STOP, CLUCK, MANUAL
+        HOME, SAY_HI, STOP, CLUCK, MANUAL, RANDOM_EYES
     }
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
@@ -98,10 +99,10 @@ object DieAufseherin : Startable {
             GripperActions.HOME -> currentMode = SystemMode.IDLE
             GripperActions.MANUAL -> currentMode = SystemMode.MANUAL
             GripperActions.CLUCK -> DisplayDos.cluck()
+            GripperActions.RANDOM_EYES -> DisplayDos.randomEye()
             else -> logger.warn("Unknown command: $payload")
         }
     }
-
 
     private fun startDevices() {
         // HA stuff
@@ -110,5 +111,6 @@ object DieAufseherin : Startable {
         rosetteStrand.start()
         textDosEntity.start()
         numberWaistEntity.start()
+        extenderEntity.start()
     }
 }

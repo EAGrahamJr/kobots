@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.enviro
+package crackers.kobots.app.display
 
 import com.diozero.devices.oled.MonochromeSsdOled.Height
 import com.diozero.devices.oled.SSD1306
@@ -23,24 +23,28 @@ import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.whileRunning
 import crackers.kobots.app.Startable
 import crackers.kobots.app.multiplexor
+import crackers.kobots.graphics.animation.*
+import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.elapsed
 import crackers.kobots.parts.scheduleWithFixedDelay
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics2D
+import java.awt.Point
 import java.awt.image.BufferedImage
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration.Companion.seconds
 
-
 /**
- * **WAS** 4 digit 14 segment display but the dang thing quit on me.
+ * Shows text and time in a multi-segment like font, as well as eyes.
  */
 object DisplayDos : Startable {
+
     private val logger = LoggerFactory.getLogger("DisplayDos")
     private val screen = run {
         val i2c = multiplexor.getI2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
@@ -50,11 +54,13 @@ object DisplayDos : Startable {
             setDisplayOn(false)
         }
     }
+    private val MAX_WD = screen.width
+    private val MAX_HT = screen.height
 
     private val graphics: Graphics2D
     private val lcdFontOffset: Int
     private val lcdFont: Font
-    private val image = BufferedImage(SSD1306.DEFAULT_WIDTH, Height.SHORT.lines, screen.nativeImageType).also {
+    private val image = BufferedImage(MAX_WD, MAX_HT, screen.nativeImageType).also {
         val f = Font.createFont(Font.TRUETYPE_FONT, this.javaClass.getResourceAsStream("/lcd.ttf")).deriveFont(12f)
         graphics = (it.graphics as Graphics2D).apply {
             background = Color.BLACK
@@ -67,33 +73,43 @@ object DisplayDos : Startable {
     private fun Graphics2D.fitFont(f: Font): Font {
         val nextFont = f.deriveFont(f.size + .5f)
         val fm = getFontMetrics(nextFont)
-        // note: this is adjusted to fit the specfic font above, so be careful
-        return if (fm.height > Height.SHORT.lines) f.also {
-            logger.debug("Final height is ${fm.height}")
-        } else fitFont(nextFont)
+        // note: this is adjusted to fit the specific font above, so be careful
+        return if (fm.height > Height.SHORT.lines) {
+            f.also {
+                logger.debug("Final height is ${fm.height}")
+            }
+        } else {
+            fitFont(nextFont)
+        }
     }
 
     private lateinit var cluckFuture: Future<*>
 
     private enum class Mode {
-        IDLE, CLUCK, TEXT
+        IDLE, CLUCK, TEXT, EYES, RANDOM
     }
 
     private val mode = AtomicReference(Mode.IDLE)
 
-    lateinit var timerStart: Instant
+    private lateinit var timerStart: Instant
     private var currentMode: Mode
         get() = mode.get()
         set(m) {
-            logger.debug("Mode changed to {}", m)
-            mode.set(m)
-            timerStart = Instant.now()
-            screen.setDisplayOn(m != Mode.IDLE)
+            if (mode.get() != m) {
+                logger.info("Mode changed to {}", m)
+                mode.set(m)
+                timerStart = Instant.now()
+                screen.setDisplayOn(m != Mode.IDLE)
+            }
         }
 
-    private val TEXT_EXPIRES = java.time.Duration.ofSeconds(30)
-    private val CLUCK_EXPIRES = java.time.Duration.ofSeconds(5)
-    private val TIME_EXPIRES = java.time.Duration.ofSeconds(30)
+    private val TEXT_EXPIRES = Duration.ofSeconds(30)
+    private val CLUCK_EXPIRES = Duration.ofSeconds(5)
+    private val TIME_EXPIRES = Duration.ofSeconds(30)
+    private val EYES_EXPIRES = Duration.ofMinutes(2)
+
+    private var eyesLastChanged = Instant.EPOCH
+    private val currentExpression = AtomicReference<Expression>()
 
     override fun start() {
         clear()
@@ -116,11 +132,26 @@ object DisplayDos : Startable {
                     }
 
                     Mode.CLUCK -> {
-                        if (timerStart.elapsed() > TIME_EXPIRES) currentMode = Mode.IDLE
-                        else if (timerStart.elapsed() > CLUCK_EXPIRES) {
+                        if (timerStart.elapsed() > TIME_EXPIRES) {
+                            currentMode = Mode.IDLE
+                        } else if (timerStart.elapsed() > CLUCK_EXPIRES) {
                             val timeString = if (colon) "%2d:%02d" else "%2d %02d"
                             graphics.printLcd(String.format(timeString, now.hour, now.minute))
                             colon = !colon
+                        }
+                    }
+
+                    Mode.EYES -> {
+                        blink(currentExpression.get())
+                    }
+
+                    Mode.RANDOM -> {
+                        if (timerStart.elapsed() > EYES_EXPIRES) {
+                            currentMode = Mode.IDLE
+                        } // choose a random eye after 10 seconds
+                        else {
+                            val random = (CannedExpressions.entries - CannedExpressions.CLOSED).random().expression
+                            blink(random)
                         }
                     }
                 }
@@ -129,8 +160,9 @@ object DisplayDos : Startable {
     }
 
     fun text(s: String) {
-        if (s.isBlank()) currentMode = Mode.IDLE
-        else {
+        if (s.isBlank()) {
+            currentMode = Mode.IDLE
+        } else if (currentMode == Mode.IDLE) {
             currentMode = Mode.TEXT
             graphics.printLcd(s)
         }
@@ -152,8 +184,62 @@ object DisplayDos : Startable {
         screen.display(image)
     }
 
-
     override fun stop() {
-        screen.setDisplayOn(false)
+        screen.clear()
+        screen.close()
+    }
+
+    // EYE STUFF ------------------------------------------------------------------------------------------------------
+
+    val LOOK_RIGHT = Expression(
+        lidPosition = Eye.LidPosition.ONE_QUARTER,
+        pupilPosition = Pupil.Position.RIGHT + Pupil.Position.CENTER
+    )
+    val LOOK_LEFT = Expression(
+        lidPosition = Eye.LidPosition.ONE_QUARTER,
+        pupilPosition = Pupil.Position.LEFT + Pupil.Position.CENTER
+    )
+
+    // show a random image
+    private val CHANGE_EYES = Duration.ofSeconds(5)
+
+    private val leftEye = Eye(Point(46, 15), 15)
+    private val rightEye = Eye(Point(82, 15), 15)
+    private val eyes = PairOfEyes(leftEye, rightEye)
+
+    /**
+     * Show this expression
+     */
+    fun showEyes(expression: Expression) {
+        currentExpression.set(expression)
+        currentMode = Mode.EYES
+    }
+
+    private fun blink(expression: Expression) {
+        if (eyesLastChanged.elapsed() > CHANGE_EYES) {
+            // do a blink
+            graphics.clearRect(0, 0, MAX_WD, MAX_HT)
+            drawEyes(CannedExpressions.CLOSED.expression)
+            KobotSleep.millis(200)
+            drawEyes(expression)
+            eyesLastChanged = Instant.now()
+        }
+    }
+
+    private fun drawEyes(expression: Expression) {
+        eyes(expression)
+        eyes.draw(graphics)
+        screen.display(image)
+    }
+
+    /**
+     * Pick a random one for a while
+     */
+    fun randomEye() {
+        if (currentMode == Mode.IDLE) currentMode = Mode.RANDOM
+    }
+
+    internal fun eyesReset() {
+        if (currentMode == Mode.EYES) currentMode = Mode.RANDOM
     }
 }

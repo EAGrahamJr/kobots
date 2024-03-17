@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.arm
+package crackers.kobots.app.display
 
 import com.diozero.devices.oled.MonochromeSsdOled
 import com.diozero.devices.oled.SH1106
@@ -29,9 +29,9 @@ import java.awt.geom.AffineTransform
 import java.awt.image.BufferedImage
 
 /**
- * Displays the lift status (0-100 percent) on a rotated 132x32 display.
+ * Displays the extender status (0-100 percent) on a rotated 132x32 display.
  */
-object LiftStatus {
+object ExtenderStatus {
     private val DISPLAY_HEIGHT = MonochromeSsdOled.Height.SHORT.lines
 
     private val screen: SSD1306 by lazy {
@@ -45,14 +45,12 @@ object LiftStatus {
     // set up the vertical thingie and then rotate it to display
     val rotatedGraphics: Graphics2D
     val rotatedImage =
-        BufferedImage(MonochromeSsdOled.DEFAULT_WIDTH, DISPLAY_HEIGHT, BufferedImage.TYPE_BYTE_BINARY).also {
-            rotatedGraphics = (it.graphics as Graphics2D).apply {
-                val theRotation = AffineTransform().apply {
-                    rotate(-90.toRadians())
-                    translate(-DISPLAY_HEIGHT.toDouble(), 0.0)
-                }
-                transform(theRotation)
+        BufferedImage(MonochromeSsdOled.DEFAULT_WIDTH, DISPLAY_HEIGHT, BufferedImage.TYPE_BYTE_BINARY).also { img ->
+            val theRotation = AffineTransform().apply {
+                rotate(-90.toRadians())
+                translate(-DISPLAY_HEIGHT.toDouble(), 0.0)
             }
+            rotatedGraphics = (img.graphics as Graphics2D).apply { transform(theRotation) }
         }
     val vpd = VerticalPercentageIndicator(
         rotatedGraphics,

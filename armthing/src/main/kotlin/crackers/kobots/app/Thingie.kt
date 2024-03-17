@@ -18,10 +18,10 @@ package crackers.kobots.app
 
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.executor
-import crackers.kobots.app.arm.ArmMonitor
 import crackers.kobots.app.arm.ManualController
+import crackers.kobots.app.display.ArmMonitor
+import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.enviro.DieAufseherin
-import crackers.kobots.app.enviro.DisplayDos
 import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.devices.expander.I2CMultiplexer
 import org.slf4j.LoggerFactory
@@ -72,3 +72,11 @@ private fun stopAll() {
     if (muxDelegate.isInitialized()) multiplexor.close()
     if (crickitDelegate.isInitialized()) crickitHat.close()
 }
+
+fun <F> ignoreErrors(executionBlock: () -> F?): F? =
+    try {
+        executionBlock()
+    } catch (t: Throwable) {
+        logger.error("Error on shutdown", t)
+        null
+    }

@@ -57,10 +57,13 @@ object ManualController : Startable {
                         val switchThis = if (manualMode) {
                             thermoStepper.release()
                             GripperActions.HOME
-                        } else GripperActions.MANUAL
+                        } else {
+                            GripperActions.MANUAL
+                        }
                         DieAufseherin.actionTime(switchThis)
-                    } else if (!it && manualMode)
+                    } else if (!it && manualMode) {
                         joyRide()
+                    }
                 }
             }
         }
@@ -86,14 +89,19 @@ object ManualController : Startable {
         }
         if (selectDebounce) return
 
-        if (armSelected) armThing()
-        else otherThing()
+        if (armSelected) {
+            armThing()
+        } else {
+            otherThing()
+        }
     }
 
     private fun otherThing() = with(gamepad) {
-        if (xButton) +thermoStepper
-        else if (bButton) -thermoStepper
-        else if (aButton) thermoStepper.reset()
+        if (xButton) {
+            +thermoStepper
+        } else if (bButton) {
+            -thermoStepper
+        } else if (aButton) thermoStepper.reset()
     }
 
     private fun armThing() {
@@ -106,8 +114,9 @@ object ManualController : Startable {
 //                if (diff < -45f) waist += 2
 //            }
             val yAxis = gamepad.yAxis
-            if (gpZeroY == null) gpZeroY = yAxis
-            else {
+            if (gpZeroY == null) {
+                gpZeroY = yAxis
+            } else {
                 val diff = gpZeroY!! - yAxis
 //                if (diff > 45f) elevator.extendTo(100)
 //                if (diff < -45f) elevator.extendTo(0)
@@ -124,7 +133,9 @@ object ManualController : Startable {
     }
 
     fun statuses(): Map<String, Any> {
-        return if (armSelected) TheArm.state.position.mapped() else {
+        return if (armSelected) {
+            TheArm.state.position.mapped()
+        } else {
             mapOf("THM" to thermoStepper.current(), "HI MOM" to 0.0f)
         }
     }

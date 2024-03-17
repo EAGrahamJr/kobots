@@ -75,7 +75,7 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
 
     val extender by lazy {
         val _IN = 0f
-        val _OUT = 90f
+        val _OUT = 120f
         val servo = crickitHat.servo(1, MG90S_TRIM).apply {
             this at _IN
         }
@@ -95,12 +95,11 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
         crickitHat.servo(4, MG90S_TRIM).apply { this at 0 }
     }
 
+    val waistRange = IntRange(-60, 240) // TODO check this
     val waist by lazy {
-        val servoRange = IntRange(0, 180)
-        val physicalRange = IntRange(-45, 200)    // TODO check this
-        ServoRotator(waistServo, physicalRange, servoRange)
+        val servoRange = IntRange(0, 130)
+        ServoRotator(waistServo, waistRange, servoRange)
     }
-
 
     // manage the state of this construct =============================================================================
     private val _currentState = AtomicReference(ArmState(HOME_POSITION, false))
