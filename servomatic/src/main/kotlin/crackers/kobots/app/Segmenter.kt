@@ -59,7 +59,6 @@ object Segmenter : AutoCloseable {
     private val CLUCK_EXPIRES = java.time.Duration.ofSeconds(5)
     private val TIME_EXPIRES = java.time.Duration.ofSeconds(30)
 
-
     fun start() {
         segmenter.clear()
         var colon = true
@@ -69,7 +68,7 @@ object Segmenter : AutoCloseable {
                 val now = LocalTime.now()
                 when (currentMode) {
                     // flip to cluck mode every 5 minutes
-                    Mode.IDLE -> if (now.minute % 5 == 0) {
+                    Mode.IDLE -> if (now.minute % 5 == 0 && now.hour in (8..20)) {
                         currentMode = Mode.CLUCK
                         segmenter.print("Clck")
                     }
@@ -97,8 +96,9 @@ object Segmenter : AutoCloseable {
     }
 
     fun text(s: String) {
-        if (s.isBlank()) currentMode = Mode.IDLE
-        else {
+        if (s.isBlank()) {
+            currentMode = Mode.IDLE
+        } else {
             currentMode = Mode.TEXT
             segmenter.print(s)
         }

@@ -16,6 +16,7 @@
 
 package crackers.kobots.app
 
+import com.diozero.devices.Button
 import com.diozero.devices.ServoController
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
@@ -26,9 +27,11 @@ import crackers.kobots.parts.app.publishToTopic
 import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceRequest
+import crackers.kobots.parts.scheduleWithFixedDelay
 import org.slf4j.LoggerFactory
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Handles a bunch of different servos for various things. Everything should have an MQTT interface.
@@ -49,8 +52,14 @@ fun main(args: Array<String>?) {
     // add the shutdown hook
     Runtime.getRuntime().addShutdownHook(thread(start = false, block = ::stopEverything))
 
-
-
+    val button = Button(17)
+    var lastPush = false
+    AppCommon.executor.scheduleWithFixedDelay(20.milliseconds, 20.milliseconds) {
+        lastPush = button.value.also { pushed ->
+            if (!pushed && lastPush) AppCommon.applicationRunning = false
+        }
+        if (AppCommon.applicationRunning) Sensei.publishEvent()
+    }
     HAJunk.start()
     mqttClient.apply {
         startAliveCheck()
@@ -64,6 +73,7 @@ fun main(args: Array<String>?) {
 }
 
 fun stopEverything() {
+    AppCommon.executor.shutdownNow()
     HAJunk.close()
 //    hat.close()
 
@@ -77,16 +87,13 @@ internal val selectHandler = object : KobotSelectEntity.Companion.SelectHandler 
     override fun executeOption(select: String) {
         when (enumValue<Mode>(select)) {
             Mode.IDLE -> {
-
             }
 
             Mode.STOP -> AppCommon.applicationRunning = false
             Mode.CLUCK -> {
-
             }
 
             else -> logger.warn("No clue what to do with $select")
         }
-
     }
 }

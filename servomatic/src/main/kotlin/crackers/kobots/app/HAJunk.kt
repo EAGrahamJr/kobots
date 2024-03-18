@@ -17,6 +17,7 @@
 package crackers.kobots.app
 
 import crackers.kobots.mqtt.homeassistant.DeviceIdentifier
+import crackers.kobots.mqtt.homeassistant.KobotAnalogSensor
 import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
 import crackers.kobots.mqtt.homeassistant.KobotTextEntity
 
@@ -29,11 +30,16 @@ object HAJunk : AutoCloseable {
 
     val commandSelectEntity = KobotSelectEntity(selectHandler, "servo_selector", "Servo Selector", haIdentifier)
 
+    val tofSensor = KobotAnalogSensor(
+        "servomatic_tof", "Bobbi Detector", haIdentifier,
+        KobotAnalogSensor.Companion.AnalogDevice.DISTANCE, unitOfMeasurement = "mm"
+    )
 
     fun start() {
         Segmenter.start()
         textDosEntity.start()
         commandSelectEntity.start()
+        tofSensor.start()
     }
 
     override fun close() {

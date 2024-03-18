@@ -16,15 +16,11 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.AppCommon.mqttClient
+import crackers.kobots.app.HAJunk.tofSensor
 import crackers.kobots.app.SuzerainOfServos.SENSAI_MIN
 import crackers.kobots.app.SuzerainOfServos.senseiRotor
-import crackers.kobots.app.SuzerainOfServos.senseiServo
 import crackers.kobots.devices.sensors.VL6180X
-import crackers.kobots.mqtt.KobotsMQTT.Companion.KOBOTS_EVENTS
-import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.movement.sequence
-import org.json.JSONObject
 import org.slf4j.LoggerFactory
 
 object Sensei {
@@ -32,7 +28,7 @@ object Sensei {
     internal val toffle by lazy { VL6180X() }
 
     private fun VL6180X.distance(): Float = try {
-        distanceCm
+        range.toFloat()
     } catch (e: Exception) {
         0f
     }
@@ -66,11 +62,9 @@ object Sensei {
         }
     }
 
-    private fun publishEvent() {
-        KobotSleep.millis(5)
-        val event = SensaiEvent(senseiRotor.current(), toffle.distance())
-        logger.debug("Servo = ${senseiServo.angle} $event")
-        mqttClient.publish(KOBOTS_EVENTS, JSONObject(event))
-        KobotSleep.millis(15)
+    fun publishEvent() {
+        toffle.distance().run {
+            if (this < 200) tofSensor.currentState = toString()
+        }
     }
 }
