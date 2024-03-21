@@ -18,14 +18,16 @@ package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.Startable
+import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.display.DisplayDos
-import crackers.kobots.app.enviro.HAStuff.crickitNeoPixel
 import crackers.kobots.app.enviro.HAStuff.extenderEntity
 import crackers.kobots.app.enviro.HAStuff.noodSwitch
-import crackers.kobots.app.enviro.HAStuff.numberWaistEntity
 import crackers.kobots.app.enviro.HAStuff.rosetteStrand
 import crackers.kobots.app.enviro.HAStuff.selector
 import crackers.kobots.app.enviro.HAStuff.textDosEntity
+import crackers.kobots.app.enviro.HAStuff.waistEntity
+import crackers.kobots.app.execution.sayHi
+import crackers.kobots.parts.movement.SequenceRequest
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 
@@ -47,6 +49,7 @@ object DieAufseherin : Startable {
     var currentMode: SystemMode
         get() = theMode.get()
         set(v) {
+            logger.info("System mode changed to $v")
             theMode.set(v)
         }
 
@@ -67,8 +70,7 @@ object DieAufseherin : Startable {
     override fun stop() {
         VeryDumbThermometer.reset()
         noodSwitch.handleCommand("OFF")
-//        rosetteStrand.handleCommand("OFF")
-        crickitNeoPixel.off()
+        rosetteStrand.handleCommand("OFF")
     }
 
     private fun localStuff() {
@@ -100,7 +102,9 @@ object DieAufseherin : Startable {
             GripperActions.MANUAL -> currentMode = SystemMode.MANUAL
             GripperActions.CLUCK -> DisplayDos.cluck()
             GripperActions.RANDOM_EYES -> DisplayDos.randomEye()
+            GripperActions.SAY_HI -> TheArm.handleRequest(SequenceRequest(sayHi))
             else -> logger.warn("Unknown command: $payload")
+
         }
     }
 
@@ -110,7 +114,7 @@ object DieAufseherin : Startable {
         selector.start()
         rosetteStrand.start()
         textDosEntity.start()
-        numberWaistEntity.start()
+        waistEntity.start()
         extenderEntity.start()
     }
 }

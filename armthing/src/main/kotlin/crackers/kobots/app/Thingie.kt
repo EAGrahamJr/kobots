@@ -18,13 +18,16 @@ package crackers.kobots.app
 
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.executor
+import crackers.kobots.app.AppCommon.ignoreErrors
 import crackers.kobots.app.arm.ManualController
+import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.display.ArmMonitor
 import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.devices.expander.I2CMultiplexer
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
@@ -42,7 +45,8 @@ internal interface Startable {
     fun stop()
 }
 
-private val startables = listOf(ArmMonitor, DisplayDos, ManualController, DieAufseherin)
+private val startables = listOf(TheArm, ArmMonitor, DisplayDos, ManualController, DieAufseherin)
+private val stopFlag = AtomicBoolean(true)
 
 /**
  * Run this.
@@ -66,15 +70,19 @@ fun main(args: Array<String>? = null) {
     exitProcess(0)
 }
 
-private fun stopAll() {
-    startables.forEach { AppCommon.ignoreErrors { it::stop } }
+private fun stopAll() = with(stopFlag) {
+    if (get()) {
+        startables.forEach { ignoreErrors(it::stop) }
 
-    if (muxDelegate.isInitialized()) multiplexor.close()
-    if (crickitDelegate.isInitialized()) crickitHat.close()
+        if (muxDelegate.isInitialized()) multiplexor.close()
+        if (crickitDelegate.isInitialized()) crickitHat.close()
+    }
+    set(false)
 }
 
 fun <F> ignoreErrors(executionBlock: () -> F?): F? =
     try {
+        println("Stopping a thing")
         executionBlock()
     } catch (t: Throwable) {
         logger.error("Error on shutdown", t)

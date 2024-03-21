@@ -41,6 +41,7 @@ import java.time.Instant
 import java.util.concurrent.Future
 import kotlin.time.Duration.Companion.milliseconds
 
+
 private const val MAX_WD = 128
 private const val MAX_HT = 32
 
@@ -55,7 +56,7 @@ object ArmMonitor :
         MAX_HT.toDouble()
     ) {
     private val logger = LoggerFactory.getLogger("ArmMonitor")
-    internal val TURN_OFF = Duration.ofMinutes(2)
+    internal val TURN_OFF = Duration.ofSeconds(30)
 
     private val imageType = BufferedImage.TYPE_BYTE_BINARY
 
@@ -88,15 +89,12 @@ object ArmMonitor :
         var screenOn = true
         future = AppCommon.executor.scheduleWithFixedDelay(100.milliseconds, 100.milliseconds) {
             AppCommon.whileRunning {
-                var drawStats = false
                 val screenDirty = when (DieAufseherin.currentMode) {
                     DieAufseherin.SystemMode.IDLE -> {
-                        ExtenderStatus.sleep()
                         false
                     }
 
                     DieAufseherin.SystemMode.IN_MOTION -> {
-                        drawStats = true
                         statsGraphics.displayStatuses(TheArm.state.position.mapped())
                         ExtenderStatus.update(TheArm.extender.current())
                         DisplayDos.showEyes(DisplayDos.LOOK_LEFT)
@@ -104,37 +102,37 @@ object ArmMonitor :
                     }
 
                     DieAufseherin.SystemMode.MANUAL -> {
-                        // screen is always dirty amd enabled
-                        screenOnAt = Instant.now()
                         statsGraphics.displayStatuses(ManualController.statuses())
                         ExtenderStatus.update(TheArm.extender.current())
                         DisplayDos.showEyes(DisplayDos.LOOK_LEFT)
-                        drawStats = true
                         true
                     }
 
                     DieAufseherin.SystemMode.SHUTDOWN -> {
-                        stop()
                         false
                     }
                 }
 
                 if (screenDirty) {
+                    screenOnAt = Instant.now()
                     if (!screenOn) {
                         screen.setDisplayOn(true)
                         screenOn = true
                     }
 
-                    screenGraphics.clearRect(0, 0, MAX_WD, 2 * MAX_HT)
+                    screenGraphics.clearRect(0, 0, screen.width, screen.height)
+                    // draw the stats image as drawn above
+                    screenGraphics.drawImage(statsImage, 0, MAX_HT, null)
 
-                    if (drawStats) screenGraphics.drawImage(statsImage, 0, MAX_HT, null)
+                    // display full image
                     screen.display(screenImage)
                 } else {
                     if (screenOnAt.elapsed() > TURN_OFF && screenOn) {
+                        DisplayDos.eyesReset()
                         screen.setDisplayOn(false)
+                        ExtenderStatus.sleep()
                         screenOn = false
                     }
-                    if (screenOn) DisplayDos.eyesReset()
                 }
             }
         }
@@ -151,7 +149,6 @@ object ArmMonitor :
         ExtenderStatus.close()
 
         if (::future.isInitialized) future.cancel(true)
-        screen.clear()
         screen.close()
     }
 }

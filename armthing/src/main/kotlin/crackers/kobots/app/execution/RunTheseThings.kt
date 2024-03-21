@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ val sayHi by lazy {
         }
         (1..4).forEach {
             action {
-                elbow rotate 80
+                elbow rotate ELBOW_UP
                 requestedSpeed = ActionSpeed.FAST
             }
             action {
@@ -117,18 +117,25 @@ val armSleep by lazy {
 }
 
 /**
- * Send it home
+ * Send it home - should be "0" state for servos.
  */
 val homeSequence by lazy {
     sequence {
         name = "Home"
         // make sure the gripper is out of the way of anything
-        action { extender goTo EXTENDER_HOME }
-        action { elbow rotate ELBOW_UP }
+        action {
+            requestedSpeed = ActionSpeed.SLOW
+            extender goTo EXTENDER_HOME
+        }
+        action {
+            requestedSpeed = ActionSpeed.SLOW
+            elbow rotate ELBOW_DOWN
+        }
         // now we can close and finish
         action {
+            requestedSpeed = ActionSpeed.SLOW
             waist rotate WAIST_HOME
-            gripper goTo GRIPPER_CLOSED
+            gripper goTo GRIPPER_OPEN
         }
     }
 }

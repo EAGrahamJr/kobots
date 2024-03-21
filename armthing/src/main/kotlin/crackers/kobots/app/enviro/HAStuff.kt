@@ -103,7 +103,7 @@ object HAStuff {
         }
     }
 
-    val numberWaistEntity = object : KobotNumberEntity(
+    val waistEntity = object : KobotNumberEntity(
         waistHandler,
         "arm_waist",
         "Arm: Waist",

@@ -78,8 +78,5 @@ object ExtenderStatus {
         screen.clear()
     }
 
-    fun close() {
-        sleep()
-        screen.close()
-    }
+    fun close() = screen.close()
 }

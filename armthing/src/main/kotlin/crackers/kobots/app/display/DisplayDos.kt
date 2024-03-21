@@ -46,7 +46,7 @@ import kotlin.time.Duration.Companion.seconds
 object DisplayDos : Startable {
 
     private val logger = LoggerFactory.getLogger("DisplayDos")
-    private val screen = run {
+    private val dosScreen = run {
         val i2c = multiplexor.getI2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
         val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2c)
         SSD1306(channel, Height.SHORT).apply {
@@ -54,13 +54,13 @@ object DisplayDos : Startable {
             setDisplayOn(false)
         }
     }
-    private val MAX_WD = screen.width
-    private val MAX_HT = screen.height
+    private val MAX_WD = dosScreen.width
+    private val MAX_HT = dosScreen.height
 
     private val graphics: Graphics2D
     private val lcdFontOffset: Int
     private val lcdFont: Font
-    private val image = BufferedImage(MAX_WD, MAX_HT, screen.nativeImageType).also {
+    private val image = BufferedImage(MAX_WD, MAX_HT, dosScreen.nativeImageType).also {
         val f = Font.createFont(Font.TRUETYPE_FONT, this.javaClass.getResourceAsStream("/lcd.ttf")).deriveFont(12f)
         graphics = (it.graphics as Graphics2D).apply {
             background = Color.BLACK
@@ -96,17 +96,17 @@ object DisplayDos : Startable {
         get() = mode.get()
         set(m) {
             if (mode.get() != m) {
-                logger.info("Mode changed to {}", m)
+                logger.debug("Mode changed to {}", m)
                 mode.set(m)
                 timerStart = Instant.now()
-                screen.setDisplayOn(m != Mode.IDLE)
+                dosScreen.setDisplayOn(m != Mode.IDLE)
             }
         }
 
     private val TEXT_EXPIRES = Duration.ofSeconds(30)
     private val CLUCK_EXPIRES = Duration.ofSeconds(5)
     private val TIME_EXPIRES = Duration.ofSeconds(30)
-    private val EYES_EXPIRES = Duration.ofMinutes(2)
+    private val EYES_EXPIRES = Duration.ofMinutes(1)
 
     private var eyesLastChanged = Instant.EPOCH
     private val currentExpression = AtomicReference<Expression>()
@@ -175,19 +175,17 @@ object DisplayDos : Startable {
     private fun Graphics2D.printLcd(s: String) {
         clearRect(0, 0, image.width, image.height)
         font = lcdFont
+        color = Color.WHITE
         drawString(s, 0, lcdFontOffset)
-        screen.display(image)
+        dosScreen.display(image)
     }
 
     private fun clear() {
         graphics.clearRect(0, 0, image.width, image.height)
-        screen.display(image)
+        dosScreen.display(image)
     }
 
-    override fun stop() {
-        screen.clear()
-        screen.close()
-    }
+    override fun stop() = dosScreen.close()
 
     // EYE STUFF ------------------------------------------------------------------------------------------------------
 
@@ -229,7 +227,7 @@ object DisplayDos : Startable {
     private fun drawEyes(expression: Expression) {
         eyes(expression)
         eyes.draw(graphics)
-        screen.display(image)
+        dosScreen.display(image)
     }
 
     /**
@@ -240,6 +238,6 @@ object DisplayDos : Startable {
     }
 
     internal fun eyesReset() {
-        if (currentMode == Mode.EYES) currentMode = Mode.RANDOM
+        currentMode = Mode.RANDOM
     }
 }

@@ -27,6 +27,8 @@ import crackers.kobots.devices.MG90S_TRIM
 import crackers.kobots.devices.at
 import crackers.kobots.parts.app.publishToTopic
 import crackers.kobots.parts.movement.*
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -39,11 +41,11 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
         publishToTopic(REQUEST_TOPIC, SequenceRequest(sequence))
     }
 
-    const val ELBOW_UP = 90
-    const val ELBOW_DOWN = -9
+    const val ELBOW_UP = 60
+    const val ELBOW_DOWN = 0
 
     const val WAIST_HOME = 0
-    const val WAIST_MAX = 140
+    const val WAIST_MAX = 180
 
     const val EXTENDER_HOME = 0
     const val EXTENDER_FULL = 100
@@ -87,7 +89,7 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
             this at 0
         }
         val physicalRange = IntRange(ELBOW_DOWN, ELBOW_UP)
-        val servoRange = IntRange(150, 0)
+        val servoRange = IntRange(0, 145)
         ServoRotator(servo2, physicalRange, servoRange)
     }
 
@@ -95,9 +97,9 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
         crickitHat.servo(4, MG90S_TRIM).apply { this at 0 }
     }
 
-    val waistRange = IntRange(-60, 240) // TODO check this
+    val waistRange = IntRange(0, 180) // TODO check this
     val waist by lazy {
-        val servoRange = IntRange(0, 130)
+        val servoRange = IntRange(0, 144)
         ServoRotator(waistServo, waistRange, servoRange)
     }
 
@@ -120,9 +122,15 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
     // allow the home sequence to run as well if termination has been called
     override fun canRun() = runFlag.get() || currentSequence.get() == homeSequence.name
 
+    lateinit var stopLatch: CountDownLatch
     override fun stop() {
+        stopLatch = CountDownLatch(1)
+        // home the arm and wait for it
+        executeSequence(SequenceRequest(homeSequence))
+        if (!stopLatch.await(30, TimeUnit.SECONDS)) {
+            logger.error("Arm not homed in 30 seconds")
+        }
         super.stop()
-        postExecution()
     }
 
     override fun preExecution() {
@@ -132,10 +140,14 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
     }
 
     override fun postExecution() {
-        HAStuff.noodSwitch.handleCommand("OFF")
-        HAStuff.numberWaistEntity.sendCurrentState()
+        with(HAStuff) {
+            noodSwitch.handleCommand("OFF")
+            waistEntity.sendCurrentState()
+            extenderEntity.sendCurrentState()
+        }
         // just in case, release steppers
         DieAufseherin.currentMode = DieAufseherin.SystemMode.IDLE
+        if (::stopLatch.isInitialized) stopLatch.countDown()
     }
 
     /**
