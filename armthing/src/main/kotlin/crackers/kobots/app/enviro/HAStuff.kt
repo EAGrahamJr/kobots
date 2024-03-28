@@ -17,16 +17,20 @@
 package crackers.kobots.app.enviro
 
 import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
+import crackers.kobots.app.arm.TheArm.ELBOW_UP
+import crackers.kobots.app.arm.TheArm.WAIST_HOME
+import crackers.kobots.app.arm.TheArm.WAIST_MAX
+import crackers.kobots.app.arm.TheArm.elbow
 import crackers.kobots.app.arm.TheArm.extender
+import crackers.kobots.app.arm.TheArm.gripper
 import crackers.kobots.app.arm.TheArm.waist
-import crackers.kobots.app.arm.TheArm.waistRange
 import crackers.kobots.app.crickitHat
 import crackers.kobots.app.display.DisplayDos
+import crackers.kobots.app.enviro.DieAufseherin.currentMode
 import crackers.kobots.mqtt.homeassistant.*
 import crackers.kobots.parts.enumValue
-import crackers.kobots.parts.movement.ActionSpeed
-import crackers.kobots.parts.movement.SequenceRequest
-import crackers.kobots.parts.movement.sequence
+import crackers.kobots.parts.movement.*
 import kotlin.math.roundToInt
 
 object HAStuff {
@@ -70,7 +74,15 @@ object HAStuff {
             DieAufseherin.actionTime(payloadToEnum)
         }
     }
-    val selector = KobotSelectEntity(selectorHandler, "arm_thing", "Arm Thing", deviceIdentifier = haIdentifier)
+    val selector = object : KobotSelectEntity(
+        selectorHandler, "arm_thing", "Arm Thing", deviceIdentifier =
+        haIdentifier
+    ) {
+        override fun sendCurrentState(state: String) {
+            if (currentMode != DieAufseherin.SystemMode.IDLE) super.sendCurrentState(currentState())
+            else super.sendCurrentState("None")
+        }
+    }
 
     /**
      * Run the 8-bit circular NeoPixel thing
@@ -84,18 +96,16 @@ object HAStuff {
      */
     val textDosEntity = KobotTextEntity(DisplayDos::text, "second_display", "Dos Display", haIdentifier)
 
-    /**
-     * Turn it sideways
-     */
-    private val waistHandler = object : KobotNumberEntity.Companion.NumberHandler {
-        override fun currentState() = waist.current().toFloat()
+    private class ArmRotateHandler(val rotator: Rotator, val thing: String) :
+        KobotNumberEntity.Companion.NumberHandler {
+        override fun currentState() = rotator.current().toFloat()
 
         override fun move(target: Float) {
             sequence {
-                name = "HA Move Waist"
+                name = "HA Move $thing"
                 action {
                     requestedSpeed = ActionSpeed.SLOW
-                    waist rotate target.roundToInt()
+                    rotator rotate target.roundToInt()
                 }
             }.let { seq ->
                 TheArm.handleRequest(SequenceRequest(seq))
@@ -103,40 +113,43 @@ object HAStuff {
         }
     }
 
+    private class PctHandler(val linear: LinearActuator, val thing: String) :
+        KobotNumberEntity.Companion.NumberHandler {
+        override fun currentState() = linear.current().toFloat()
+
+        override fun move(target: Float) {
+            sequence {
+                name = "HA Move $thing"
+                action {
+                    requestedSpeed = ActionSpeed.SLOW
+                    linear goTo target.roundToInt()
+                }
+            }.let { seq ->
+                TheArm.handleRequest(SequenceRequest(seq))
+            }
+        }
+    }
+
+    /**
+     * Turn it sideways
+     */
     val waistEntity = object : KobotNumberEntity(
-        waistHandler,
+        ArmRotateHandler(waist, "Waist"),
         "arm_waist",
         "Arm: Waist",
         haIdentifier,
-        min = waistRange.start,
-        max = waistRange.endInclusive,
-        mode = Companion.DisplayMode.box,
+        min = WAIST_HOME,
+        max = WAIST_MAX,
         unitOfMeasurement = "degrees"
     ) {
         override val icon = "mdi:rotate-360"
     }
 
     /**
-     * In and out
+     * In and oot
      */
-    private val extenderHandler = object : KobotNumberEntity.Companion.NumberHandler {
-        override fun currentState() = extender.current().toFloat()
-
-        override fun move(target: Float) {
-            sequence {
-                name = "HA Move Extender"
-                action {
-                    requestedSpeed = ActionSpeed.SLOW
-                    extender goTo target.toInt()
-                }
-            }.let { seq ->
-                TheArm.handleRequest(SequenceRequest(seq))
-            }
-        }
-    }
-
     val extenderEntity = object : KobotNumberEntity(
-        extenderHandler,
+        PctHandler(extender, "Extender"),
         "arm_extender",
         "Arm: Extend",
         haIdentifier,
@@ -144,5 +157,42 @@ object HAStuff {
         unitOfMeasurement = "percent"
     ) {
         override val icon = "mdi:hand-extended"
+    }
+
+    /**
+     * Hup down
+     */
+    val elbowEntity = object : KobotNumberEntity(
+        ArmRotateHandler(elbow, "Elbow"),
+        "arm_elbow",
+        "Arm: Elbow",
+        haIdentifier,
+        min = ELBOW_DOWN,
+        max = ELBOW_UP,
+        unitOfMeasurement = "degrees"
+    ) {
+        override val icon = "mdi:horizontal-rotate-clockwise"
+    }
+
+    /**
+     * Grabby thing
+     */
+    val gripperEntity = object : KobotNumberEntity(
+        PctHandler(gripper, "Gripper"),
+        "arm_gripper",
+        "Arm: Gripper",
+        haIdentifier
+    ) {}
+
+    internal fun startDevices() {
+        // HA stuff
+        noodSwitch.start()
+        selector.start()
+        rosetteStrand.start()
+        textDosEntity.start()
+        waistEntity.start()
+        extenderEntity.start()
+        elbowEntity.start()
+        gripperEntity.start()
     }
 }

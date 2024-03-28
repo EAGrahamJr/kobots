@@ -24,7 +24,6 @@ import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.app.enviro.HAStuff
 import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.devices.MG90S_TRIM
-import crackers.kobots.devices.at
 import crackers.kobots.parts.app.publishToTopic
 import crackers.kobots.parts.movement.*
 import java.util.concurrent.CountDownLatch
@@ -41,11 +40,11 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
         publishToTopic(REQUEST_TOPIC, SequenceRequest(sequence))
     }
 
-    const val ELBOW_UP = 60
+    const val ELBOW_UP = 80
     const val ELBOW_DOWN = 0
 
     const val WAIST_HOME = 0
-    const val WAIST_MAX = 180
+    const val WAIST_MAX = 140
 
     const val EXTENDER_HOME = 0
     const val EXTENDER_FULL = 100
@@ -62,45 +61,32 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
 
     // hardware! =====================================================================================================
 
-    val gripper by lazy {
-        // traverse gears
-        val _OPEN = 0f
-        val _CLOSE = 65f
-
-        val servo = crickitHat.servo(3, MG90S_TRIM).apply {
-            this at _CLOSE
-        }
-
-        // 0% == CLOSE, 100% == OPEN
-        ServoLinearActuator(servo, _OPEN, _CLOSE)
-    }
-
     val extender by lazy {
-        val _IN = 0f
-        val _OUT = 120f
-        val servo = crickitHat.servo(1, MG90S_TRIM).apply {
-            this at _IN
-        }
-        ServoLinearActuator(servo, _IN, _OUT)
+        val servo = crickitHat.servo(1, MG90S_TRIM).apply { angle = 0f }
+        ServoLinearActuator(servo, 0f, 120f)
     }
 
     val elbow by lazy {
-        val servo2 = crickitHat.servo(2, MG90S_TRIM).apply {
-            this at 0
-        }
+        val servo = crickitHat.servo(2, MG90S_TRIM).apply { angle = 0f }
+
         val physicalRange = IntRange(ELBOW_DOWN, ELBOW_UP)
-        val servoRange = IntRange(0, 145)
-        ServoRotator(servo2, physicalRange, servoRange)
+        val servoRange = IntRange(0, 115)
+
+        ServoRotator(servo, physicalRange, servoRange)
     }
 
-    val waistServo by lazy {
-        crickitHat.servo(4, MG90S_TRIM).apply { this at 0 }
+    val gripper by lazy {
+        val servo = crickitHat.servo(3, MG90S_TRIM).apply { angle = 0f }
+        ServoLinearActuator(servo, 0f, 80f)
     }
 
-    val waistRange = IntRange(0, 180) // TODO check this
     val waist by lazy {
-        val servoRange = IntRange(0, 144)
-        ServoRotator(waistServo, waistRange, servoRange)
+        val servo = crickitHat.servo(4, MG90S_TRIM).apply { angle = 0f }
+
+        val physicalRange = IntRange(WAIST_HOME, WAIST_MAX) // TODO check this
+        val servoRange = IntRange(0, 180)
+
+        ServoRotator(servo, physicalRange, servoRange)
     }
 
     // manage the state of this construct =============================================================================
@@ -144,6 +130,8 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
             noodSwitch.handleCommand("OFF")
             waistEntity.sendCurrentState()
             extenderEntity.sendCurrentState()
+            elbowEntity.sendCurrentState()
+            gripperEntity.sendCurrentState()
         }
         // just in case, release steppers
         DieAufseherin.currentMode = DieAufseherin.SystemMode.IDLE

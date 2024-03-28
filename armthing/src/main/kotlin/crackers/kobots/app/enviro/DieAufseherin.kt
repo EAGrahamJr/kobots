@@ -20,12 +20,11 @@ import crackers.kobots.app.AppCommon
 import crackers.kobots.app.Startable
 import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.display.DisplayDos
-import crackers.kobots.app.enviro.HAStuff.extenderEntity
 import crackers.kobots.app.enviro.HAStuff.noodSwitch
 import crackers.kobots.app.enviro.HAStuff.rosetteStrand
 import crackers.kobots.app.enviro.HAStuff.selector
-import crackers.kobots.app.enviro.HAStuff.textDosEntity
-import crackers.kobots.app.enviro.HAStuff.waistEntity
+import crackers.kobots.app.enviro.HAStuff.startDevices
+import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.app.execution.sayHi
 import crackers.kobots.parts.movement.SequenceRequest
 import org.slf4j.LoggerFactory
@@ -51,7 +50,12 @@ object DieAufseherin : Startable {
         set(v) {
             logger.info("System mode changed to $v")
             theMode.set(v)
+            if (v == SystemMode.IDLE) resetThings()
         }
+
+    private fun resetThings() {
+        selector.sendCurrentState("None")
+    }
 
     enum class GripperActions {
         HOME, SAY_HI, STOP, CLUCK, MANUAL, RANDOM_EYES
@@ -98,7 +102,7 @@ object DieAufseherin : Startable {
     internal fun actionTime(payload: GripperActions?) {
         when (payload) {
             GripperActions.STOP -> AppCommon.applicationRunning = false
-            GripperActions.HOME -> currentMode = SystemMode.IDLE
+            GripperActions.HOME -> TheArm.handleRequest(SequenceRequest(homeSequence))
             GripperActions.MANUAL -> currentMode = SystemMode.MANUAL
             GripperActions.CLUCK -> DisplayDos.cluck()
             GripperActions.RANDOM_EYES -> DisplayDos.randomEye()
@@ -108,13 +112,4 @@ object DieAufseherin : Startable {
         }
     }
 
-    private fun startDevices() {
-        // HA stuff
-        noodSwitch.start()
-        selector.start()
-        rosetteStrand.start()
-        textDosEntity.start()
-        waistEntity.start()
-        extenderEntity.start()
-    }
 }

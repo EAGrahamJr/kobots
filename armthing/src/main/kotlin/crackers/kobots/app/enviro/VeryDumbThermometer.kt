@@ -28,8 +28,8 @@ import org.tinylog.Logger
  */
 object VeryDumbThermometer {
     val thermoStepper by lazy {
-        val stepper = BasicStepperMotor(2048, crickitHat.unipolarStepperPort())
-        BasicStepperRotator(stepper, gearRatio = 1.28f, reversed = true)
+        val stepper = BasicStepperMotor(200, crickitHat.motorStepperPort())
+        BasicStepperRotator(stepper, gearRatio = 1f, reversed = true)
     }
 
     private const val DEGREES_TO_ANGLES = 18f // this comes out to 5 degree temp change == 90 degree stepper change
