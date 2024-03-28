@@ -65,6 +65,7 @@ object Segmenter : AutoCloseable {
 
         cluckFuture = AppCommon.executor.scheduleWithFixedDelay(1.seconds, 1.seconds) {
             whileRunning {
+                try {
                 val now = LocalTime.now()
                 when (currentMode) {
                     // flip to cluck mode every 5 minutes
@@ -91,6 +92,9 @@ object Segmenter : AutoCloseable {
                         }
                     }
                 }
+                } catch (e: Throwable) {
+                    logger.error(e.localizedMessage)
+                }
             }
         }
     }
@@ -111,10 +115,12 @@ object Segmenter : AutoCloseable {
 
     override fun close() = stop()
     fun stop() {
-        if (::cluckFuture.isInitialized) {
+        if (::cluckFuture.isInitialized) try {
             cluckFuture.cancel(true)
             segmenter.clear()
             segmenter.close()
+        } catch (e: Exception) {
+            logger.error(e.localizedMessage)
         }
     }
 }
