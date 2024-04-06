@@ -22,7 +22,6 @@ import crackers.kobots.app.Startable
 import crackers.kobots.app.crickitHat
 import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.app.enviro.HAStuff
-import crackers.kobots.app.execution.homeSequence
 import crackers.kobots.devices.MG90S_TRIM
 import crackers.kobots.parts.app.publishToTopic
 import crackers.kobots.parts.movement.*
@@ -31,7 +30,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /**
- * V5 iteration of a controlled "arm-like" structure.
+ * V7 iteration of a controlled "arm-like" structure. This is somewhat modelled after a backhoe arm
  */
 object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
     const val REQUEST_TOPIC = "TheArm.Request"
@@ -40,54 +39,51 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
         publishToTopic(REQUEST_TOPIC, SequenceRequest(sequence))
     }
 
-    const val ELBOW_UP = 80
-    const val ELBOW_DOWN = 0
+    const val SWING_HOME = 0
+    const val SWING_MAX = 140
 
-    const val WAIST_HOME = 0
-    const val WAIST_MAX = 140
+    const val BOOM_UP = 0
+    const val BOOM_DOWN = 90
 
-    const val EXTENDER_HOME = 0
-    const val EXTENDER_FULL = 100
+    const val ARM_DOWN = -53
+    const val ARM_UP = 65
 
     const val GRIPPER_OPEN = 0
     const val GRIPPER_CLOSED = 100
 
     private val HOME_POSITION = ArmPosition(
-        JointPosition(WAIST_HOME),
-        JointPosition(EXTENDER_HOME),
+        JointPosition(SWING_HOME),
+        JointPosition(BOOM_UP),
         JointPosition(GRIPPER_CLOSED),
-        JointPosition(ELBOW_UP)
+        JointPosition(ARM_UP)
     )
 
     // hardware! =====================================================================================================
 
-    val extender by lazy {
+    private val maxServoRange = IntRange(0, 180)
+    val swing by lazy {
         val servo = crickitHat.servo(1, MG90S_TRIM).apply { angle = 0f }
-        ServoLinearActuator(servo, 0f, 120f)
+        val physicalRange = IntRange(SWING_HOME, SWING_MAX)
+        ServoRotator(servo, physicalRange, maxServoRange)
     }
 
-    val elbow by lazy {
+    val boomLink by lazy {
         val servo = crickitHat.servo(2, MG90S_TRIM).apply { angle = 0f }
+        val physicalRange = IntRange(BOOM_UP, BOOM_DOWN)
+        ServoRotator(servo, physicalRange, maxServoRange)
+    }
 
-        val physicalRange = IntRange(ELBOW_DOWN, ELBOW_UP)
-        val servoRange = IntRange(0, 115)
-
-        ServoRotator(servo, physicalRange, servoRange)
+    val armLink by lazy {
+        val servo = crickitHat.servo(3, MG90S_TRIM).apply { angle = 0f }
+        val physicalRange = IntRange(ARM_DOWN, ARM_UP)
+        ServoRotator(servo, physicalRange, maxServoRange)
     }
 
     val gripper by lazy {
-        val servo = crickitHat.servo(3, MG90S_TRIM).apply { angle = 0f }
+        val servo = crickitHat.servo(4, MG90S_TRIM).apply { angle = 0f }
         ServoLinearActuator(servo, 0f, 80f)
     }
 
-    val waist by lazy {
-        val servo = crickitHat.servo(4, MG90S_TRIM).apply { angle = 0f }
-
-        val physicalRange = IntRange(WAIST_HOME, WAIST_MAX) // TODO check this
-        val servoRange = IntRange(0, 180)
-
-        ServoRotator(servo, physicalRange, servoRange)
-    }
 
     // manage the state of this construct =============================================================================
     private val _currentState = AtomicReference(ArmState(HOME_POSITION, false))
@@ -144,10 +140,10 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
     override fun updateCurrentState() {
         state = ArmState(
             ArmPosition(
-                JointPosition(waist.current()),
-                JointPosition(extender.current()),
+                JointPosition(swing.current()),
+                JointPosition(boomLink.current()),
                 JointPosition(gripper.current()),
-                JointPosition(elbow.current())
+                JointPosition(armLink.current())
             ),
             moveInProgress
         )

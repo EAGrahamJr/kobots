@@ -95,15 +95,14 @@ object ArmMonitor :
                     }
 
                     DieAufseherin.SystemMode.IN_MOTION -> {
-                        statsGraphics.displayStatuses(TheArm.state.position.mapped())
-                        ExtenderStatus.update(TheArm.extender.current())
+                        updateStatusDisplays()
                         DisplayDos.showEyes(DisplayDos.LOOK_LEFT)
                         true
                     }
 
                     DieAufseherin.SystemMode.MANUAL -> {
                         statsGraphics.displayStatuses(ManualController.statuses())
-                        ExtenderStatus.update(TheArm.extender.current())
+                        BoomStatusDisplay.update()
                         DisplayDos.showEyes(DisplayDos.LOOK_LEFT)
                         true
                     }
@@ -130,12 +129,17 @@ object ArmMonitor :
                     if (screenOnAt.elapsed() > TURN_OFF && screenOn) {
                         DisplayDos.eyesReset()
                         screen.setDisplayOn(false)
-                        ExtenderStatus.sleep()
+                        BoomStatusDisplay.sleep()
                         screenOn = false
                     }
                 }
             }
         }
+    }
+
+    private fun updateStatusDisplays() {
+        statsGraphics.displayStatuses(TheArm.state.position.mapped())
+        BoomStatusDisplay.update()
     }
 
     fun ping(angle: Int, distance: Float) {
@@ -146,7 +150,7 @@ object ArmMonitor :
     }
 
     override fun stop() {
-        ExtenderStatus.close()
+        BoomStatusDisplay.close()
 
         if (::future.isInitialized) future.cancel(true)
         screen.close()

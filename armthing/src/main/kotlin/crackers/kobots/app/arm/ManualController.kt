@@ -90,7 +90,7 @@ object ManualController : Startable {
         if (selectDebounce) return
 
         if (armSelected) {
-            armThing()
+            // armThing()
         } else {
             otherThing()
         }
@@ -98,37 +98,36 @@ object ManualController : Startable {
 
     private fun otherThing() = with(gamepad) {
         if (xButton) {
-            +thermoStepper
+//            +thermoStepper
         } else if (bButton) {
-            -thermoStepper
+//            -thermoStepper
         } else if (aButton) thermoStepper.reset()
     }
 
     private fun armThing() {
         with(TheArm) {
-//            val xAxis = gamepad.xAxis
-//            if (gpZeroX == null) gpZeroX = xAxis
-//            else {
-//                val diff = gpZeroX!! - xAxis
-//                if (diff > 45f) waist -= 2
-//                if (diff < -45f) waist += 2
-//            }
+            val xAxis = gamepad.xAxis
+            if (gpZeroX == null) gpZeroX = xAxis
+            else {
+                val diff = gpZeroX!! - xAxis
+//                if (diff > 45f) +boomLink
+//                if (diff < -45f) -boomLink
+            }
             val yAxis = gamepad.yAxis
             if (gpZeroY == null) {
                 gpZeroY = yAxis
             } else {
                 val diff = gpZeroY!! - yAxis
-//                if (diff > 45f) elevator.extendTo(100)
-//                if (diff < -45f) elevator.extendTo(0)
-//                elevator.release()
+//                if (diff > 45f) +armLink
+//                if (diff < -45f) -armLink
             }
-//
-//            if (gamepad.aButton) +extender
-//            if (gamepad.yButton) -extender
+
+//            if (gamepad.aButton) +swing
+//            if (gamepad.yButton) -swing
 //            if (gamepad.xButton) -gripper
 //            if (gamepad.bButton) +gripper
-//
-//            updateCurrentState()
+
+            updateCurrentState()
         }
     }
 

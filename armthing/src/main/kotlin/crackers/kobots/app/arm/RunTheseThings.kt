@@ -14,37 +14,20 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.execution
+package crackers.kobots.app.arm
 
-import crackers.kobots.app.arm.TheArm.ELBOW_DOWN
-import crackers.kobots.app.arm.TheArm.ELBOW_UP
-import crackers.kobots.app.arm.TheArm.EXTENDER_FULL
-import crackers.kobots.app.arm.TheArm.EXTENDER_HOME
+import crackers.kobots.app.arm.TheArm.ARM_DOWN
+import crackers.kobots.app.arm.TheArm.ARM_UP
+import crackers.kobots.app.arm.TheArm.BOOM_UP
 import crackers.kobots.app.arm.TheArm.GRIPPER_CLOSED
 import crackers.kobots.app.arm.TheArm.GRIPPER_OPEN
-import crackers.kobots.app.arm.TheArm.WAIST_HOME
-import crackers.kobots.app.arm.TheArm.WAIST_MAX
-import crackers.kobots.app.arm.TheArm.elbow
-import crackers.kobots.app.arm.TheArm.extender
+import crackers.kobots.app.arm.TheArm.SWING_HOME
+import crackers.kobots.app.arm.TheArm.armLink
+import crackers.kobots.app.arm.TheArm.boomLink
 import crackers.kobots.app.arm.TheArm.gripper
-import crackers.kobots.app.arm.TheArm.waist
+import crackers.kobots.app.arm.TheArm.swing
 import crackers.kobots.parts.movement.ActionSpeed
 import crackers.kobots.parts.movement.sequence
-
-/**
- * Picks up stuff from the places and returns it.
- */
-object PickUpAndMoveStuff {
-    val dropMover = MoveStuffAround(
-        closeOnItem = 93,
-        extenderToPickupTarget = 70,
-        elbowForPickupTarget = 10,
-        dropOffElbow = 0,
-        dropOffExtender = 0
-    )
-    val moveEyeDropsToDropZone = dropMover.moveObjectToTarget()
-    val returnDropsToStorage = dropMover.pickupAndReturn()
-}
 
 /**
  * Wave hello kinda.
@@ -53,18 +36,18 @@ val sayHi by lazy {
     sequence {
         name = "Say Hi"
         action {
-            elbow rotate 45
-            extender goTo EXTENDER_FULL
+            armLink rotate 45
+            boomLink rotate 45
             gripper goTo GRIPPER_OPEN
-            waist rotate 90
+            swing rotate 90
         }
         (1..4).forEach {
             action {
-                elbow rotate ELBOW_UP
+                armLink rotate ARM_UP
                 requestedSpeed = ActionSpeed.FAST
             }
             action {
-                elbow rotate 30
+                armLink rotate 30
                 requestedSpeed = ActionSpeed.FAST
             }
         }
@@ -80,8 +63,8 @@ val excuseMe by lazy {
         name = "Excuse Me"
         this += homeSequence
         action {
-            waist rotate 90
-            elbow rotate 45
+            swing rotate 90
+            armLink rotate 45
         }
         (1..5).forEach {
             action {
@@ -104,15 +87,15 @@ val armSleep by lazy {
     sequence {
         name = "Go To Sleep"
         this += homeSequence
-        action {
-            waist rotate WAIST_MAX
-            requestedSpeed = ActionSpeed.SLOW
-        }
-        action {
-            requestedSpeed = ActionSpeed.VERY_SLOW
-            elbow rotate ELBOW_DOWN
-            extender goTo 50
-        }
+//        action {
+//            waist rotate WAIST_MAX
+//            requestedSpeed = ActionSpeed.SLOW
+//        }
+//        action {
+//            requestedSpeed = ActionSpeed.VERY_SLOW
+//            elbow rotate ELBOW_DOWN
+//            extender goTo 50
+//        }
     }
 }
 
@@ -124,18 +107,12 @@ val homeSequence by lazy {
         name = "Home"
         // make sure the gripper is out of the way of anything
         action {
-            requestedSpeed = ActionSpeed.SLOW
-            extender goTo EXTENDER_HOME
-        }
-        action {
-            requestedSpeed = ActionSpeed.SLOW
-            elbow rotate ELBOW_DOWN
-        }
-        // now we can close and finish
-        action {
-            requestedSpeed = ActionSpeed.SLOW
-            waist rotate WAIST_HOME
+            boomLink rotate BOOM_UP
             gripper goTo GRIPPER_OPEN
+        }
+        action {
+            armLink rotate ARM_DOWN
+            swing rotate SWING_HOME
         }
     }
 }

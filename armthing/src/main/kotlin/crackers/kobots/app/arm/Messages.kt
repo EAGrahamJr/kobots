@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,14 +29,14 @@ data class JointPosition(val angle: Int, val radius: Float = 0f)
  */
 data class ArmPosition(
     val waist: JointPosition,
-    val extender: JointPosition,
+    val boomLink: JointPosition,
     val gripper: JointPosition,
-    val elbow: JointPosition
+    val armLink: JointPosition
 ) {
     fun mapped(): Map<String, Int> = mapOf(
         "WST" to waist.angle,
-        "XTN" to extender.angle,
-        "ELB" to elbow.angle,
+        "BM" to boomLink.angle,
+        "ARM" to armLink.angle,
         "GRP" to gripper.angle
     )
 }
