@@ -115,7 +115,7 @@ object Segmenter : AutoCloseable {
 
     override fun close() = stop()
     fun stop() {
-        if (::cluckFuture.isInitialized) try {
+        if (Segmenter::cluckFuture.isInitialized) try {
             cluckFuture.cancel(true)
             segmenter.clear()
             segmenter.close()

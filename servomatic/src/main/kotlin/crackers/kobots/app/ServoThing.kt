@@ -17,7 +17,6 @@
 package crackers.kobots.app
 
 import com.diozero.devices.Button
-import com.diozero.devices.ServoController
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
 import crackers.kobots.app.SuzerainOfServos.INTERNAL_TOPIC
@@ -29,20 +28,40 @@ import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceRequest
 import crackers.kobots.parts.scheduleWithFixedDelay
 import org.slf4j.LoggerFactory
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Handles a bunch of different servos for various things. Everything should have an MQTT interface.
+ * Handles a bunch of different servos for various things. Everything should have an HA interface.
  */
-lateinit var hat: ServoController
 
 val logger = LoggerFactory.getLogger("Servomatic")
 
 enum class Mode {
     IDLE, STOP, CLUCK, TEXT
 }
+
+internal interface Startable {
+    fun start()
+    fun stop()
+}
+
+// because we might be doing something else?
+enum class SystemState {
+    IDLE, MOVING
+}
+
+private val state = AtomicReference(SystemState.IDLE)
+internal var systemState: SystemState
+    get() = state.get()
+    set(v) {
+        if (v != state.get()) {
+            state.set(v)
+            // TODO trigger things?
+        }
+    }
 
 fun main(args: Array<String>?) {
     // pass any arg and we'll use the remote pi
@@ -60,6 +79,7 @@ fun main(args: Array<String>?) {
         }
         if (AppCommon.applicationRunning) Sensei.publishEvent()
     }
+    SuzerainOfServos.start()
     HAJunk.start()
     mqttClient.apply {
         startAliveCheck()
@@ -73,9 +93,9 @@ fun main(args: Array<String>?) {
 }
 
 fun stopEverything() {
+    SuzerainOfServos.stop()
     AppCommon.executor.shutdownNow()
     HAJunk.close()
-//    hat.close()
 
     logger.warn("Servomatic exit")
 }

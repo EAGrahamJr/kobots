@@ -17,10 +17,7 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.HAJunk.tofSensor
-import crackers.kobots.app.SuzerainOfServos.SENSAI_MIN
-import crackers.kobots.app.SuzerainOfServos.senseiRotor
 import crackers.kobots.devices.sensors.VL6180X
-import crackers.kobots.parts.movement.sequence
 import org.slf4j.LoggerFactory
 
 object Sensei {
@@ -30,36 +27,8 @@ object Sensei {
     private fun VL6180X.distance(): Float = try {
         range.toFloat()
     } catch (e: Exception) {
+        logger.error(e.localizedMessage)
         0f
-    }
-
-    data class SensaiEvent(val angle: Int, val distance: Float)
-
-    // sweep to 180 and then back
-    val simpleScan by lazy {
-        val SCAN_MAX = 180
-
-        sequence {
-            name = "Simple Scan"
-            action {
-                senseiRotor rotate SENSAI_MIN
-            }
-            action {
-                senseiRotor forwardUntil {
-                    publishEvent()
-                    senseiRotor.current() == SCAN_MAX
-                }
-            }
-            action {
-                senseiRotor backwardUntil {
-                    publishEvent()
-                    senseiRotor.current() == SENSAI_MIN
-                }
-            }
-            action {
-                senseiRotor rotate SENSAI_MIN
-            }
-        }
     }
 
     fun publishEvent() {

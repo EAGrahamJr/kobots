@@ -17,14 +17,13 @@
 package crackers.kobots.app.arm
 
 import crackers.kobots.app.AppCommon
-import crackers.kobots.app.AppCommon.runFlag
 import crackers.kobots.app.Startable
-import crackers.kobots.app.crickitHat
 import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.app.enviro.HAStuff
-import crackers.kobots.devices.MG90S_TRIM
 import crackers.kobots.parts.app.publishToTopic
-import crackers.kobots.parts.movement.*
+import crackers.kobots.parts.movement.ActionSequence
+import crackers.kobots.parts.movement.SequenceExecutor
+import crackers.kobots.parts.movement.SequenceRequest
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -39,62 +38,18 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
         publishToTopic(REQUEST_TOPIC, SequenceRequest(sequence))
     }
 
-    const val SWING_HOME = 0
-    const val SWING_MAX = 140
-
-    const val BOOM_UP = 0
-    const val BOOM_DOWN = 90
-
-    const val ARM_DOWN = -53
-    const val ARM_UP = 65
-
-    const val GRIPPER_OPEN = 0
-    const val GRIPPER_CLOSED = 100
-
-    private val HOME_POSITION = ArmPosition(
-        JointPosition(SWING_HOME),
-        JointPosition(BOOM_UP),
-        JointPosition(GRIPPER_CLOSED),
-        JointPosition(ARM_UP)
-    )
-
-    // hardware! =====================================================================================================
-
-    private val maxServoRange = IntRange(0, 180)
-    val swing by lazy {
-        val servo = crickitHat.servo(1, MG90S_TRIM).apply { angle = 0f }
-        val physicalRange = IntRange(SWING_HOME, SWING_MAX)
-        ServoRotator(servo, physicalRange, maxServoRange)
+    override fun canRun(): Boolean {
+        TODO("Not yet implemented")
     }
-
-    val boomLink by lazy {
-        val servo = crickitHat.servo(2, MG90S_TRIM).apply { angle = 0f }
-        val physicalRange = IntRange(BOOM_UP, BOOM_DOWN)
-        ServoRotator(servo, physicalRange, maxServoRange)
-    }
-
-    val armLink by lazy {
-        val servo = crickitHat.servo(3, MG90S_TRIM).apply { angle = 0f }
-        val physicalRange = IntRange(ARM_DOWN, ARM_UP)
-        ServoRotator(servo, physicalRange, maxServoRange)
-    }
-
-    val gripper by lazy {
-        val servo = crickitHat.servo(4, MG90S_TRIM).apply { angle = 0f }
-        ServoLinearActuator(servo, 0f, 80f)
-    }
-
 
     // manage the state of this construct =============================================================================
-    private val _currentState = AtomicReference(ArmState(HOME_POSITION, false))
+    private val _currentState = AtomicReference<ArmState>()
 
     var state: ArmState
         get() = _currentState.get()
         private set(s) {
             _currentState.set(s)
         }
-    val home: Boolean
-        get() = state.position == HOME_POSITION
 
     override fun start() {
         // TODO do we need the interna bus?
@@ -102,13 +57,13 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
     }
 
     // allow the home sequence to run as well if termination has been called
-    override fun canRun() = runFlag.get() || currentSequence.get() == homeSequence.name
+//    override fun canRun() = runFlag.get() || currentSequence.get() == homeSequence.name
 
     lateinit var stopLatch: CountDownLatch
     override fun stop() {
         stopLatch = CountDownLatch(1)
         // home the arm and wait for it
-        executeSequence(SequenceRequest(homeSequence))
+//        executeSequence(SequenceRequest(homeSequence))
         if (!stopLatch.await(30, TimeUnit.SECONDS)) {
             logger.error("Arm not homed in 30 seconds")
         }
@@ -124,28 +79,10 @@ object TheArm : SequenceExecutor("TheArm", AppCommon.mqttClient), Startable {
     override fun postExecution() {
         with(HAStuff) {
             noodSwitch.handleCommand("OFF")
-            waistEntity.sendCurrentState()
-            extenderEntity.sendCurrentState()
-            elbowEntity.sendCurrentState()
-            gripperEntity.sendCurrentState()
         }
         // just in case, release steppers
         DieAufseherin.currentMode = DieAufseherin.SystemMode.IDLE
         if (::stopLatch.isInitialized) stopLatch.countDown()
     }
 
-    /**
-     * Updates the state of the arm, which in turn publishes to the event topic.
-     */
-    override fun updateCurrentState() {
-        state = ArmState(
-            ArmPosition(
-                JointPosition(swing.current()),
-                JointPosition(boomLink.current()),
-                JointPosition(gripper.current()),
-                JointPosition(armLink.current())
-            ),
-            moveInProgress
-        )
-    }
 }

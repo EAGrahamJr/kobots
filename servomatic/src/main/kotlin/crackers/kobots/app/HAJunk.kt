@@ -16,17 +16,31 @@
 
 package crackers.kobots.app
 
+import crackers.kobots.app.SuzerainOfServos.ARM_DOWN
+import crackers.kobots.app.SuzerainOfServos.ARM_UP
+import crackers.kobots.app.SuzerainOfServos.BOOM_DOWN
+import crackers.kobots.app.SuzerainOfServos.BOOM_UP
+import crackers.kobots.app.SuzerainOfServos.SWING_HOME
+import crackers.kobots.app.SuzerainOfServos.SWING_MAX
+import crackers.kobots.app.SuzerainOfServos.armLink
+import crackers.kobots.app.SuzerainOfServos.boomLink
+import crackers.kobots.app.SuzerainOfServos.gripper
+import crackers.kobots.app.SuzerainOfServos.swing
 import crackers.kobots.mqtt.homeassistant.DeviceIdentifier
 import crackers.kobots.mqtt.homeassistant.KobotAnalogSensor
+import crackers.kobots.mqtt.homeassistant.KobotNumberEntity
 import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
-import crackers.kobots.mqtt.homeassistant.KobotTextEntity
+import crackers.kobots.parts.movement.ActionSpeed
+import crackers.kobots.parts.movement.LinearActuator
+import crackers.kobots.parts.movement.Rotator
+import crackers.kobots.parts.movement.SequenceRequest
+import kotlin.math.roundToInt
 
 /**
- * TODO fill this in
+ * HA entities, etc.
  */
 object HAJunk : AutoCloseable {
     val haIdentifier = DeviceIdentifier("Kobots", "Servomatic")
-    val textDosEntity = KobotTextEntity(Segmenter::text, "cluck_tower", "Cluck Tower", haIdentifier)
 
     val commandSelectEntity = KobotSelectEntity(selectHandler, "servo_selector", "Servo Selector", haIdentifier)
 
@@ -35,14 +49,107 @@ object HAJunk : AutoCloseable {
         KobotAnalogSensor.Companion.AnalogDevice.DISTANCE, unitOfMeasurement = "mm"
     )
 
+    private class ArmRotateHandler(val rotator: Rotator, val thing: String) :
+        KobotNumberEntity.Companion.NumberHandler {
+        override fun currentState() = rotator.current().toFloat()
+
+        override fun move(target: Float) {
+            crackers.kobots.parts.movement.sequence {
+                name = "HA Move $thing"
+                action {
+                    requestedSpeed = ActionSpeed.SLOW
+                    rotator rotate target.roundToInt()
+                }
+            }.run {
+                SuzerainOfServos.handleRequest(SequenceRequest(this))
+            }
+        }
+    }
+
+    private class PctHandler(val linear: LinearActuator, val thing: String) :
+        KobotNumberEntity.Companion.NumberHandler {
+        override fun currentState() = linear.current().toFloat()
+
+        override fun move(target: Float) {
+            crackers.kobots.parts.movement.sequence {
+                name = "HA Move $thing"
+                action {
+                    requestedSpeed = ActionSpeed.SLOW
+                    linear goTo target.roundToInt()
+                }
+            }.run {
+                SuzerainOfServos.handleRequest(SequenceRequest(this))
+            }
+        }
+    }
+
+    /**
+     * Turn it sideways
+     */
+    val swingEntity = object : KobotNumberEntity(
+        ArmRotateHandler(swing, "Swing"),
+        "arm_swing",
+        "Arm: Swing",
+        haIdentifier,
+        min = SWING_HOME,
+        max = SWING_MAX,
+        unitOfMeasurement = "degrees"
+    ) {
+        override val icon = "mdi:rotate-360"
+    }
+
+    /**
+     * In and oot
+     */
+    val boomEntity = object : KobotNumberEntity(
+        ArmRotateHandler(boomLink, "Boom"),
+        "arm_boom",
+        "Arm: Boom",
+        haIdentifier,
+        min = BOOM_UP,
+        max = BOOM_DOWN,
+        unitOfMeasurement = "degrees"
+    ) {
+        override val icon = "mdi:horizontal-rotate-clockwise"
+    }
+
+    /**
+     * Hup down
+     */
+    val armEntity = object : KobotNumberEntity(
+        ArmRotateHandler(armLink, "Arm"),
+        "arm_arm",
+        "Arm: Arm",
+        haIdentifier,
+        min = ARM_DOWN,
+        max = ARM_UP,
+        unitOfMeasurement = "degrees"
+    ) {
+        override val icon = "mdi:horizontal-rotate-clockwise"
+    }
+
+    /**
+     * Grabby thing
+     */
+    val gripperEntity = object : KobotNumberEntity(
+        PctHandler(gripper, "Gripper"),
+        "arm_gripper",
+        "Arm: Gripper",
+        haIdentifier
+    ) {}
+
+    /**
+     * LET'S LIGHT THIS THING UP!!!
+     */
     fun start() {
-        Segmenter.start()
-        textDosEntity.start()
+        swingEntity.start()
+        boomEntity.start()
+        armEntity.start()
+        gripperEntity.start()
         commandSelectEntity.start()
         tofSensor.start()
     }
 
     override fun close() {
-        Segmenter.stop()
     }
 }

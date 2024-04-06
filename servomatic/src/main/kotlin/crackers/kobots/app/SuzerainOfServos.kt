@@ -16,87 +16,93 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.SuzerainOfServos.primaryPivot
-import crackers.kobots.app.SuzerainOfServos.wavyRotor
+import com.diozero.devices.ServoController
 import crackers.kobots.devices.MG90S_TRIM
-import crackers.kobots.parts.movement.ActionSpeed
 import crackers.kobots.parts.movement.SequenceExecutor
+import crackers.kobots.parts.movement.ServoLinearActuator
 import crackers.kobots.parts.movement.ServoRotator
-import crackers.kobots.parts.movement.sequence
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * All the things
  */
-object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient) {
+object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Startable {
     internal const val INTERNAL_TOPIC = "Servo.Suzie"
+    private val hat by lazy {
+        ServoController()
+    }
 
-    override fun canRun() = AppCommon.applicationRunning
-    val primaryPivot by lazy {
+    override fun start() {
+//        TODO("Not yet implemented")
+    }
+
+    private lateinit var stopLatch: CountDownLatch
+    override fun stop() {
+        stopLatch = CountDownLatch(1)
+        // TODO request all things "home"
+        if (!stopLatch.await(30, TimeUnit.SECONDS)) {
+            logger.error("Arm not homed in 30 seconds")
+        }
+        // forces everything to stop
+        super.stop()
+    }
+
+    override fun canRun() = AppCommon.applicationRunning || ::stopLatch.isInitialized
+
+    override fun preExecution() {
+        systemState = SystemState.MOVING
+    }
+
+    override fun postExecution() {
+        with(HAJunk) {
+            swingEntity.sendCurrentState()
+            boomEntity.sendCurrentState()
+            armEntity.sendCurrentState()
+            gripperEntity.sendCurrentState()
+        }
+        super.postExecution()
+        systemState = SystemState.IDLE
+        if (::stopLatch.isInitialized) stopLatch.countDown()
+    }
+
+    const val SWING_HOME = 0
+    const val SWING_MAX = 140
+
+    const val BOOM_UP = 0
+    const val BOOM_DOWN = 90
+
+    const val ARM_DOWN = -53
+    const val ARM_UP = 65
+
+    const val GRIPPER_OPEN = 0
+    const val GRIPPER_CLOSED = 100
+
+
+    // hardware! =====================================================================================================
+
+    private val maxServoRange = IntRange(0, 180)
+
+    val swing by lazy {
         val servo = hat.getServo(0, MG90S_TRIM, 0)
-        // 1 to 1 gear ratio
-        ServoRotator(servo, 0..90, 0..90)
-    }
-    val wavyRotor by lazy {
-        val wavyServo = hat.getServo(1, MG90S_TRIM, 0)
-        // 12/20 - 0.6 gear ratio
-        ServoRotator(wavyServo, 0..90, 0..150)
+        val physicalRange = IntRange(SWING_HOME, SWING_MAX)
+        ServoRotator(servo, physicalRange, maxServoRange)
     }
 
-    const val SENSAI_MIN = -45
-    const val SENSAI_MAX = 225
-    val senseiServo by lazy { hat.getServo(2, MG90S_TRIM, 0) }
-    val senseiRotor by lazy {
-        // 1.67:1 gear ratio with full rotation, offset by -45 degrees
-        ServoRotator(senseiServo, SENSAI_MIN..SENSAI_MAX, 0..180)
+    val boomLink by lazy {
+        val servo = hat.getServo(1, MG90S_TRIM, 0)
+        val physicalRange = IntRange(BOOM_UP, BOOM_DOWN)
+        ServoRotator(servo, physicalRange, maxServoRange)
     }
-}
 
-val swirlyMax by lazy {
-    sequence {
-        name = "Swirly Max"
-        action {
-            primaryPivot rotate 90
-            requestedSpeed = ActionSpeed.SLOW
-        }
+    val armLink by lazy {
+        val servo = hat.getServo(2, MG90S_TRIM, 0)
+        val physicalRange = IntRange(ARM_DOWN, ARM_UP)
+        ServoRotator(servo, physicalRange, maxServoRange)
     }
-}
 
-val swirlyHome by lazy {
-    sequence {
-        name = "Swirly Home"
-        action {
-            primaryPivot rotate 0
-            requestedSpeed = ActionSpeed.SLOW
-        }
-    }
-}
-
-val swirlyCenter by lazy {
-    sequence {
-        name = "Swirly Center"
-        action {
-            primaryPivot rotate 45
-            requestedSpeed = ActionSpeed.SLOW
-        }
-    }
-}
-
-val wavyUp by lazy {
-    sequence {
-        name = "Wavy Up"
-        action {
-            wavyRotor rotate 90
-            requestedSpeed = ActionSpeed.VERY_FAST
-        }
-    }
-}
-
-val wavyDown by lazy {
-    sequence {
-        name = "Wavy Down"
-        action {
-            wavyRotor rotate 0
-            requestedSpeed = ActionSpeed.SLOW
-        }
+    val gripper by lazy {
+        val servo = hat.getServo(3, MG90S_TRIM, 0)
+        ServoLinearActuator(servo, 0f, 80f)
     }
 }
