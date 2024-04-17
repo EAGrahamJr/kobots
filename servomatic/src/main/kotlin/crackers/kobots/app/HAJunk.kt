@@ -20,27 +20,47 @@ import crackers.kobots.app.SuzerainOfServos.ARM_DOWN
 import crackers.kobots.app.SuzerainOfServos.ARM_UP
 import crackers.kobots.app.SuzerainOfServos.BOOM_DOWN
 import crackers.kobots.app.SuzerainOfServos.BOOM_UP
+import crackers.kobots.app.SuzerainOfServos.BUCKET_HOME
+import crackers.kobots.app.SuzerainOfServos.BUCKET_MAX
 import crackers.kobots.app.SuzerainOfServos.SWING_HOME
 import crackers.kobots.app.SuzerainOfServos.SWING_MAX
 import crackers.kobots.app.SuzerainOfServos.armLink
 import crackers.kobots.app.SuzerainOfServos.boomLink
+import crackers.kobots.app.SuzerainOfServos.bucketLink
 import crackers.kobots.app.SuzerainOfServos.gripper
 import crackers.kobots.app.SuzerainOfServos.swing
 import crackers.kobots.mqtt.homeassistant.DeviceIdentifier
 import crackers.kobots.mqtt.homeassistant.KobotAnalogSensor
 import crackers.kobots.mqtt.homeassistant.KobotNumberEntity
 import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
-import crackers.kobots.parts.movement.ActionSpeed
-import crackers.kobots.parts.movement.LinearActuator
-import crackers.kobots.parts.movement.Rotator
-import crackers.kobots.parts.movement.SequenceRequest
+import crackers.kobots.parts.enumValue
+import crackers.kobots.parts.movement.*
 import kotlin.math.roundToInt
 
 /**
  * HA entities, etc.
  */
 object HAJunk : AutoCloseable {
-    val haIdentifier = DeviceIdentifier("Kobots", "Servomatic")
+    private val haIdentifier = DeviceIdentifier("Kobots", "Servomatic")
+
+    private val selectHandler = object : KobotSelectEntity.Companion.SelectHandler {
+        override val options = Mode.entries.map { it.name }
+        override fun executeOption(select: String) {
+            when (enumValue<Mode>(select)) {
+                Mode.IDLE -> {
+                }
+
+                Mode.STOP -> AppCommon.applicationRunning = false
+                Mode.CLUCK -> {
+                }
+
+                Mode.HOME -> SuzerainOfServos.handleRequest(SequenceRequest(Predestination.homeSequence))
+                Mode.SAY_HI -> SuzerainOfServos.handleRequest(SequenceRequest(Predestination.sayHi))
+
+                else -> logger.warn("No clue what to do with $select")
+            }
+        }
+    }
 
     val commandSelectEntity = KobotSelectEntity(selectHandler, "servo_selector", "Servo Selector", haIdentifier)
 
@@ -57,7 +77,7 @@ object HAJunk : AutoCloseable {
             crackers.kobots.parts.movement.sequence {
                 name = "HA Move $thing"
                 action {
-                    requestedSpeed = ActionSpeed.SLOW
+                    requestedSpeed = DefaultActionSpeed.SLOW
                     rotator rotate target.roundToInt()
                 }
             }.run {
@@ -71,10 +91,10 @@ object HAJunk : AutoCloseable {
         override fun currentState() = linear.current().toFloat()
 
         override fun move(target: Float) {
-            crackers.kobots.parts.movement.sequence {
+            sequence {
                 name = "HA Move $thing"
                 action {
-                    requestedSpeed = ActionSpeed.SLOW
+                    requestedSpeed = DefaultActionSpeed.SLOW
                     linear goTo target.roundToInt()
                 }
             }.run {
@@ -138,6 +158,16 @@ object HAJunk : AutoCloseable {
         haIdentifier
     ) {}
 
+    val bucketEntity = object : KobotNumberEntity(
+        ArmRotateHandler(bucketLink, "Bucket"),
+        "arm_bucket",
+        "Arm: Bucket",
+        haIdentifier,
+        min = BUCKET_HOME,
+        max = BUCKET_MAX,
+        unitOfMeasurement = "degrees"
+    ) {}
+
     /**
      * LET'S LIGHT THIS THING UP!!!
      */
@@ -146,8 +176,17 @@ object HAJunk : AutoCloseable {
         boomEntity.start()
         armEntity.start()
         gripperEntity.start()
+        bucketEntity.start()
         commandSelectEntity.start()
         tofSensor.start()
+    }
+
+    fun sendUpdatedStates() {
+        swingEntity.sendCurrentState()
+        boomEntity.sendCurrentState()
+        armEntity.sendCurrentState()
+        gripperEntity.sendCurrentState()
+        bucketEntity.sendCurrentState()
     }
 
     override fun close() {

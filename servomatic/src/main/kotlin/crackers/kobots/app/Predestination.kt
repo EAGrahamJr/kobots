@@ -17,15 +17,18 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.SuzerainOfServos.ARM_DOWN
-import crackers.kobots.app.SuzerainOfServos.ARM_UP
 import crackers.kobots.app.SuzerainOfServos.BOOM_UP
+import crackers.kobots.app.SuzerainOfServos.BUCKET_HOME
+import crackers.kobots.app.SuzerainOfServos.GRIPPER_CLOSED
 import crackers.kobots.app.SuzerainOfServos.GRIPPER_OPEN
 import crackers.kobots.app.SuzerainOfServos.SWING_HOME
 import crackers.kobots.app.SuzerainOfServos.armLink
 import crackers.kobots.app.SuzerainOfServos.boomLink
+import crackers.kobots.app.SuzerainOfServos.bucketLink
 import crackers.kobots.app.SuzerainOfServos.gripper
 import crackers.kobots.app.SuzerainOfServos.swing
-import crackers.kobots.parts.movement.ActionSpeed
+import crackers.kobots.parts.movement.DefaultActionSpeed
+import crackers.kobots.parts.movement.sequence
 
 /**
  * Pre-canned sequences, esp the home one.
@@ -35,22 +38,25 @@ object Predestination {
      * Wave hello kinda.
      */
     val sayHi by lazy {
-        crackers.kobots.parts.movement.sequence {
+        sequence {
             name = "Say Hi"
             action {
                 armLink rotate 45
                 boomLink rotate 45
                 gripper goTo GRIPPER_OPEN
                 swing rotate 90
+                bucketLink rotate 45
             }
             (1..4).forEach {
                 action {
-                    armLink rotate ARM_UP
-                    requestedSpeed = ActionSpeed.FAST
+                    gripper goTo GRIPPER_CLOSED
+                    bucketLink rotate 30
+                    requestedSpeed = DefaultActionSpeed.FAST
                 }
                 action {
-                    armLink rotate 30
-                    requestedSpeed = ActionSpeed.FAST
+                    gripper goTo GRIPPER_OPEN
+                    bucketLink rotate 45
+                    requestedSpeed = DefaultActionSpeed.FAST
                 }
             }
             this += homeSequence
@@ -61,7 +67,7 @@ object Predestination {
      * Send it home - should be "0" state for servos.
      */
     val homeSequence by lazy {
-        crackers.kobots.parts.movement.sequence {
+        sequence {
             name = "Home"
             // make sure the gripper is out of the way of anything
             action {
@@ -69,8 +75,12 @@ object Predestination {
                 gripper goTo GRIPPER_OPEN
             }
             action {
-                armLink rotate ARM_DOWN
+                bucketLink rotate BUCKET_HOME
+                armLink rotate ARM_DOWN + 10
                 swing rotate SWING_HOME
+            }
+            action {
+                armLink rotate ARM_DOWN
             }
         }
     }

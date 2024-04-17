@@ -19,11 +19,10 @@ package crackers.kobots.app
 import com.diozero.devices.Button
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
+import crackers.kobots.app.HAJunk.commandSelectEntity
 import crackers.kobots.app.SuzerainOfServos.INTERNAL_TOPIC
-import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.app.publishToTopic
-import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceRequest
 import crackers.kobots.parts.scheduleWithFixedDelay
@@ -40,7 +39,7 @@ import kotlin.time.Duration.Companion.milliseconds
 val logger = LoggerFactory.getLogger("Servomatic")
 
 enum class Mode {
-    IDLE, STOP, CLUCK, TEXT
+    IDLE, STOP, CLUCK, TEXT, HOME, SAY_HI
 }
 
 internal interface Startable {
@@ -58,8 +57,10 @@ internal var systemState: SystemState
     get() = state.get()
     set(v) {
         if (v != state.get()) {
+            logger.warn("State is $v")
             state.set(v)
             // TODO trigger things?
+            commandSelectEntity.sendCurrentState()
         }
     }
 
@@ -101,19 +102,3 @@ fun stopEverything() {
 }
 
 internal fun servoRequest(sequence: ActionSequence) = publishToTopic(INTERNAL_TOPIC, SequenceRequest(sequence))
-
-internal val selectHandler = object : KobotSelectEntity.Companion.SelectHandler {
-    override val options = Mode.entries.map { it.name }
-    override fun executeOption(select: String) {
-        when (enumValue<Mode>(select)) {
-            Mode.IDLE -> {
-            }
-
-            Mode.STOP -> AppCommon.applicationRunning = false
-            Mode.CLUCK -> {
-            }
-
-            else -> logger.warn("No clue what to do with $select")
-        }
-    }
-}
