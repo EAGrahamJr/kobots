@@ -29,10 +29,8 @@ import crackers.kobots.app.SuzerainOfServos.boomLink
 import crackers.kobots.app.SuzerainOfServos.bucketLink
 import crackers.kobots.app.SuzerainOfServos.gripper
 import crackers.kobots.app.SuzerainOfServos.swing
-import crackers.kobots.mqtt.homeassistant.DeviceIdentifier
-import crackers.kobots.mqtt.homeassistant.KobotAnalogSensor
-import crackers.kobots.mqtt.homeassistant.KobotNumberEntity
-import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
+import crackers.kobots.app.newarm.Predestination
+import crackers.kobots.mqtt.homeassistant.*
 import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.*
 import kotlin.math.roundToInt
@@ -40,7 +38,7 @@ import kotlin.math.roundToInt
 /**
  * HA entities, etc.
  */
-object HAJunk : AutoCloseable {
+object HAJunk : Startable {
     private val haIdentifier = DeviceIdentifier("Kobots", "Servomatic")
 
     private val selectHandler = object : KobotSelectEntity.Companion.SelectHandler {
@@ -50,12 +48,16 @@ object HAJunk : AutoCloseable {
                 Mode.IDLE -> {
                 }
 
-                Mode.STOP -> AppCommon.applicationRunning = false
+                Mode.STOP -> {
+                    SuzerainOfServos.stop()
+                    AppCommon.applicationRunning = false
+                }
                 Mode.CLUCK -> {
                 }
 
                 Mode.HOME -> SuzerainOfServos.handleRequest(SequenceRequest(Predestination.homeSequence))
                 Mode.SAY_HI -> SuzerainOfServos.handleRequest(SequenceRequest(Predestination.sayHi))
+                Mode.CRA_CRAY -> SuzerainOfServos.handleRequest(SequenceRequest(Predestination.craCraSequence()))
 
                 else -> logger.warn("No clue what to do with $select")
             }
@@ -68,6 +70,25 @@ object HAJunk : AutoCloseable {
         "servomatic_tof", "Bobbi Detector", haIdentifier,
         KobotAnalogSensor.Companion.AnalogDevice.DISTANCE, unitOfMeasurement = "mm"
     )
+    val proxSensor = object : KobotBinarySensor(
+        "proximity_alert",
+        "Proximity",
+        haIdentifier,
+        deviceClass = KobotBinarySensor.Companion.BinaryDevice.OCCUPANCY,
+    ) {
+        override val icon = "mdi:alert"
+    }
+
+    val ambientSensor = object : KobotAnalogSensor(
+        "ambient_light",
+        "Luminosity",
+        haIdentifier,
+        deviceClass = KobotAnalogSensor.Companion.AnalogDevice.ILLUMINANCE,
+        unitOfMeasurement = "lumens",
+    ) {
+        override val icon = "mdi:lightbulb-alert"
+    }
+
 
     private class ArmRotateHandler(val rotator: Rotator, val thing: String) :
         KobotNumberEntity.Companion.NumberHandler {
@@ -171,7 +192,7 @@ object HAJunk : AutoCloseable {
     /**
      * LET'S LIGHT THIS THING UP!!!
      */
-    fun start() {
+    override fun start() {
         swingEntity.start()
         boomEntity.start()
         armEntity.start()
@@ -179,6 +200,8 @@ object HAJunk : AutoCloseable {
         bucketEntity.start()
         commandSelectEntity.start()
         tofSensor.start()
+        proxSensor.start()
+        ambientSensor.start()
     }
 
     fun sendUpdatedStates() {
@@ -189,6 +212,6 @@ object HAJunk : AutoCloseable {
         bucketEntity.sendCurrentState()
     }
 
-    override fun close() {
+    override fun stop() {
     }
 }

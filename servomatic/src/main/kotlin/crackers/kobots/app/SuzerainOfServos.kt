@@ -17,7 +17,9 @@
 package crackers.kobots.app
 
 import com.diozero.api.ServoTrim
+import com.diozero.devices.PCA9685
 import com.diozero.devices.ServoController
+import crackers.kobots.app.newarm.Predestination
 import crackers.kobots.parts.movement.LimitedRotator.Companion.rotator
 import crackers.kobots.parts.movement.SequenceExecutor
 import crackers.kobots.parts.movement.SequenceRequest
@@ -32,7 +34,7 @@ import java.util.concurrent.TimeUnit
 object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Startable {
     internal const val INTERNAL_TOPIC = "Servo.Suzie"
     private val hat by lazy {
-        ServoController()
+        ServoController(PCA9685(I2CFactory.suziDevice))
     }
 
     override fun start() {
@@ -41,12 +43,16 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
 
     private lateinit var stopLatch: CountDownLatch
     override fun stop() {
+        // already did this
+        ::stopLatch.isInitialized && return
+
         // forces everything to stop
         super.stop()
 
         logger.info("Setting latch")
         stopLatch = CountDownLatch(1)
-        handleRequest(SequenceRequest(Predestination.homeSequence))
+        val fullStopSequence = Predestination.outOfTheWay + Predestination.homeSequence
+        handleRequest(SequenceRequest(fullStopSequence))
         if (!stopLatch.await(30, TimeUnit.SECONDS)) {
             logger.error("Arm not homed in 30 seconds")
         }
@@ -69,9 +75,11 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
     const val SWING_MAX = 133
 
     const val BOOM_UP = 0
+    const val BOOM_HOME = 0
     const val BOOM_DOWN = 70
 
     const val ARM_DOWN = 0
+    const val ARM_HOME = 0
     const val ARM_UP = 90
 
     const val GRIPPER_OPEN = 0

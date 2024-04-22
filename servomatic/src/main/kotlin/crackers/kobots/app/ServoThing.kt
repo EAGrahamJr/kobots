@@ -16,21 +16,15 @@
 
 package crackers.kobots.app
 
-import com.diozero.devices.Button
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
 import crackers.kobots.app.HAJunk.commandSelectEntity
-import crackers.kobots.app.SuzerainOfServos.INTERNAL_TOPIC
+import crackers.kobots.app.newarm.ArmMonitor
 import crackers.kobots.parts.app.KobotSleep
-import crackers.kobots.parts.app.publishToTopic
-import crackers.kobots.parts.movement.ActionSequence
-import crackers.kobots.parts.movement.SequenceRequest
-import crackers.kobots.parts.scheduleWithFixedDelay
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
-import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Handles a bunch of different servos for various things. Everything should have an HA interface.
@@ -39,7 +33,7 @@ import kotlin.time.Duration.Companion.milliseconds
 val logger = LoggerFactory.getLogger("Servomatic")
 
 enum class Mode {
-    IDLE, STOP, CLUCK, TEXT, HOME, SAY_HI
+    IDLE, STOP, CLUCK, TEXT, HOME, SAY_HI, CRA_CRAY
 }
 
 internal interface Startable {
@@ -49,7 +43,7 @@ internal interface Startable {
 
 // because we might be doing something else?
 enum class SystemState {
-    IDLE, MOVING
+    IDLE, MOVING, SHUTDOWN
 }
 
 private val state = AtomicReference(SystemState.IDLE)
@@ -72,15 +66,9 @@ fun main(args: Array<String>?) {
     // add the shutdown hook
     Runtime.getRuntime().addShutdownHook(thread(start = false, block = ::stopEverything))
 
-    val button = Button(17)
-    var lastPush = false
-    AppCommon.executor.scheduleWithFixedDelay(20.milliseconds, 20.milliseconds) {
-        lastPush = button.value.also { pushed ->
-            if (!pushed && lastPush) AppCommon.applicationRunning = false
-        }
-        if (AppCommon.applicationRunning) Sensei.publishEvent()
-    }
+    Sensei.start()
     SuzerainOfServos.start()
+    ArmMonitor.start()
     HAJunk.start()
     mqttClient.apply {
         startAliveCheck()
@@ -89,16 +77,21 @@ fun main(args: Array<String>?) {
 
     AppCommon.awaitTermination()
     KobotSleep.seconds(1)
-    stopEverything()
     exitProcess(0)
 }
 
 fun stopEverything() {
+    if (systemState == SystemState.SHUTDOWN) {
+        logger.warn("Already stopped")
+        return
+    }
+    ArmMonitor.stop()
     SuzerainOfServos.stop()
+    Sensei.stop()
+    HAJunk.stop()
+
     AppCommon.executor.shutdownNow()
-    HAJunk.close()
 
     logger.warn("Servomatic exit")
+    systemState = SystemState.SHUTDOWN
 }
-
-internal fun servoRequest(sequence: ActionSequence) = publishToTopic(INTERNAL_TOPIC, SequenceRequest(sequence))
