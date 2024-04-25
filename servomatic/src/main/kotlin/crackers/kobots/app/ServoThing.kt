@@ -32,10 +32,6 @@ import kotlin.system.exitProcess
 
 val logger = LoggerFactory.getLogger("Servomatic")
 
-enum class Mode {
-    IDLE, STOP, CLUCK, TEXT, HOME, SAY_HI, CRA_CRAY
-}
-
 internal interface Startable {
     fun start()
     fun stop()

@@ -29,39 +29,62 @@ import crackers.kobots.app.SuzerainOfServos.boomLink
 import crackers.kobots.app.SuzerainOfServos.bucketLink
 import crackers.kobots.app.SuzerainOfServos.gripper
 import crackers.kobots.app.SuzerainOfServos.swing
+import crackers.kobots.app.newarm.DumbFunc
+import crackers.kobots.app.newarm.Position
 import crackers.kobots.app.newarm.Predestination
 import crackers.kobots.mqtt.homeassistant.*
 import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.*
 import kotlin.math.roundToInt
+import crackers.kobots.app.SuzerainOfServos as Suzi
 
 /**
  * HA entities, etc.
  */
 object HAJunk : Startable {
+    enum class Command {
+        IDLE, STOP, CLUCK, TEXT, HOME, SAY_HI, CRA_CRAY, FOUR_TWENTY, PICKUP_1
+    }
+
     private val haIdentifier = DeviceIdentifier("Kobots", "Servomatic")
 
     private val selectHandler = object : KobotSelectEntity.Companion.SelectHandler {
-        override val options = Mode.entries.map { it.name }
+        override val options = Command.entries.map { it.name }
         override fun executeOption(select: String) {
-            when (enumValue<Mode>(select)) {
-                Mode.IDLE -> {
+            when (enumValue<Command>(select)) {
+                Command.IDLE -> {
                 }
 
-                Mode.STOP -> {
-                    SuzerainOfServos.stop()
+                Command.STOP -> {
+                    Suzi.stop()
                     AppCommon.applicationRunning = false
                 }
-                Mode.CLUCK -> {
+
+                Command.CLUCK -> {
                 }
 
-                Mode.HOME -> SuzerainOfServos.handleRequest(SequenceRequest(Predestination.homeSequence))
-                Mode.SAY_HI -> SuzerainOfServos.handleRequest(SequenceRequest(Predestination.sayHi))
-                Mode.CRA_CRAY -> SuzerainOfServos.handleRequest(SequenceRequest(Predestination.craCraSequence()))
+                Command.HOME -> suzi(Predestination.homeSequence)
+                Command.SAY_HI -> suzi(Predestination.sayHi)
+                Command.CRA_CRAY -> suzi(Predestination.craCraSequence())
+                Command.FOUR_TWENTY -> logger.debug("not now")//suzi(Predestination.fourTwenty)
+                Command.PICKUP_1 -> {
+                    val pickup = DumbFunc.ArmAction(Position.first)
+                    val dropoff = DumbFunc.ArmAction(Position.waitForDropOff)
+                    val dropCheck = { proxSensor.currentState }
+                    val sequence = DumbFunc.grabFrom(pickup, 80) +
+                        DumbFunc.grabFrom(dropoff, 0, dropCheck) +
+                        Predestination.outOfTheWay +
+                        Predestination.homeSequence
+                    suzi(sequence)
+                }
 
                 else -> logger.warn("No clue what to do with $select")
             }
         }
+    }
+
+    private fun suzi(sequence: ActionSequence) {
+        Suzi.handleRequest(SequenceRequest(sequence))
     }
 
     val commandSelectEntity = KobotSelectEntity(selectHandler, "servo_selector", "Servo Selector", haIdentifier)
@@ -95,14 +118,14 @@ object HAJunk : Startable {
         override fun currentState() = rotator.current().toFloat()
 
         override fun move(target: Float) {
-            crackers.kobots.parts.movement.sequence {
+            sequence {
                 name = "HA Move $thing"
                 action {
                     requestedSpeed = DefaultActionSpeed.SLOW
                     rotator rotate target.roundToInt()
                 }
             }.run {
-                SuzerainOfServos.handleRequest(SequenceRequest(this))
+                suzi(this)
             }
         }
     }
@@ -119,7 +142,7 @@ object HAJunk : Startable {
                     linear goTo target.roundToInt()
                 }
             }.run {
-                SuzerainOfServos.handleRequest(SequenceRequest(this))
+                suzi(this)
             }
         }
     }

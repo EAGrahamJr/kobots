@@ -71,7 +71,7 @@ object Sensei : Startable {
                                 proxFiredAt = Instant.now()
                             } else {
                                 if (proxFiredAt.elapsed() > TRIP_DURATION)
-                                    HAJunk.proxSensor.currentState = true
+                                    fireProximityThings()
                             }
                         } else {
                             HAJunk.proxSensor.currentState = false
@@ -88,6 +88,10 @@ object Sensei : Startable {
                 HAJunk.ambientSensor.currentState = polly.luminosity.toString()
             }
         }
+    }
+
+    private fun fireProximityThings() {
+        HAJunk.proxSensor.currentState = true
     }
 
     override fun stop() {

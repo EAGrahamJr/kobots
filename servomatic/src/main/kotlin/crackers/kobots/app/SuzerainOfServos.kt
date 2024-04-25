@@ -51,7 +51,7 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
 
         logger.info("Setting latch")
         stopLatch = CountDownLatch(1)
-        val fullStopSequence = Predestination.outOfTheWay + Predestination.homeSequence
+        val fullStopSequence = Predestination.gripperOpen + Predestination.outOfTheWay + Predestination.homeSequence
         handleRequest(SequenceRequest(fullStopSequence))
         if (!stopLatch.await(30, TimeUnit.SECONDS)) {
             logger.error("Arm not homed in 30 seconds")

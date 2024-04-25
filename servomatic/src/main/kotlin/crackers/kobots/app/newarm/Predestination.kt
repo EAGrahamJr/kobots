@@ -39,6 +39,8 @@ import kotlin.random.Random
  * Pre-canned sequences, esp the home one.
  */
 object Predestination {
+    val gripperOpen = sequence { action { gripper goTo GRIPPER_OPEN } }
+
     /**
      * Make sure the gripper is out of the way of anything
      */
@@ -138,5 +140,34 @@ object Predestination {
         }
 
         this += outOfTheWay + homeSequence
+    }
+
+    val fourTwenty = sequence {
+        name = "420"
+
+        this += outOfTheWay
+        action {
+            bucketLink rotate 90
+            gripper goTo 40
+        }
+
+        listOf(SWING_MAX, 90, 45).forEach { schwing ->
+            action {
+                requestedSpeed = DefaultActionSpeed.FAST
+                swing rotate schwing
+            }
+            (1..4).forEach {
+                action {
+                    requestedSpeed = DefaultActionSpeed.FAST
+                    armLink rotate ARM_UP - 30
+                }
+                action {
+                    requestedSpeed = DefaultActionSpeed.FAST
+                    armLink rotate ARM_UP
+                }
+            }
+        }
+
+        this += gripperOpen + homeSequence
     }
 }
