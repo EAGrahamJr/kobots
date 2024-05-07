@@ -170,4 +170,14 @@ object Predestination {
 
         this += gripperOpen + homeSequence
     }
+
+    val attackMode = sequence {
+        action {
+            requestedSpeed = DefaultActionSpeed.VERY_FAST
+            boomLink rotate 40
+            armLink rotate 90
+            bucketLink rotate 90
+            gripper goTo 50
+        }
+    }
 }

@@ -29,11 +29,8 @@ import crackers.kobots.app.SuzerainOfServos.boomLink
 import crackers.kobots.app.SuzerainOfServos.bucketLink
 import crackers.kobots.app.SuzerainOfServos.gripper
 import crackers.kobots.app.SuzerainOfServos.swing
-import crackers.kobots.app.newarm.DumbFunc
-import crackers.kobots.app.newarm.Position
-import crackers.kobots.app.newarm.Predestination
+import crackers.kobots.app.otherstuff.Jeep
 import crackers.kobots.mqtt.homeassistant.*
-import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.*
 import kotlin.math.roundToInt
 import crackers.kobots.app.SuzerainOfServos as Suzi
@@ -42,62 +39,24 @@ import crackers.kobots.app.SuzerainOfServos as Suzi
  * HA entities, etc.
  */
 object HAJunk : Startable {
-    enum class Command {
-        IDLE, STOP, CLUCK, TEXT, HOME, SAY_HI, CRA_CRAY, FOUR_TWENTY, PICKUP_1
-    }
 
     private val haIdentifier = DeviceIdentifier("Kobots", "Servomatic")
 
-    private val selectHandler = object : KobotSelectEntity.Companion.SelectHandler {
-        override val options = Command.entries.map { it.name }
-        override fun executeOption(select: String) {
-            when (enumValue<Command>(select)) {
-                Command.IDLE -> {
-                }
 
-                Command.STOP -> {
-                    Suzi.stop()
-                    AppCommon.applicationRunning = false
-                }
-
-                Command.CLUCK -> {
-                }
-
-                Command.HOME -> suzi(Predestination.homeSequence)
-                Command.SAY_HI -> suzi(Predestination.sayHi)
-                Command.CRA_CRAY -> suzi(Predestination.craCraSequence())
-                Command.FOUR_TWENTY -> logger.debug("not now")//suzi(Predestination.fourTwenty)
-                Command.PICKUP_1 -> {
-                    val pickup = DumbFunc.ArmAction(Position.first)
-                    val dropoff = DumbFunc.ArmAction(Position.waitForDropOff)
-                    val dropCheck = { proxSensor.currentState }
-                    val sequence = DumbFunc.grabFrom(pickup, 80) +
-                        DumbFunc.grabFrom(dropoff, 0, dropCheck) +
-                        Predestination.outOfTheWay +
-                        Predestination.homeSequence
-                    suzi(sequence)
-                }
-
-                else -> logger.warn("No clue what to do with $select")
-            }
-        }
-    }
-
-    private fun suzi(sequence: ActionSequence) {
-        Suzi.handleRequest(SequenceRequest(sequence))
-    }
-
-    val commandSelectEntity = KobotSelectEntity(selectHandler, "servo_selector", "Servo Selector", haIdentifier)
+    private val commandSelectEntity = KobotSelectEntity(Commando, "servo_selector", "Servo Selector", haIdentifier)
 
     val tofSensor = KobotAnalogSensor(
-        "servomatic_tof", "Bobbi Detector", haIdentifier,
-        KobotAnalogSensor.Companion.AnalogDevice.DISTANCE, unitOfMeasurement = "mm"
+        "servomatic_tof",
+        "Bobbi Detector",
+        haIdentifier,
+        KobotAnalogSensor.Companion.AnalogDevice.DISTANCE,
+        unitOfMeasurement = "mm"
     )
     val proxSensor = object : KobotBinarySensor(
         "proximity_alert",
         "Proximity",
         haIdentifier,
-        deviceClass = KobotBinarySensor.Companion.BinaryDevice.OCCUPANCY,
+        deviceClass = KobotBinarySensor.Companion.BinaryDevice.OCCUPANCY
     ) {
         override val icon = "mdi:alert"
     }
@@ -107,26 +66,24 @@ object HAJunk : Startable {
         "Luminosity",
         haIdentifier,
         deviceClass = KobotAnalogSensor.Companion.AnalogDevice.ILLUMINANCE,
-        unitOfMeasurement = "lumens",
+        unitOfMeasurement = "lumens"
     ) {
         override val icon = "mdi:lightbulb-alert"
     }
-
 
     private class ArmRotateHandler(val rotator: Rotator, val thing: String) :
         KobotNumberEntity.Companion.NumberHandler {
         override fun currentState() = rotator.current().toFloat()
 
-        override fun move(target: Float) {
-            sequence {
+        override fun set(target: Float) {
+            val requested = sequence {
                 name = "HA Move $thing"
                 action {
                     requestedSpeed = DefaultActionSpeed.SLOW
                     rotator rotate target.roundToInt()
                 }
-            }.run {
-                suzi(this)
             }
+            Suzi.handleRequest(SequenceRequest(requested))
         }
     }
 
@@ -134,23 +91,22 @@ object HAJunk : Startable {
         KobotNumberEntity.Companion.NumberHandler {
         override fun currentState() = linear.current().toFloat()
 
-        override fun move(target: Float) {
-            sequence {
+        override fun set(target: Float) {
+            val requested = sequence {
                 name = "HA Move $thing"
                 action {
                     requestedSpeed = DefaultActionSpeed.SLOW
                     linear goTo target.roundToInt()
                 }
-            }.run {
-                suzi(this)
             }
+            Suzi.handleRequest(SequenceRequest(requested))
         }
     }
 
     /**
      * Turn it sideways
      */
-    val swingEntity = object : KobotNumberEntity(
+    private val swingEntity = object : KobotNumberEntity(
         ArmRotateHandler(swing, "Swing"),
         "arm_swing",
         "Arm: Swing",
@@ -165,7 +121,7 @@ object HAJunk : Startable {
     /**
      * In and oot
      */
-    val boomEntity = object : KobotNumberEntity(
+    private val boomEntity = object : KobotNumberEntity(
         ArmRotateHandler(boomLink, "Boom"),
         "arm_boom",
         "Arm: Boom",
@@ -180,7 +136,7 @@ object HAJunk : Startable {
     /**
      * Hup down
      */
-    val armEntity = object : KobotNumberEntity(
+    private val armEntity = object : KobotNumberEntity(
         ArmRotateHandler(armLink, "Arm"),
         "arm_arm",
         "Arm: Arm",
@@ -195,14 +151,14 @@ object HAJunk : Startable {
     /**
      * Grabby thing
      */
-    val gripperEntity = object : KobotNumberEntity(
+    private val gripperEntity = object : KobotNumberEntity(
         PctHandler(gripper, "Gripper"),
         "arm_gripper",
         "Arm: Gripper",
         haIdentifier
     ) {}
 
-    val bucketEntity = object : KobotNumberEntity(
+    private val bucketEntity = object : KobotNumberEntity(
         ArmRotateHandler(bucketLink, "Bucket"),
         "arm_bucket",
         "Arm: Bucket",
@@ -212,10 +168,13 @@ object HAJunk : Startable {
         unitOfMeasurement = "degrees"
     ) {}
 
+    val noodleEntity = KobotLight("small_nood", BasicLightController(Jeep.noodleLamp), "Da Nood", haIdentifier)
+
     /**
      * LET'S LIGHT THIS THING UP!!!
      */
     override fun start() {
+        noodleEntity.start()
         swingEntity.start()
         boomEntity.start()
         armEntity.start()

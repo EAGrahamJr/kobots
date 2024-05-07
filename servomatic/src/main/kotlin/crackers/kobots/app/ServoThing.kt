@@ -18,8 +18,8 @@ package crackers.kobots.app
 
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
-import crackers.kobots.app.HAJunk.commandSelectEntity
 import crackers.kobots.app.newarm.ArmMonitor
+import crackers.kobots.app.otherstuff.Sensei
 import crackers.kobots.parts.app.KobotSleep
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
@@ -39,18 +39,21 @@ internal interface Startable {
 
 // because we might be doing something else?
 enum class SystemState {
-    IDLE, MOVING, SHUTDOWN
+    IDLE, MOVING, SHUTDOWN, MANUAL
 }
 
 private val state = AtomicReference(SystemState.IDLE)
 internal var systemState: SystemState
     get() = state.get()
     set(v) {
-        if (v != state.get()) {
-            logger.warn("State is $v")
+        val current = state.get()
+        if (v != current) {
+            logger.warn("State change from '$current' to '$v'")
+
+            if (current == SystemState.MANUAL && v != SystemState.IDLE) return
+
             state.set(v)
             // TODO trigger things?
-            commandSelectEntity.sendCurrentState()
         }
     }
 

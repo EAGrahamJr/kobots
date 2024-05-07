@@ -14,8 +14,12 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app
+package crackers.kobots.app.otherstuff
 
+import crackers.kobots.app.AppCommon
+import crackers.kobots.app.HAJunk
+import crackers.kobots.app.I2CFactory
+import crackers.kobots.app.Startable
 import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.devices.sensors.VL6180X
 import crackers.kobots.parts.elapsed
@@ -70,8 +74,9 @@ object Sensei : Startable {
                             if (!lastProxTriggered) {
                                 proxFiredAt = Instant.now()
                             } else {
-                                if (proxFiredAt.elapsed() > TRIP_DURATION)
+                                if (proxFiredAt.elapsed() > TRIP_DURATION) {
                                     fireProximityThings()
+                                }
                             }
                         } else {
                             HAJunk.proxSensor.currentState = false
@@ -82,8 +87,7 @@ object Sensei : Startable {
             }
         }
 
-        slowFuture = AppCommon.executor.scheduleWithDelay(30.seconds)
-        {
+        slowFuture = AppCommon.executor.scheduleWithDelay(30.seconds) {
             AppCommon.whileRunning {
                 HAJunk.ambientSensor.currentState = polly.luminosity.toString()
             }
@@ -95,7 +99,7 @@ object Sensei : Startable {
     }
 
     override fun stop() {
-        ::slowFuture.isInitialized && slowFuture.cancel(true)
-        ::future.isInitialized && future.cancel(true)
+        Sensei::slowFuture.isInitialized && slowFuture.cancel(true)
+        Sensei::future.isInitialized && future.cancel(true)
     }
 }

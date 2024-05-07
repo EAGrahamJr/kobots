@@ -16,7 +16,6 @@
 
 package crackers.kobots.app.newarm
 
-
 /**
  * Canned, known positions
  */
@@ -32,5 +31,26 @@ object Position {
         boom = 70,
         arm = 75,
         bucket = 50
+    )
+    val tire = DumbFunc.ArmLocation(
+        swing = 0,
+        boom = 25,
+        arm = 35,
+        bucket = 140
+    )
+    val tireLift = DumbFunc.ArmLocation(
+        boom = 5,
+        arm = 55,
+        bucket = 170
+    )
+    val tireMid = DumbFunc.ArmLocation(
+        swing = 90,
+        boom = 10,
+        bucket = 130
+    )
+    val tireEnd = DumbFunc.ArmLocation(
+        boom = 10,
+        arm = 20,
+        bucket = 120
     )
 }

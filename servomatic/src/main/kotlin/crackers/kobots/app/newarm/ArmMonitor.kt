@@ -21,9 +21,7 @@ import com.diozero.devices.oled.SsdOledCommunicationChannel
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.I2CFactory.armMonitorDevice
 import crackers.kobots.app.Startable
-import crackers.kobots.app.SuzerainOfServos.ARM_UP
 import crackers.kobots.app.SuzerainOfServos.BOOM_DOWN
-import crackers.kobots.app.SuzerainOfServos.BUCKET_MAX
 import crackers.kobots.app.SuzerainOfServos.SWING_MAX
 import crackers.kobots.app.SuzerainOfServos.armLink
 import crackers.kobots.app.SuzerainOfServos.boomLink
@@ -34,6 +32,7 @@ import crackers.kobots.app.systemState
 import crackers.kobots.graphics.widgets.DirectionPointer
 import crackers.kobots.graphics.widgets.VerticalPercentageIndicator
 import crackers.kobots.parts.app.KobotSleep
+import crackers.kobots.parts.movement.LimitedRotator
 import crackers.kobots.parts.scheduleWithFixedDelay
 import java.awt.Color
 import java.awt.Font
@@ -80,23 +79,23 @@ object ArmMonitor : Startable {
             drawStatic()
         }
 
-        val armPointer = DirectionPointer(
+        val boomPointer = DirectionPointer(
             graphics,
             SMALL_FONT,
             32,
             y = 32,
-            endAngle = ARM_UP,
+            endAngle = BOOM_DOWN,
             clockWise = false
         ).apply {
             drawStatic()
         }
 
-        val boomPointer = VerticalPercentageIndicator(
+        val armPointer = VerticalPercentageIndicator(
             graphics,
             SMALL_FONT,
             screen.height,
-            x = armPointer.bounds.x + armPointer.bounds.width + 3,
-            label = "Boom"
+            x = boomPointer.bounds.x + boomPointer.bounds.width + 3,
+            label = "Arm"
         ).apply {
             drawStatic()
         }
@@ -104,8 +103,8 @@ object ArmMonitor : Startable {
             graphics,
             SMALL_FONT,
             screen.height,
-            x = boomPointer.bounds.x + boomPointer.bounds.width + 3,
-            label = "Bucket"
+            x = armPointer.bounds.x + armPointer.bounds.width + 3,
+            label = "Bkt"
         ).apply {
             drawStatic()
         }
@@ -132,16 +131,19 @@ object ArmMonitor : Startable {
                             screenOn = true
                         }
                         pointer.updateValue(swing.current())
-                        armPointer.updateValue(armLink.current())
-                        boomPointer.updateValue((boomLink.current() * 100f / BOOM_DOWN).roundToInt().coerceIn(0, 100))
-                        bucketPointer.updateValue(
-                            (bucketLink.current() * 100f / BUCKET_MAX).roundToInt().coerceIn(0, 100)
-                        )
+                        armPointer.updateValue(armLink.percentage())
+                        boomPointer.updateValue(boomLink.current())
+                        bucketPointer.updateValue(bucketLink.percentage())
                         screen.display(image)
                     }
                 }
             }
         }
+    }
+
+    private fun LimitedRotator.percentage(): Int {
+        val scope = physicalRange.endInclusive - physicalRange.first
+        return (current() * 100f / scope).roundToInt().coerceIn(0, 100)
     }
 
     override fun stop() {

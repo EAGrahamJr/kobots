@@ -29,17 +29,10 @@ object DumbFunc {
     private val logger = LoggerFactory.getLogger("DumbFunc")
 
     class ArmLocation(swing: Int? = null, boom: Int? = null, arm: Int? = null, bucket: Int? = null) {
-        val swingDest: Int?
-        val boomDest: Int?
-        val armDest: Int?
-        val bucketDest: Int?
-
-        init {
-            swingDest = swing?.also { require(swing in Suzie.SWING_HOME..Suzie.SWING_MAX) }
-            boomDest = boom?.also { require(boom in Suzie.BOOM_HOME..Suzie.BOOM_DOWN) }
-            armDest = arm?.also { require(arm in Suzie.ARM_DOWN..Suzie.ARM_UP) }
-            bucketDest = bucket?.also { require(bucket in Suzie.BUCKET_HOME..Suzie.BUCKET_MAX) }
-        }
+        val swingDest: Int? = swing?.also { require(swing in Suzie.SWING_HOME..Suzie.SWING_MAX) }
+        val boomDest: Int? = boom?.also { require(boom in Suzie.BOOM_HOME..Suzie.BOOM_DOWN) }
+        val armDest: Int? = arm?.also { require(arm in Suzie.ARM_DOWN..Suzie.ARM_UP) }
+        val bucketDest: Int? = bucket?.also { require(bucket in Suzie.BUCKET_HOME..Suzie.BUCKET_MAX) }
 
         /**
          * Set the bucket position based on where this location is. [flipped] is only valid when [horizontal] is true,
@@ -49,14 +42,25 @@ object DumbFunc {
             TODO("Calcuate where the bucket should be")
         }
 
-
         fun fullyQualified() = swingDest != null && boomDest != null && armDest != null && bucketDest != null
     }
 
     class ArmAction(
         val location: ArmLocation,
         val speed: ActionSpeed = DefaultActionSpeed.NORMAL
-    )
+    ) {
+        fun toAction() = action {
+            with(location) {
+                Suzie.let {
+                    if (swingDest != null) it.swing rotate swingDest
+                    if (boomDest != null) it.boomLink rotate boomDest
+                    if (armDest != null) it.armLink rotate armDest
+                    if (bucketDest != null) it.bucketLink rotate bucketDest
+                    requestedSpeed = speed
+                }
+            }
+        }
+    }
 
     class DurationSpeed(d: Duration) : ActionSpeed {
         override val millis: Long = d.inWholeMilliseconds
@@ -68,26 +72,23 @@ object DumbFunc {
     }
 
     /**
-     * Move to a locaiton and [squeeze] the gripper, with an optional [grabTrigger]
+     * Move to a location and [squeeze] the gripper, with an optional [grabTrigger]
      * to initialize the gripper action.
      */
     fun grabFrom(where: ArmAction, squeeze: Int, grabTrigger: () -> Boolean = DEFAULT_GRAB): ActionSequence {
-        require(where.location.fullyQualified()) { "The location must be complete." }
+//        require(where.location.fullyQualified()) { "The location must be complete." }
 
         return sequence {
             warning("Starting grab")
-
-            // first, make sure not to hit anything
-            this += Predestination.outOfTheWay
 
             // go to a preliminary position that is just a little off
             action {
                 with(where.location) {
                     Suzie.let {
-                        it.swing rotate swingDest!!
-                        it.boomLink rotate boomDest!! - 5
-                        it.armLink rotate armDest!! - 5
-                        it.bucketLink rotate bucketDest!! - 5
+                        if (swingDest != null) it.swing rotate swingDest
+                        if (boomDest != null) it.boomLink rotate boomDest - 5
+                        if (armDest != null) it.armLink rotate armDest - 5
+                        if (bucketDest != null) it.bucketLink rotate bucketDest - 5
                         requestedSpeed = where.speed
                     }
                 }
@@ -97,9 +98,9 @@ object DumbFunc {
                 requestedSpeed = DefaultActionSpeed.SLOW
                 with(where.location) {
                     Suzie.let {
-                        it.boomLink rotate boomDest!!
-                        it.armLink rotate armDest!!
-                        it.bucketLink rotate bucketDest!!
+                        if (boomDest != null) it.boomLink rotate boomDest
+                        if (armDest != null) it.armLink rotate armDest
+                        if (bucketDest != null) it.bucketLink rotate bucketDest
                     }
                 }
             }
@@ -118,6 +119,4 @@ object DumbFunc {
             true
         }
     }
-
-
 }

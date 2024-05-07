@@ -20,11 +20,15 @@ import com.diozero.api.ServoTrim
 import com.diozero.devices.PCA9685
 import com.diozero.devices.ServoController
 import crackers.kobots.app.newarm.Predestination
+import crackers.kobots.app.otherstuff.Jeep
+import crackers.kobots.devices.set
 import crackers.kobots.parts.movement.LimitedRotator.Companion.rotator
 import crackers.kobots.parts.movement.SequenceExecutor
 import crackers.kobots.parts.movement.SequenceRequest
 import crackers.kobots.parts.movement.ServoLinearActuator
 import crackers.kobots.parts.movement.ServoRotator
+import crackers.kobots.parts.off
+import crackers.kobots.parts.on
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -62,9 +66,11 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
 
     override fun preExecution() {
         systemState = SystemState.MOVING
+        Jeep.noodleLamp set on
     }
 
     override fun postExecution() {
+        Jeep.noodleLamp set off
         HAJunk.sendUpdatedStates()
         super.postExecution()
         systemState = SystemState.IDLE
@@ -87,7 +93,6 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
 
     const val BUCKET_HOME = 0
     const val BUCKET_MAX = 180
-
 
     // hardware! =====================================================================================================
 
