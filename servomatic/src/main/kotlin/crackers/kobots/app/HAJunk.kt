@@ -52,15 +52,6 @@ object HAJunk : Startable {
         KobotAnalogSensor.Companion.AnalogDevice.DISTANCE,
         unitOfMeasurement = "mm"
     )
-    val ambientSensor = object : KobotAnalogSensor(
-        "ambient_light",
-        "Luminosity",
-        haIdentifier,
-        deviceClass = KobotAnalogSensor.Companion.AnalogDevice.ILLUMINANCE,
-        unitOfMeasurement = "lumens"
-    ) {
-        override val icon = "mdi:lightbulb-alert"
-    }
 
     private class ArmRotateHandler(val rotator: Rotator, val thing: String) :
         KobotNumberEntity.Companion.NumberHandler {
@@ -173,7 +164,6 @@ object HAJunk : Startable {
         bucketEntity.start()
         commandSelectEntity.start()
         tofSensor.start()
-        ambientSensor.start()
     }
 
     fun sendUpdatedStates() {
