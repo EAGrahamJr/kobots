@@ -52,15 +52,6 @@ object HAJunk : Startable {
         KobotAnalogSensor.Companion.AnalogDevice.DISTANCE,
         unitOfMeasurement = "mm"
     )
-    val proxSensor = object : KobotBinarySensor(
-        "proximity_alert",
-        "Proximity",
-        haIdentifier,
-        deviceClass = KobotBinarySensor.Companion.BinaryDevice.OCCUPANCY
-    ) {
-        override val icon = "mdi:alert"
-    }
-
     val ambientSensor = object : KobotAnalogSensor(
         "ambient_light",
         "Luminosity",
@@ -182,7 +173,6 @@ object HAJunk : Startable {
         bucketEntity.start()
         commandSelectEntity.start()
         tofSensor.start()
-        proxSensor.start()
         ambientSensor.start()
     }
 

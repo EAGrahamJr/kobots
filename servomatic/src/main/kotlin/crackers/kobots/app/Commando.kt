@@ -80,7 +80,11 @@ object Commando : KobotSelectEntity.Companion.SelectHandler {
             Command.PICKUP_1 -> {
                 val pickup = DumbFunc.ArmAction(Position.first)
                 val dropoff = DumbFunc.ArmAction(Position.waitForDropOff)
-                val dropCheck = { HAJunk.proxSensor.currentState }
+                val dropCheck = {
+                    val tof = HAJunk.tofSensor.currentState
+                    if (tof != null) tof.toFloat() < 10f
+                    else false
+                }
                 val sequence = DumbFunc.grabFrom(pickup, 80) +
                     DumbFunc.grabFrom(dropoff, 0, dropCheck) +
                     Predestination.outOfTheWay +
