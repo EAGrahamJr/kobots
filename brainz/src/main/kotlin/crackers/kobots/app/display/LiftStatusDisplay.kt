@@ -20,7 +20,6 @@ import com.diozero.devices.oled.MonochromeSsdOled
 import com.diozero.devices.oled.SH1106
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel
-import crackers.kobots.app.arm.TheArm
 import crackers.kobots.app.multiplexor
 import crackers.kobots.graphics.toRadians
 import crackers.kobots.graphics.widgets.VerticalPercentageIndicator
@@ -28,22 +27,20 @@ import java.awt.Font
 import java.awt.Graphics2D
 import java.awt.geom.AffineTransform
 import java.awt.image.BufferedImage
-import kotlin.math.roundToInt
 
 /**
  * Displays the extender status (0-100 percent) on a rotated 132x32 display.
  */
-object BoomStatusDisplay {
+object LiftStatusDisplay {
     private val DISPLAY_HEIGHT = MonochromeSsdOled.Height.SHORT.lines
 
     private val screen: SSD1306 by lazy {
-        val i2CDevice = multiplexor.getI2CDevice(2, SH1106.DEFAULT_I2C_ADDRESS)
+        val i2CDevice = multiplexor.getI2CDevice(3, SH1106.DEFAULT_I2C_ADDRESS)
         val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2CDevice)
         SSD1306(channel, MonochromeSsdOled.Height.SHORT).apply { setContrast(0f) }
     }
     private var ready = false
     private var screenOn = false
-    private val pct = 100f / TheArm.BOOM_DOWN
 
     // set up the vertical thingie and then rotate it to display
     val rotatedGraphics: Graphics2D
@@ -59,10 +56,10 @@ object BoomStatusDisplay {
         rotatedGraphics,
         Font(Font.SANS_SERIF, Font.BOLD, 10),
         MonochromeSsdOled.DEFAULT_WIDTH,
-        label = "Boom"
+        label = "Lift"
     )
 
-    fun update() {
+    fun update(liftStatus: Int) {
         if (!ready) {
             vpd.drawStatic()
             ready = true
@@ -72,9 +69,7 @@ object BoomStatusDisplay {
             screenOn = true
         }
 
-        val current = TheArm.state.position.boomLink.angle
-        val p = (current * pct).roundToInt()
-        vpd.updateValue(p)
+        vpd.updateValue(liftStatus)
         screen.display(rotatedImage)
     }
 

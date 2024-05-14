@@ -66,32 +66,32 @@ object Segmenter : AutoCloseable {
         cluckFuture = AppCommon.executor.scheduleWithFixedDelay(1.seconds, 1.seconds) {
             whileRunning {
                 try {
-                val now = LocalTime.now()
-                when (currentMode) {
-                    // flip to cluck mode every 5 minutes
-                    Mode.IDLE -> if (now.minute % 5 == 0 && now.hour in (8..20)) {
-                        currentMode = Mode.CLUCK
-                        segmenter.print("Clck")
-                    }
+                    val now = LocalTime.now()
+                    when (currentMode) {
+                        // flip to cluck mode every 5 minutes
+                        Mode.IDLE -> if (now.minute % 5 == 0 && now.hour in (8..20)) {
+                            currentMode = Mode.CLUCK
+                            segmenter.print("Clck")
+                        }
 
-                    // if text mode, assume the display contains the requested text already
-                    Mode.TEXT -> {
-                        if (timerStart.elapsed() > TEXT_EXPIRES) currentMode = Mode.IDLE
-                        // TODO initiate a scroll?
-                    }
+                        // if text mode, assume the display contains the requested text already
+                        Mode.TEXT -> {
+                            if (timerStart.elapsed() > TEXT_EXPIRES) currentMode = Mode.IDLE
+                            // TODO initiate a scroll?
+                        }
 
-                    Mode.CLUCK -> {
-                        val elapsed = timerStart.elapsed()
+                        Mode.CLUCK -> {
+                            val elapsed = timerStart.elapsed()
 
-                        when {
-                            elapsed > TIME_EXPIRES -> currentMode = Mode.IDLE
-                            elapsed > CLUCK_EXPIRES -> {
-                                segmenter.clock(now, colon)
-                                colon = !colon
+                            when {
+                                elapsed > TIME_EXPIRES -> currentMode = Mode.IDLE
+                                elapsed > CLUCK_EXPIRES -> {
+                                    segmenter.clock(now, colon)
+                                    colon = !colon
+                                }
                             }
                         }
                     }
-                }
                 } catch (e: Throwable) {
                     logger.error(e.localizedMessage)
                 }
@@ -115,12 +115,14 @@ object Segmenter : AutoCloseable {
 
     override fun close() = stop()
     fun stop() {
-        if (Segmenter::cluckFuture.isInitialized) try {
-            cluckFuture.cancel(true)
-            segmenter.clear()
-            segmenter.close()
-        } catch (e: Exception) {
-            logger.error(e.localizedMessage)
+        if (Segmenter::cluckFuture.isInitialized) {
+            try {
+                cluckFuture.cancel(true)
+                segmenter.clear()
+                segmenter.close()
+            } catch (e: Exception) {
+                logger.error(e.localizedMessage)
+            }
         }
     }
 }

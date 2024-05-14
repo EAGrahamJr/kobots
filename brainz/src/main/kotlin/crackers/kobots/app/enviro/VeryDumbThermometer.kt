@@ -16,10 +16,8 @@
 
 package crackers.kobots.app.enviro
 
-import com.diozero.devices.sandpit.motor.BasicStepperMotor
-import crackers.kobots.app.crickitHat
+import crackers.kobots.app.Jimmy.thermoStepper
 import crackers.kobots.parts.app.KobotSleep
-import crackers.kobots.parts.movement.BasicStepperRotator
 import org.tinylog.Logger
 import kotlin.math.roundToInt
 
@@ -28,10 +26,6 @@ import kotlin.math.roundToInt
  * temperature is 18 degrees of stepper rotation, with the median temperature being 75 degrees.
  */
 object VeryDumbThermometer {
-    val thermoStepper: BasicStepperRotator by lazy {
-        val stepper = BasicStepperMotor(200, crickitHat.motorStepperPort())
-        BasicStepperRotator(stepper, gearRatio = 1f)
-    }
 
     private val degreesRange = (75f..90f)
     private val degreesTotal = degreesRange.endInclusive - degreesRange.start

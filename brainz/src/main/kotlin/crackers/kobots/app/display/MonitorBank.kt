@@ -19,9 +19,7 @@ package crackers.kobots.app.display
 import com.diozero.devices.oled.SH1106
 import com.diozero.devices.oled.SsdOledCommunicationChannel
 import crackers.kobots.app.AppCommon
-import crackers.kobots.app.Startable
-import crackers.kobots.app.arm.ManualController
-import crackers.kobots.app.arm.TheArm
+import crackers.kobots.app.Jimmy
 import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.app.multiplexor
 import crackers.kobots.graphics.animation.KobotRadar
@@ -41,21 +39,20 @@ import java.time.Instant
 import java.util.concurrent.Future
 import kotlin.time.Duration.Companion.milliseconds
 
-
 private const val MAX_WD = 128
 private const val MAX_HT = 32
 
 /**
  * Shows where the arm is on a timed basis.
  */
-object ArmMonitor :
-    Startable,
+object MonitorBank :
+    AppCommon.Startable,
     StatusColumnDisplay by StatusColumnDelegate(MAX_WD, MAX_HT),
     KobotRadar by SimpleRadar(
         Point(0, 0),
         MAX_HT.toDouble()
     ) {
-    private val logger = LoggerFactory.getLogger("ArmMonitor")
+    private val logger = LoggerFactory.getLogger("MonitorBank")
     internal val TURN_OFF = Duration.ofSeconds(30)
 
     private val imageType = BufferedImage.TYPE_BYTE_BINARY
@@ -74,17 +71,18 @@ object ArmMonitor :
         }
     }
 
-    private val screen by lazy {
-//        val i2CDevice = I2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
-        val i2CDevice = multiplexor.getI2CDevice(0, SH1106.DEFAULT_I2C_ADDRESS)
-        SH1106(SsdOledCommunicationChannel.I2cCommunicationChannel(i2CDevice)).apply { setContrast(0f) }
-    }
+    private lateinit var screen: SH1106
 
     private lateinit var future: Future<*>
 
     private var screenOnAt = Instant.EPOCH
 
     override fun start() {
+        screen = run {
+            val i2CDevice = multiplexor.getI2CDevice(0, SH1106.DEFAULT_I2C_ADDRESS)
+            SH1106(SsdOledCommunicationChannel.I2cCommunicationChannel(i2CDevice)).apply { setContrast(0f) }
+        }
+
         screenOnAt = Instant.now()
         var screenOn = true
         future = AppCommon.executor.scheduleWithFixedDelay(100.milliseconds, 100.milliseconds) {
@@ -101,8 +99,7 @@ object ArmMonitor :
                     }
 
                     DieAufseherin.SystemMode.MANUAL -> {
-                        statsGraphics.displayStatuses(ManualController.statuses())
-                        BoomStatusDisplay.update()
+                        updateStatusDisplays()
                         DisplayDos.showEyes(DisplayDos.LOOK_LEFT)
                         true
                     }
@@ -129,7 +126,7 @@ object ArmMonitor :
                     if (screenOnAt.elapsed() > TURN_OFF && screenOn) {
                         DisplayDos.eyesReset()
                         screen.setDisplayOn(false)
-                        BoomStatusDisplay.sleep()
+                        LiftStatusDisplay.sleep()
                         screenOn = false
                     }
                 }
@@ -138,8 +135,8 @@ object ArmMonitor :
     }
 
     private fun updateStatusDisplays() {
-        statsGraphics.displayStatuses(TheArm.state.position.mapped())
-        BoomStatusDisplay.update()
+//        statsGraphics.displayStatuses(TheArm.state.position.mapped())
+        LiftStatusDisplay.update(Jimmy.lifter.current())
     }
 
     fun ping(angle: Int, distance: Float) {
@@ -150,9 +147,9 @@ object ArmMonitor :
     }
 
     override fun stop() {
-        BoomStatusDisplay.close()
+        LiftStatusDisplay.close()
 
         if (::future.isInitialized) future.cancel(true)
-        screen.close()
+        if (::screen.isInitialized) screen.close()
     }
 }

@@ -16,24 +16,16 @@
 
 package crackers.kobots.app.enviro
 
+//import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.AppCommon
-import crackers.kobots.app.Startable
-import crackers.kobots.app.arm.TheArm
-import crackers.kobots.app.arm.homeSequence
-import crackers.kobots.app.arm.sayHi
-import crackers.kobots.app.display.DisplayDos
-import crackers.kobots.app.enviro.HAStuff.noodSwitch
-import crackers.kobots.app.enviro.HAStuff.rosetteStrand
-import crackers.kobots.app.enviro.HAStuff.selector
 import crackers.kobots.app.enviro.HAStuff.startDevices
-import crackers.kobots.parts.movement.SequenceRequest
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 
 /*
  * Central control, of a sorts.
  */
-object DieAufseherin : Startable {
+object DieAufseherin : AppCommon.Startable {
     // system-wide "wat the hell is going on" stuff
     enum class SystemMode {
         IDLE,
@@ -43,21 +35,16 @@ object DieAufseherin : Startable {
     }
 
     private val theMode = AtomicReference(SystemMode.IDLE)
-
-    // TODO this needs a semaphore so that only one thing can manipulate it at a time
     var currentMode: SystemMode
         get() = theMode.get()
         set(v) {
             logger.info("System mode changed to $v")
             theMode.set(v)
-            if (v == SystemMode.IDLE) resetThings()
+//            if (v == SystemMode.IDLE) resetThings()
         }
 
-    private fun resetThings() {
-        selector.sendCurrentState("None")
-    }
 
-    enum class GripperActions {
+    enum class BrainzActions {
         HOME, SAY_HI, STOP, CLUCK, MANUAL, RANDOM_EYES
     }
 
@@ -73,8 +60,8 @@ object DieAufseherin : Startable {
 
     override fun stop() {
         VeryDumbThermometer.reset()
-        noodSwitch.handleCommand("OFF")
-        rosetteStrand.handleCommand("OFF")
+//        noodSwitch.handleCommand("OFF")
+//        rosetteStrand.handleCommand("OFF")
     }
 
     private fun localStuff() {
@@ -99,17 +86,15 @@ object DieAufseherin : Startable {
         }
     }
 
-    internal fun actionTime(payload: GripperActions?) {
+    internal fun actionTime(payload: BrainzActions?) {
         when (payload) {
-            GripperActions.STOP -> AppCommon.applicationRunning = false
-            GripperActions.HOME -> TheArm.handleRequest(SequenceRequest(homeSequence))
-            GripperActions.MANUAL -> currentMode = SystemMode.MANUAL
-            GripperActions.CLUCK -> DisplayDos.cluck()
-            GripperActions.RANDOM_EYES -> DisplayDos.randomEye()
-            GripperActions.SAY_HI -> TheArm.handleRequest(SequenceRequest(sayHi))
+            BrainzActions.STOP -> AppCommon.applicationRunning = false
+            BrainzActions.HOME -> {}
+            BrainzActions.MANUAL -> currentMode = SystemMode.MANUAL
+//            BrainzActions.CLUCK -> DisplayDos.cluck()
+//            BrainzActions.RANDOM_EYES -> DisplayDos.randomEye()
+            BrainzActions.SAY_HI -> {}
             else -> logger.warn("Unknown command: $payload")
-
         }
     }
-
 }

@@ -1,4 +1,8 @@
-# The Arm Thing
+# BRAINZ
+
+This is for the stuff attached to a Pi with a CRICKIT hat and maybe other stuff. It started driving servos, but there were only 4 available and I wanted **MORE, MORE, MORE!!!** So now it's not drving The Arm, but other stuff.
+
+## The Arm Thing
 
 First "robot" experiment. The intent is to create a robotic arm that can fetch things and move them about.
 

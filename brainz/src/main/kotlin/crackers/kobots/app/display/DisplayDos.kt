@@ -16,12 +16,12 @@
 
 package crackers.kobots.app.display
 
+import com.diozero.devices.oled.MonochromeSsdOled
 import com.diozero.devices.oled.MonochromeSsdOled.Height
 import com.diozero.devices.oled.SSD1306
 import com.diozero.devices.oled.SsdOledCommunicationChannel
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.whileRunning
-import crackers.kobots.app.Startable
 import crackers.kobots.app.multiplexor
 import crackers.kobots.graphics.animation.*
 import crackers.kobots.parts.app.KobotSleep
@@ -43,24 +43,17 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * Shows text and time in a multi-segment like font, as well as eyes.
  */
-object DisplayDos : Startable {
+object DisplayDos : AppCommon.Startable {
 
     private val logger = LoggerFactory.getLogger("DisplayDos")
-    private val dosScreen = run {
-        val i2c = multiplexor.getI2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
-        val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2c)
-        SSD1306(channel, Height.SHORT).apply {
-            setContrast(0x20)
-            setDisplayOn(false)
-        }
-    }
-    private val MAX_WD = dosScreen.width
-    private val MAX_HT = dosScreen.height
+    private lateinit var dosScreen: SSD1306
+    private val MAX_WD = MonochromeSsdOled.DEFAULT_WIDTH
+    private val MAX_HT = Height.SHORT.lines
 
     private val graphics: Graphics2D
     private val lcdFontOffset: Int
     private val lcdFont: Font
-    private val image = BufferedImage(MAX_WD, MAX_HT, dosScreen.nativeImageType).also {
+    private val image = BufferedImage(MAX_WD, MAX_HT, BufferedImage.TYPE_BYTE_BINARY).also {
         val f = Font.createFont(Font.TRUETYPE_FONT, this.javaClass.getResourceAsStream("/lcd.ttf")).deriveFont(12f)
         graphics = (it.graphics as Graphics2D).apply {
             background = Color.BLACK
@@ -112,6 +105,14 @@ object DisplayDos : Startable {
     private val currentExpression = AtomicReference<Expression>()
 
     override fun start() {
+        dosScreen = run {
+            val i2c = multiplexor.getI2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
+            val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2c)
+            SSD1306(channel, Height.SHORT).apply {
+                setContrast(0x20)
+                setDisplayOn(false)
+            }
+        }
         clear()
         var colon = true
 
@@ -185,10 +186,11 @@ object DisplayDos : Startable {
         dosScreen.display(image)
     }
 
-    override fun stop() = dosScreen.close()
+    override fun stop() {
+        if (::dosScreen.isInitialized) dosScreen.close()
+    }
 
     // EYE STUFF ------------------------------------------------------------------------------------------------------
-
     val LOOK_RIGHT = Expression(
         lidPosition = Eye.LidPosition.ONE_QUARTER,
         pupilPosition = Pupil.Position.RIGHT + Pupil.Position.CENTER
