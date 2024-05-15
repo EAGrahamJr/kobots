@@ -22,6 +22,8 @@ import crackers.kobots.app.SuzerainOfServos.BOOM_DOWN
 import crackers.kobots.app.SuzerainOfServos.BOOM_UP
 import crackers.kobots.app.SuzerainOfServos.BUCKET_HOME
 import crackers.kobots.app.SuzerainOfServos.BUCKET_MAX
+import crackers.kobots.app.SuzerainOfServos.GRIPPER_CLOSED
+import crackers.kobots.app.SuzerainOfServos.GRIPPER_OPEN
 import crackers.kobots.app.SuzerainOfServos.SWING_HOME
 import crackers.kobots.app.SuzerainOfServos.SWING_MAX
 import crackers.kobots.app.SuzerainOfServos.armLink
@@ -137,8 +139,12 @@ object HAJunk : Startable {
         PctHandler(gripper, "Gripper"),
         "arm_gripper",
         "Arm: Gripper",
-        haIdentifier
-    ) {}
+        haIdentifier,
+        min = GRIPPER_OPEN,
+        max = GRIPPER_CLOSED
+    ) {
+        override val icon = "mdi:hand-extended"
+    }
 
     private val bucketEntity = object : KobotNumberEntity(
         ArmRotateHandler(bucketLink, "Bucket"),
@@ -148,7 +154,9 @@ object HAJunk : Startable {
         min = BUCKET_HOME,
         max = BUCKET_MAX,
         unitOfMeasurement = "degrees"
-    ) {}
+    ) {
+        override val icon = "mdi:hand-pointing-right"
+    }
 
     val noodleEntity = KobotLight("small_nood", BasicLightController(Jeep.noodleLamp), "Da Nood", haIdentifier)
 
