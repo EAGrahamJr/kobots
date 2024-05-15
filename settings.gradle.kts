@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,5 +14,10 @@
  * permissions and limitations under the License.
  */
 
+plugins {
+    id("org.gradle.toolchains.foojay-resolver-convention") version "0.5.0"
+}
+
 rootProject.name = "kobots"
-include("armthing", "servomatic")
+include("brainz", "servomatic")
+include("junk")
