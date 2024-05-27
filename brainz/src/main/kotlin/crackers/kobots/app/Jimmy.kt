@@ -16,16 +16,21 @@
 
 package crackers.kobots.app
 
+import com.diozero.api.ServoTrim
+import com.diozero.devices.sandpit.motor.BasicStepperController.StepStyle
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
-import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import crackers.kobots.app.enviro.HAStuff
 import crackers.kobots.devices.expander.CRICKITHat
+import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.movement.BasicStepperRotator
 import crackers.kobots.parts.movement.SequenceExecutor
-import crackers.kobots.parts.movement.StepperLinearActuator
+import crackers.kobots.parts.movement.SequenceRequest
+import crackers.kobots.parts.movement.ServoRotator
 import java.awt.Color
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import crackers.kobots.app.enviro.DieAufseherin as DA
 
 /**
@@ -33,7 +38,6 @@ import crackers.kobots.app.enviro.DieAufseherin as DA
  */
 object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttClient) {
     const val CRACKER = 90
-//
 
     private lateinit var crickit: CRICKITHat
     private lateinit var polly: VCNL4040
@@ -43,21 +47,44 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
 
     val crickitNeoPixel by lazy { crickit.neoPixel(8).apply { brightness = .005f } }
 
-    val thermoStepper by lazy {
-        val stepper = BasicStepperMotor(200, crickit.motorStepperPort())
-        BasicStepperRotator(stepper, gearRatio = 1f)
-    }
-
-    private val MAX_LIFT = 16_000
-    private val liftStepper by lazy { BasicStepperMotor(1024, crickit.unipolarStepperPort()) }
-    val lifter by lazy {
-        object : StepperLinearActuator(liftStepper, MAX_LIFT, true) {
+    const val ABSOLUTE_AZIMUTH_LIMIT = 270
+    val sunAzimuth by lazy {
+        val azimuthStepper by lazy { BasicStepperMotor(4096, crickit.unipolarStepperPort()) }
+        object : BasicStepperRotator(azimuthStepper, stepStyle = StepStyle.INTERLEAVE) {
             override fun limitCheck(whereTo: Int): Boolean {
-                return whereTo <= currentPercent && polly.hasCracker().also {
-                    if (it) reset()
+                return angleLocation > ABSOLUTE_AZIMUTH_LIMIT || polly.hasCracker().also {
+                    if (it) super.reset()
                 }
             }
+
+            override fun reset() {
+                // run it forward a little bit
+                logger.info("Rotate forward")
+                (1..azimuthStepper.stepsPerRotation / 8).forEach {
+                    azimuthStepper.step(forwardDirection)
+                    KobotSleep.millis(10)
+                }
+                logger.info("Looking for cracker")
+                while (polly.wantsCracker()) {
+                    azimuthStepper.step(backwardDirection)
+                    KobotSleep.millis(10)
+                }
+                super.reset()
+            }
         }
+    }
+
+    private val elevationServo by lazy { crickit.servo(1, ServoTrim.MG90S).apply { angle = 0f } }
+    val sunElevation by lazy {
+        object : ServoRotator(elevationServo, 0..90) {
+            override fun rotateTo(angle: Int): Boolean {
+                return super.rotateTo(if (angle > 0) angle else 0)
+            }
+        }
+    }
+
+    val wavyThing by lazy {
+        ServoRotator(crickit.servo(2, ServoTrim.TOWERPRO_SG90), 0..180)
     }
 
     override fun canRun() = AppCommon.applicationRunning
@@ -66,29 +93,32 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
         polly = VCNL4040().apply {
             ambientLightEnabled = true
             proximityEnabled = true
+            proximityLEDCurrent = VCNL4040.LEDCurrent.LED_100MA
         }
         crickit = CRICKITHat()
-//        DisplayDos.text("Wait...")
-        // it would be nice if we had a max stop, too?
-        if (polly.hasCracker()) (1..MAX_LIFT / 4).forEach {
-            liftStepper.step(StepperMotorInterface.Direction.BACKWARD)
-            KobotSleep.millis(1)
-        }
-        while (polly.wantsCracker()) {
-            liftStepper.step(StepperMotorInterface.Direction.FORWARD)
-            KobotSleep.millis(1)
-        }
-        lifter.release()
-//        DisplayDos.text("")
     }
 
+    private lateinit var stopLatch: CountDownLatch
+
     override fun stop() {
+        // already did this
+        ::stopLatch.isInitialized && return
+
+        // forces everything to stop
         super.stop()
+
+        logger.info("Setting latch")
+        stopLatch = CountDownLatch(1)
+
         if (::crickit.isInitialized) {
-            crickitNeoPixel.fill(Color.BLACK)
+            crickitNeoPixel.fill(WS2811.PixelColor(Color.RED, brightness = .1f))
+            handleRequest(SequenceRequest(CannedSequences.home))
+            if (!stopLatch.await(30, TimeUnit.SECONDS)) {
+                logger.error("Arm not homed in 30 seconds")
+            }
             // ensure the steppers are released
-            thermoStepper.release()
-            lifter.release()
+            sunAzimuth.release()
+            crickitNeoPixel.fill(Color.BLACK)
             crickit.close()
         }
         if (::polly.isInitialized) polly.close()
@@ -99,8 +129,9 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     }
 
     override fun postExecution() {
-        lifter.release()
+        sunAzimuth.release()
         DA.currentMode = DA.SystemMode.IDLE
         HAStuff.updateEverything()
+        if (::stopLatch.isInitialized) stopLatch.countDown()
     }
 }

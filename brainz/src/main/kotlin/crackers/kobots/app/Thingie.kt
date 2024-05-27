@@ -21,7 +21,6 @@ import crackers.kobots.app.AppCommon.convenientShutdownHook
 import crackers.kobots.app.AppCommon.convenientStartupHook
 import crackers.kobots.app.AppCommon.executor
 import crackers.kobots.app.display.DisplayDos
-import crackers.kobots.app.display.MonitorBank
 import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.devices.expander.I2CMultiplexer
 import org.slf4j.LoggerFactory
@@ -35,8 +34,8 @@ internal lateinit var multiplexor: I2CMultiplexer
 
 private val logger = LoggerFactory.getLogger("BRAINZ")
 
-private val startables = listOf(DisplayDos, Jimmy, MonitorBank, DieAufseherin)
-private val stoppables = listOf(DieAufseherin, Jimmy, MonitorBank, DisplayDos)
+private val startables = listOf(DisplayDos, Jimmy, DieAufseherin)
+private val stoppables = listOf(DieAufseherin, Jimmy, DisplayDos)
 private val stopFlag = AtomicBoolean(false)
 
 /**

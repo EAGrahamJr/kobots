@@ -22,7 +22,6 @@ import crackers.kobots.mqtt.homeassistant.*
 import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.DefaultActionSpeed
 import crackers.kobots.parts.movement.LinearActuator
-import crackers.kobots.parts.movement.SequenceRequest
 import crackers.kobots.parts.movement.sequence
 import kotlin.math.roundToInt
 
@@ -44,7 +43,7 @@ object HAStuff {
                     linear goTo target.roundToInt()
                 }
             }
-            Jimmy.handleRequest(SequenceRequest(requested))
+            Jimmy does requested
         }
     }
 
@@ -61,18 +60,6 @@ object HAStuff {
     }
     private val selector = KobotSelectEntity(selectorHandler, "brainz_selector", "Brainz", haIdentifier)
 
-    /**
-     * Lifty thing
-     */
-    private val lifterEntity = object : KobotNumberEntity(
-        PctHandler(Jimmy.lifter, "Lifter", DefaultActionSpeed.VERY_FAST),
-        "brainz_lift",
-        "Brainz: Lift",
-        haIdentifier,
-        min = 0
-    ) {
-        override val icon = "mdi:arrow-up-down-bold"
-    }
 
     /**
      * Run the 8-bit circular NeoPixel thing
@@ -86,14 +73,10 @@ object HAStuff {
     val textDosEntity = KobotTextEntity(DisplayDos::text, "second_display", "Dos Display", haIdentifier)
 
     internal fun startDevices() {
-        // HA stuff
-        lifterEntity.start()
-        selector.start()
-        rosetteStrand.start()
-        textDosEntity.start()
+        listOf(selector, rosetteStrand, textDosEntity).forEach { it.start() }
     }
 
     internal fun updateEverything() {
-        lifterEntity.sendCurrentState()
+//        listOf(lifterEntity, swiperEntity).forEach { it.sendCurrentState() }
     }
 }

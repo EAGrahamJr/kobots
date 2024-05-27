@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2024 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ dependencies {
 group = "crackers.kobots"
 
 kotlin {
-    jvmToolchain(17)
+    jvmToolchain(21)
 }
 
 kotlinter {

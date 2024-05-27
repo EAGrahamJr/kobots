@@ -18,9 +18,17 @@ package crackers.kobots.app.enviro
 
 //import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.AppCommon
+import crackers.kobots.app.CannedSequences
+import crackers.kobots.app.Jimmy
 import crackers.kobots.app.enviro.HAStuff.startDevices
+import crackers.kobots.parts.movement.ActionSequence
+import crackers.kobots.parts.movement.SequenceRequest
+import crackers.kobots.parts.scheduleAtFixedRate
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /*
  * Central control, of a sorts.
@@ -38,14 +46,14 @@ object DieAufseherin : AppCommon.Startable {
     var currentMode: SystemMode
         get() = theMode.get()
         set(v) {
-            logger.info("System mode changed to $v")
+//            logger.info("System mode changed to $v")
             theMode.set(v)
 //            if (v == SystemMode.IDLE) resetThings()
         }
 
 
     enum class BrainzActions {
-        HOME, SAY_HI, STOP, CLUCK, MANUAL, RANDOM_EYES
+        HOME, SAY_HI, STOP, CLUCK, MANUAL, RANDOM_EYES, RESET
     }
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
@@ -59,15 +67,17 @@ object DieAufseherin : AppCommon.Startable {
     }
 
     override fun stop() {
-        VeryDumbThermometer.reset()
 //        noodSwitch.handleCommand("OFF")
 //        rosetteStrand.handleCommand("OFF")
     }
 
     private fun localStuff() {
         with(AppCommon.hasskClient) {
-            sensor("office_enviro_temperature").state().let { fullState ->
-                VeryDumbThermometer.setTemperature(fullState.state.toFloat())
+            AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
+                val elevation = sensor("sun_solar_elevation").state().state.toFloat().roundToInt()
+                val azimuth = sensor("sun_solar_azimuth").state().state.toFloat().roundToInt()
+                logger.info("elevation: ${elevation}, azimuth: ${azimuth}")
+                jimmy(CannedSequences.setSun(azimuth, elevation))
             }
         }
     }
@@ -76,23 +86,25 @@ object DieAufseherin : AppCommon.Startable {
         with(AppCommon.mqttClient) {
 //            startAliveCheck()
             allowEmergencyStop()
-
-            subscribeJSON("kobots_auto/office_enviro_temperature/state") { payload ->
-                if (payload.has("state")) {
-                    val temp = payload.optString("state", "75").toFloat()
-                    VeryDumbThermometer.setTemperature(temp)
-                }
-            }
         }
+    }
+
+    private fun jimmy(sequence: ActionSequence) {
+        Jimmy.handleRequest(SequenceRequest(sequence))
     }
 
     internal fun actionTime(payload: BrainzActions?) {
         when (payload) {
-            BrainzActions.STOP -> AppCommon.applicationRunning = false
-            BrainzActions.HOME -> {}
+            BrainzActions.STOP -> {
+                Jimmy.stop()
+                AppCommon.applicationRunning = false
+            }
+
+            BrainzActions.HOME -> jimmy(CannedSequences.home)
             BrainzActions.MANUAL -> currentMode = SystemMode.MANUAL
 //            BrainzActions.CLUCK -> DisplayDos.cluck()
 //            BrainzActions.RANDOM_EYES -> DisplayDos.randomEye()
+            BrainzActions.RESET -> jimmy(CannedSequences.resetHome)
             BrainzActions.SAY_HI -> {}
             else -> logger.warn("Unknown command: $payload")
         }
