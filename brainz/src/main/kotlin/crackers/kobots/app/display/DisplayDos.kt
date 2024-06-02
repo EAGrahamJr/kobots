@@ -26,6 +26,7 @@ import crackers.kobots.app.multiplexor
 import crackers.kobots.graphics.animation.*
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.elapsed
+import crackers.kobots.parts.fitFont
 import crackers.kobots.parts.scheduleWithFixedDelay
 import org.slf4j.LoggerFactory
 import java.awt.Color
@@ -58,21 +59,8 @@ object DisplayDos : AppCommon.Startable {
         graphics = (it.graphics as Graphics2D).apply {
             background = Color.BLACK
             color = Color.WHITE
-            lcdFont = fitFont(f)
+            lcdFont = fitFont(f, Height.SHORT.lines)
             lcdFontOffset = getFontMetrics(lcdFont).height
-        }
-    }
-
-    private fun Graphics2D.fitFont(f: Font): Font {
-        val nextFont = f.deriveFont(f.size + .5f)
-        val fm = getFontMetrics(nextFont)
-        // note: this is adjusted to fit the specific font above, so be careful
-        return if (fm.height > Height.SHORT.lines) {
-            f.also {
-                logger.debug("Final height is ${fm.height}")
-            }
-        } else {
-            fitFont(nextFont)
         }
     }
 

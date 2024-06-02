@@ -16,6 +16,7 @@
 
 package crackers.kobots.app.otherstuff
 
+import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.PwmOutputDevice
 
 /**
@@ -23,5 +24,10 @@ import com.diozero.api.PwmOutputDevice
  */
 object Jeep {
     val noodleLamp = PwmOutputDevice(4)
-
+    val stepper1Pins = listOf(
+        DigitalOutputDevice(17),
+        DigitalOutputDevice(18),
+        DigitalOutputDevice(10),
+        DigitalOutputDevice(9)
+    )
 }

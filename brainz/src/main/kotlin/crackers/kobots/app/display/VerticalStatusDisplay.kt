@@ -29,9 +29,9 @@ import java.awt.geom.AffineTransform
 import java.awt.image.BufferedImage
 
 /**
- * Displays the extender status (0-100 percent) on a rotated 132x32 display.
+ * Displays a status (0-100 percent) on a rotated 132x32 display.
  */
-object LiftStatusDisplay {
+object VerticalStatusDisplay {
     private val DISPLAY_HEIGHT = MonochromeSsdOled.Height.SHORT.lines
 
     private val screen: SSD1306 by lazy {
@@ -43,8 +43,8 @@ object LiftStatusDisplay {
     private var screenOn = false
 
     // set up the vertical thingie and then rotate it to display
-    val rotatedGraphics: Graphics2D
-    val rotatedImage =
+    private val rotatedGraphics: Graphics2D
+    private val rotatedImage =
         BufferedImage(MonochromeSsdOled.DEFAULT_WIDTH, DISPLAY_HEIGHT, BufferedImage.TYPE_BYTE_BINARY).also { img ->
             val theRotation = AffineTransform().apply {
                 rotate(-90.toRadians())
@@ -52,11 +52,12 @@ object LiftStatusDisplay {
             }
             rotatedGraphics = (img.graphics as Graphics2D).apply { transform(theRotation) }
         }
-    val vpd = VerticalPercentageIndicator(
+    var label = "Pct"
+    private val vpd = VerticalPercentageIndicator(
         rotatedGraphics,
         Font(Font.SANS_SERIF, Font.BOLD, 10),
         MonochromeSsdOled.DEFAULT_WIDTH,
-        label = "Lift"
+        label = label
     )
 
     fun update(liftStatus: Int) {

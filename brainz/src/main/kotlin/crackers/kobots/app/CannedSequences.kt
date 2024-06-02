@@ -43,14 +43,15 @@ object CannedSequences {
         }
     }
 
-    const val AZIMUTH_OFFSET = -15
+    const val AZIMUTH_OFFSET = 15
     fun setSun(azimuth: Int, elevation: Int) =
-        if (elevation < 0 || azimuth >= Jimmy.ABSOLUTE_AZIMUTH_LIMIT) home
-        else sequence {
-            action {
-                Jimmy.sunAzimuth rotate azimuth + AZIMUTH_OFFSET
-                Jimmy.sunElevation rotate elevation
-//                requestedSpeed = DefaultActionSpeed.SLOW
+        (azimuth + AZIMUTH_OFFSET).let { az ->
+            if (elevation < 0 || az >= Jimmy.ABSOLUTE_AZIMUTH_LIMIT) home
+            else sequence {
+                action {
+                    Jimmy.sunAzimuth rotate az
+                    Jimmy.sunElevation rotate elevation
+                }
             }
         }
 }

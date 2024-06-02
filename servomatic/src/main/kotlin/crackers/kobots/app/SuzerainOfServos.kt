@@ -67,6 +67,8 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
     override fun preExecution() {
         systemState = SystemState.MOVING
         Jeep.noodleLamp set on
+        logger.info("Executing ${currentSequence.get()}")
+        super.preExecution()
     }
 
     override fun postExecution() {

@@ -18,9 +18,9 @@ package crackers.kobots.app
 
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
+import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.app.newarm.ArmMonitor
 import crackers.kobots.app.otherstuff.Sensei
-import crackers.kobots.parts.app.KobotSleep
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
@@ -39,7 +39,7 @@ internal interface Startable {
 
 // because we might be doing something else?
 enum class SystemState {
-    IDLE, MOVING, SHUTDOWN, MANUAL
+    IDLE, MOVING, SHUTDOWN
 }
 
 private val state = AtomicReference(SystemState.IDLE)
@@ -49,9 +49,6 @@ internal var systemState: SystemState
         val current = state.get()
         if (v != current) {
             logger.warn("State change from '$current' to '$v'")
-
-            if (current == SystemState.MANUAL && v != SystemState.IDLE) return
-
             state.set(v)
             // TODO trigger things?
         }
@@ -70,12 +67,18 @@ fun main(args: Array<String>?) {
     ArmMonitor.start()
     HAJunk.start()
     mqttClient.apply {
-        startAliveCheck()
+//        startAliveCheck()
         allowEmergencyStop()
+        subscribeJSON("kobots_auto/office_enviro_temperature/state") { payload ->
+            if (payload.has("state")) {
+                val temp = payload.optString("state", "75").toFloat()
+                VeryDumbThermometer.setTemperature(temp)
+            }
+        }
     }
 
     AppCommon.awaitTermination()
-    KobotSleep.seconds(1)
+    stopEverything()
     exitProcess(0)
 }
 
@@ -84,13 +87,13 @@ fun stopEverything() {
         logger.warn("Already stopped")
         return
     }
-    ArmMonitor.stop()
-    SuzerainOfServos.stop()
-    Sensei.stop()
     HAJunk.stop()
+    SuzerainOfServos.stop()
+    systemState = SystemState.SHUTDOWN
+
+    ArmMonitor.stop()
+    Sensei.stop()
 
     AppCommon.executor.shutdownNow()
-
     logger.warn("Servomatic exit")
-    systemState = SystemState.SHUTDOWN
 }

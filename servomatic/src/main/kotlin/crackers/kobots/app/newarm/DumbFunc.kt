@@ -79,6 +79,7 @@ object DumbFunc {
 //        require(where.location.fullyQualified()) { "The location must be complete." }
 
         return sequence {
+            name = "Grabbit"
             warning("Starting grab")
 
             // go to a preliminary position that is just a little off

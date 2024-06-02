@@ -72,11 +72,11 @@ object DieAufseherin : AppCommon.Startable {
     }
 
     private fun localStuff() {
-        with(AppCommon.hasskClient) {
+        AppCommon.hasskClient.run {
             AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
                 val elevation = sensor("sun_solar_elevation").state().state.toFloat().roundToInt()
                 val azimuth = sensor("sun_solar_azimuth").state().state.toFloat().roundToInt()
-                logger.info("elevation: ${elevation}, azimuth: ${azimuth}")
+                logger.debug("elevation: ${elevation}, azimuth: ${azimuth}")
                 jimmy(CannedSequences.setSun(azimuth, elevation))
             }
         }

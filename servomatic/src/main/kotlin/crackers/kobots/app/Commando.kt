@@ -17,6 +17,7 @@
 package crackers.kobots.app
 
 
+import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.app.newarm.DumbFunc
 import crackers.kobots.app.newarm.Position
 import crackers.kobots.app.newarm.Predestination
@@ -24,6 +25,7 @@ import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
 import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceRequest
+import crackers.kobots.parts.movement.sequence
 import crackers.kobots.app.SuzerainOfServos as Suzi
 
 /**
@@ -38,7 +40,9 @@ object Commando : KobotSelectEntity.Companion.SelectHandler {
 
     fun sendItHome() {
         suzi(
-            Predestination.gripperOpen +
+            sequence { name = "Home Sweet Home" } +
+                VeryDumbThermometer.reset +
+                Predestination.gripperOpen +
                 Predestination.outOfTheWay +
                 Predestination.homeSequence
         )
@@ -48,22 +52,15 @@ object Commando : KobotSelectEntity.Companion.SelectHandler {
         Suzi.handleRequest(SequenceRequest(sequence))
     }
 
+    // first sequence sets the name, so this is just the name
+    private fun sname(sequenceName: String) = sequence { name = sequenceName }
+
     override fun executeOption(select: String) {
         val selected = enumValue<Command>(select)
-        if (systemState == SystemState.MANUAL && selected != Command.IDLE && selected != Command.STOP) return
 
         when (selected) {
             Command.IDLE -> {
-//                ManualController.stop()
-                if (systemState == SystemState.MANUAL) {
-                    systemState = SystemState.IDLE
-                    sendItHome()
-                }
-            }
-
-            Command.MANUAL -> {
-                systemState = SystemState.MANUAL
-//                ManualController.start()
+                // TODO maybe show something stupid on the monitors?
             }
 
             Command.STOP -> {
@@ -85,7 +82,8 @@ object Commando : KobotSelectEntity.Companion.SelectHandler {
                     if (tof != null) tof.toFloat() < 10f
                     else false
                 }
-                val sequence = DumbFunc.grabFrom(pickup, 80) +
+                val sequence = sname("Pickup on Aisle 1") +
+                    DumbFunc.grabFrom(pickup, 80) +
                     DumbFunc.grabFrom(dropoff, 0, dropCheck) +
                     Predestination.outOfTheWay +
                     Predestination.homeSequence
@@ -98,12 +96,12 @@ object Commando : KobotSelectEntity.Companion.SelectHandler {
                 val mid = DumbFunc.ArmAction(Position.tireMid)
                 val fin = DumbFunc.ArmAction(Position.tireEnd)
 
-                val rotateSequence = crackers.kobots.parts.movement.sequence {
-                    name = "Tire Demo Midway"
+                val rotateSequence = sequence {
                     this append lift.toAction()
                     this append mid.toAction()
                 }
-                val sequence = DumbFunc.grabFrom(pickup, 80) +
+                val sequence = sname("Return of the Tire Dance") +
+                    DumbFunc.grabFrom(pickup, 80) +
                     rotateSequence +
                     DumbFunc.grabFrom(fin, Suzi.GRIPPER_OPEN) +
                     Predestination.outOfTheWay +
