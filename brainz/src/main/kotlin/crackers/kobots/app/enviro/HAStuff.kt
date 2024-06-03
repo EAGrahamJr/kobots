@@ -16,36 +16,18 @@
 
 package crackers.kobots.app.enviro
 
+import crackers.kobots.app.AppCommon
 import crackers.kobots.app.Jimmy
 import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.mqtt.homeassistant.*
 import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.DefaultActionSpeed
-import crackers.kobots.parts.movement.LinearActuator
+import crackers.kobots.parts.movement.SequenceRequest
 import crackers.kobots.parts.movement.sequence
 import kotlin.math.roundToInt
 
-object HAStuff {
+object HAStuff : AppCommon.Startable {
     val haIdentifier = DeviceIdentifier("Kobots", "BRAINZ")
-
-    private class PctHandler(
-        val linear: LinearActuator, val thing: String, val speed: DefaultActionSpeed =
-            DefaultActionSpeed.SLOW
-    ) :
-        KobotNumberEntity.Companion.NumberHandler {
-        override fun currentState() = linear.current().toFloat()
-
-        override fun set(target: Float) {
-            val requested = sequence {
-                name = "HA Move $thing"
-                action {
-                    requestedSpeed = speed
-                    linear goTo target.roundToInt()
-                }
-            }
-            Jimmy does requested
-        }
-    }
 
     /**
      * Actions
@@ -70,13 +52,38 @@ object HAStuff {
     /**
      * Write stuff to small screen.
      */
-    val textDosEntity = KobotTextEntity(DisplayDos::text, "second_display", "Dos Display", haIdentifier)
+    private val textDosEntity = KobotTextEntity(DisplayDos::text, "second_display", "Dos Display", haIdentifier)
 
-    internal fun startDevices() {
-        listOf(selector, rosetteStrand, textDosEntity).forEach { it.start() }
+    /**
+     * Wavy thing
+     */
+    private val wavyHandler = object : KobotNumberEntity.Companion.NumberHandler {
+        override fun currentState() = Jimmy.wavyThing.current().toFloat()
+
+        override fun set(target: Float) {
+            Jimmy.handleRequest(SequenceRequest(sequence {
+                action {
+                    Jimmy.wavyThing rotate target.roundToInt()
+                    requestedSpeed = DefaultActionSpeed.VERY_FAST
+                }
+            }))
+        }
+    }
+    private val wavyEntity = KobotNumberEntity(
+        wavyHandler, "brainz_wavy", "Wavy Thing", haIdentifier,
+        min = 0, max = 180, mode = KobotNumberEntity.Companion.DisplayMode
+            .SLIDER, unitOfMeasurement = "deg"
+    )
+
+    override fun start() {
+        listOf(selector, rosetteStrand, textDosEntity, wavyEntity).forEach { it.start() }
+    }
+
+    override fun stop() {
+//        TODO("Not yet implemented")
     }
 
     internal fun updateEverything() {
-//        listOf(lifterEntity, swiperEntity).forEach { it.sendCurrentState() }
+        listOf(wavyEntity).forEach { it.sendCurrentState() }
     }
 }

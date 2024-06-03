@@ -228,6 +228,6 @@ object DisplayDos : AppCommon.Startable {
     }
 
     internal fun eyesReset() {
-        currentMode = Mode.RANDOM
+        if (currentMode == Mode.EYES) currentMode = Mode.RANDOM
     }
 }

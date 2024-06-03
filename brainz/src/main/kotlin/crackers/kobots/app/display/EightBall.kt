@@ -17,11 +17,10 @@
 package crackers.kobots.app.display
 
 import crackers.kobots.graphics.loadImage
-import crackers.kobots.parts.sleep
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics2D
-import kotlin.time.Duration
+import kotlin.math.roundToInt
 
 /**
  * 8-ball for small displays. Default size is for a "large" OLED (128x128).
@@ -31,6 +30,8 @@ import kotlin.time.Duration
  */
 class EightBall(private val graphics: Graphics2D, private val width: Int = 128, private val height: Int = 128) {
     private val eightBallFont: Font
+
+    // TODO use multi-line responses, line-breaks, and a bigger font!
     private val eightBallList = listOf(
         "It is certain", "Reply hazy, try again", "Don’t count on it", "Don’t count on it",
         "Ask again later", "My reply is no", "Without a doubt", "Better not tell you now",
@@ -41,10 +42,12 @@ class EightBall(private val graphics: Graphics2D, private val width: Int = 128, 
         .also { theList ->
             var fitThis = ""
             theList.forEach { if (it.length > fitThis.length) fitThis = it }
-            var font = Font(Font.SERIF, Font.PLAIN, 18)
+            var fontSize = 18.0f
+            var font = Font(Font.SERIF, Font.PLAIN, fontSize.roundToInt())
             while (font.size > 0f) {
                 if (graphics.getFontMetrics(font).stringWidth(fitThis) < width) break
-                font = font.deriveFont(font.size - .5f)
+                fontSize = fontSize - .5f
+                font = font.deriveFont(fontSize)
             }
             if (font.size < 1f) throw IllegalStateException("Cannot get font size")
             eightBallFont = font
@@ -53,20 +56,20 @@ class EightBall(private val graphics: Graphics2D, private val width: Int = 128, 
     private val eightBallImage by lazy { loadImage("/8-ball.png") }
     private val imageX = (width - height) / 2
 
-    fun next(imageDuration: Duration) = with(graphics) {
+    fun image() = with(graphics) {
+        clearRect(0, 0, width, height)
+        drawImage(eightBallImage, imageX, 0, height, height, null)
+    }
+
+    fun next() = with(graphics) {
         color = Color.WHITE
         background = Color.BLACK
         font = eightBallFont
 
         clearRect(0, 0, width, height)
-        drawImage(eightBallImage, imageX, 0, height, height, null)
-        imageDuration.sleep()
-
-        clearRect(0, 0, width, height)
         val sayThis = eightBallList.random()
-        val x = fontMetrics.stringWidth(sayThis)
+        val x = (width - fontMetrics.stringWidth(sayThis)) / 2
         val y = fontMetrics.ascent + (height - fontMetrics.height) / 2
         drawString(sayThis, x, y)
     }
-
 }

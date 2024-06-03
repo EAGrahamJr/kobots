@@ -24,6 +24,7 @@ import crackers.kobots.app.multiplexor
 import crackers.kobots.graphics.loadImage
 import crackers.kobots.parts.elapsed
 import crackers.kobots.parts.scheduleWithFixedDelay
+import crackers.kobots.parts.sleep
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.awt.Graphics2D
@@ -33,7 +34,7 @@ import java.time.Instant
 import java.util.concurrent.Future
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.toKotlinDuration
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Shows stuff on a timed basis.
@@ -47,7 +48,7 @@ object LargerMonitor : AppCommon.Startable {
     private val imageType = BufferedImage.TYPE_BYTE_BINARY
 
     private val screenGraphics: Graphics2D
-    private val screenImage = BufferedImage(MAX_WD, MAX_HT * 2, imageType).also { img: BufferedImage ->
+    private val screenImage = BufferedImage(MAX_WD, MAX_HT, imageType).also { img: BufferedImage ->
         screenGraphics = (img.graphics as Graphics2D).apply {
             background = Color.BLACK
         }
@@ -119,15 +120,23 @@ object LargerMonitor : AppCommon.Startable {
                                     VerticalStatusDisplay.sleep()
 
                                     ballerTimer = Instant.now()
-                                    randomIdleTime = Duration.ofMinutes(Random.nextLong(3))
+                                    randomIdleTime = Duration.ofMinutes(Random.nextLong(3).also {
+                                        logger.debug("Screen on -- baller in ${it} min")
+                                    })
                                 } else {
                                     // has baller expired? (e.g. time to show
                                     if (ballerTimer.elapsed() > randomIdleTime) {
-                                        ballerTimer = Instant.now() + Duration.ofSeconds(1)
+                                        logger.debug("Not on - time to show")
+                                        ballerTimer = Instant.now() + Duration.ofSeconds(5)
                                         currentMode = Mode.BALLER
-                                        screen.visible(true)
-                                        ball8.next(BALL8EXPIRY.toKotlinDuration())
-                                        screen.display(screenImage)
+                                        with(screen) {
+                                            visible(true)
+                                            ball8.image()
+                                            display(screenImage)
+                                            5.seconds.sleep()
+                                            ball8.next()
+                                            display(screenImage)
+                                        }
                                     }
                                 }
                             }

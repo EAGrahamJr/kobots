@@ -84,7 +84,7 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     }
 
     val wavyThing by lazy {
-        ServoRotator(crickit.servo(2, ServoTrim.TOWERPRO_SG90), 0..180)
+        ServoRotator(crickit.servo(2, ServoTrim.TOWERPRO_SG90).apply { angle = 0f }, 0..180)
     }
 
     override fun canRun() = AppCommon.applicationRunning
@@ -107,7 +107,6 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
         // forces everything to stop
         super.stop()
 
-        logger.info("Setting latch")
         stopLatch = CountDownLatch(1)
 
         if (::crickit.isInitialized) {

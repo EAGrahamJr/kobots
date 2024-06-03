@@ -20,7 +20,6 @@ package crackers.kobots.app.enviro
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.CannedSequences
 import crackers.kobots.app.Jimmy
-import crackers.kobots.app.enviro.HAStuff.startDevices
 import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceRequest
 import crackers.kobots.parts.scheduleAtFixedRate
@@ -63,7 +62,7 @@ object DieAufseherin : AppCommon.Startable {
     override fun start() {
         localStuff()
         mqttStuff()
-        startDevices()
+        HAStuff.start()
     }
 
     override fun stop() {
