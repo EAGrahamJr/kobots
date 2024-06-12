@@ -14,10 +14,15 @@
  * permissions and limitations under the License.
  */
 
-plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.5.0"
-}
+package crackers.kobots.things
 
-rootProject.name = "kobots"
-include("brainz", "servomatic")
-include("junk", "notused")
+import com.diozero.api.I2CDeviceInterface
+import crackers.kobots.devices.display.HT16K33.Companion.DEFAULT_I2C_ADDRESS
+
+/**
+ * Stubs around I2C for junk.
+ */
+object I2CFactory {
+    val segmundAddress = DEFAULT_I2C_ADDRESS + 1
+    lateinit var segmundDevice: I2CDeviceInterface
+}

@@ -15,9 +15,12 @@
  */
 
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.5.0"
+    id("application-conventions")
 }
 
-rootProject.name = "kobots"
-include("brainz", "servomatic")
-include("junk", "notused")
+dependencies {
+    implementation("com.typesafe:config:1.4.1")
+    implementation("crackers.automation:hassk:0.0.1") {
+        exclude(group = "ch.qos.logback")
+    }
+}
