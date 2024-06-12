@@ -100,9 +100,9 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
 
     private val maxServoRange = 0..ServoTrim.MG90S.maxAngle
 
-    val servo1 = hat.getServo(0, ServoTrim.MG90S, 0)
+    // TODO D-H frame coordinate system, these are almost all _reversed_ for right-hand coordinate system
     val swing by lazy {
-        servo1.rotator(SWING_HOME..SWING_MAX, maxServoRange)
+        hat.getServo(0, ServoTrim.MG90S, 0).rotator(SWING_HOME..SWING_MAX, maxServoRange)
     }
 
     val boomLink by lazy {
@@ -114,8 +114,7 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
     }
 
     val gripper by lazy {
-        val servo = hat.getServo(3, ServoTrim.MG90S, 0)
-        ServoLinearActuator(servo, 0f, 80f)
+        hat.getServo(3, ServoTrim.MG90S, 0).let { servo -> ServoLinearActuator(servo, 0f, 80f) }
     }
 
     val bucketLink by lazy {
