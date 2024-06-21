@@ -19,14 +19,9 @@ plugins {
 }
 
 dependencies {
-    implementation("crackers.kobots:kobots-parts:0.0.1")
 //    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
 //    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
-    // more HA craziness
-    implementation("crackers.automation:hassk:0.0.1") {
-        exclude(group = "ch.qos.logback")
-    }
-    implementation("com.typesafe:config:1.4.2")
+
 }
 
 project.ext.set("jar.name", "brainz")

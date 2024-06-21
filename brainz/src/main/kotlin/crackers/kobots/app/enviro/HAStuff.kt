@@ -71,8 +71,7 @@ object HAStuff : AppCommon.Startable {
     }
     private val wavyEntity = KobotNumberEntity(
         wavyHandler, "brainz_wavy", "Wavy Thing", haIdentifier,
-        min = 0, max = 180, mode = KobotNumberEntity.Companion.DisplayMode
-            .SLIDER, unitOfMeasurement = "deg"
+        min = 0, max = 90, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "deg"
     )
 
     override fun start() {

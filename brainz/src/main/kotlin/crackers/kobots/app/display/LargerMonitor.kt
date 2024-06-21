@@ -120,7 +120,7 @@ object LargerMonitor : AppCommon.Startable {
                                     VerticalStatusDisplay.sleep()
 
                                     ballerTimer = Instant.now()
-                                    randomIdleTime = Duration.ofMinutes(Random.nextLong(3).also {
+                                    randomIdleTime = Duration.ofMinutes(Random.nextLong(1, 5).also {
                                         logger.debug("Screen on -- baller in ${it} min")
                                     })
                                 } else {

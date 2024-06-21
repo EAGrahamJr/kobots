@@ -23,14 +23,15 @@ import crackers.kobots.app.enviro.HAStuff
 import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.movement.BasicStepperRotator
 import crackers.kobots.parts.movement.SequenceExecutor
 import crackers.kobots.parts.movement.SequenceRequest
 import crackers.kobots.parts.movement.ServoRotator
+import crackers.kobots.parts.sleep
 import java.awt.Color
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.milliseconds
 import crackers.kobots.app.enviro.DieAufseherin as DA
 
 /**
@@ -47,10 +48,15 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
 
     val crickitNeoPixel by lazy { crickit.neoPixel(8).apply { brightness = .005f } }
 
+    // steppers set to
+    private val driveStepper by lazy { BasicStepperMotor(2048, crickit.unipolarStepperPort()) }
+    private val motorStepper by lazy { BasicStepperMotor(2048, crickit.motorStepperPort()) }
+    private val servo1 by lazy { crickit.servo(1, ServoTrim.MG90S).apply { angle = 0f } }
+    private val servo2 by lazy { crickit.servo(2, ServoTrim.TOWERPRO_SG90).apply { angle = 0f } }
+
     const val ABSOLUTE_AZIMUTH_LIMIT = 270
     val sunAzimuth by lazy {
-        val azimuthStepper by lazy { BasicStepperMotor(4096, crickit.unipolarStepperPort()) }
-        object : BasicStepperRotator(azimuthStepper, stepStyle = StepStyle.INTERLEAVE) {
+        object : BasicStepperRotator(driveStepper, stepStyle = StepStyle.INTERLEAVE, stepsPerRotation = 4096) {
             override fun limitCheck(whereTo: Int): Boolean {
                 return angleLocation > ABSOLUTE_AZIMUTH_LIMIT || polly.hasCracker().also {
                     if (it) super.reset()
@@ -59,33 +65,32 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
 
             override fun reset() {
                 // run it forward a little bit
-                logger.info("Rotate forward")
-                (1..azimuthStepper.stepsPerRotation / 8).forEach {
-                    azimuthStepper.step(forwardDirection)
-                    KobotSleep.millis(10)
+                logger.info("Stepping away")
+                (1..driveStepper.stepsPerRotation / 8).forEach {
+                    driveStepper.step(forwardDirection, StepStyle.INTERLEAVE)
+                    5.milliseconds.sleep()
                 }
                 logger.info("Looking for cracker")
                 while (polly.wantsCracker()) {
-                    azimuthStepper.step(backwardDirection)
-                    KobotSleep.millis(10)
+                    driveStepper.step(backwardDirection, StepStyle.INTERLEAVE)
+                    5.milliseconds.sleep()
                 }
+                logger.info("Cracker acquired")
                 super.reset()
             }
         }
     }
 
-    private val elevationServo by lazy { crickit.servo(1, ServoTrim.MG90S).apply { angle = 0f } }
+
     val sunElevation by lazy {
-        object : ServoRotator(elevationServo, 0..90) {
+        object : ServoRotator(servo1, 0..90) {
             override fun rotateTo(angle: Int): Boolean {
                 return super.rotateTo(if (angle > 0) angle else 0)
             }
         }
     }
 
-    val wavyThing by lazy {
-        ServoRotator(crickit.servo(2, ServoTrim.TOWERPRO_SG90).apply { angle = 0f }, 0..180)
-    }
+    val wavyThing by lazy { ServoRotator(servo2, 0..90) }
 
     override fun canRun() = AppCommon.applicationRunning
 

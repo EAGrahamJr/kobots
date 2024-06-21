@@ -104,7 +104,7 @@ object DieAufseherin : AppCommon.Startable {
 //            BrainzActions.CLUCK -> DisplayDos.cluck()
 //            BrainzActions.RANDOM_EYES -> DisplayDos.randomEye()
             BrainzActions.RESET -> jimmy(CannedSequences.resetHome)
-            BrainzActions.SAY_HI -> {}
+            BrainzActions.SAY_HI -> jimmy(CannedSequences.holySpit)
             else -> logger.warn("Unknown command: $payload")
         }
     }

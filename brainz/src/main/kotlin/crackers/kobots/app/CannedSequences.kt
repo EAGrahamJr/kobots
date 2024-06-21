@@ -16,28 +16,78 @@
 
 package crackers.kobots.app
 
+import crackers.kobots.app.Jimmy.crickitNeoPixel
+import crackers.kobots.app.Jimmy.sunAzimuth
+import crackers.kobots.app.Jimmy.sunElevation
+import crackers.kobots.app.Jimmy.wavyThing
+import crackers.kobots.devices.lighting.WS2811
+import crackers.kobots.parts.ORANGISH
+import crackers.kobots.parts.app.KobotSleep
+import crackers.kobots.parts.colorIntervalFromHSB
+import crackers.kobots.parts.movement.DefaultActionSpeed
 import crackers.kobots.parts.movement.sequence
+import java.awt.Color
 
 /**
  * Ibid
  */
 object CannedSequences {
     val home = sequence {
+        name = "Home"
         action {
-            Jimmy.sunElevation rotate 0
-            Jimmy.sunAzimuth rotate 0
-//            requestedSpeed = DefaultActionSpeed.SLOW
+            execute {
+                if (crickitNeoPixel[7].color != Color.RED)
+                    crickitNeoPixel + WS2811.PixelColor(ORANGISH, brightness = .1f)
+                true
+            }
+            sunElevation rotate 0
+            sunAzimuth rotate 0
+            wavyThing rotate 0
+        }
+        action {
+            execute {
+                crickitNeoPixel + Color.BLACK
+                true
+            }
         }
     }
 
     val resetHome = sequence {
+        name = "Reset Sun Azimuth"
         this += home
         action {
             execute {
-                Jimmy.sunAzimuth.apply {
+                sunAzimuth.apply {
                     reset()
                     release()
                 }
+                true
+            }
+        }
+    }
+
+
+    val holySpit = sequence {
+        name = "Holy Spit!"
+        action {
+            wavyThing rotate 90
+            requestedSpeed = DefaultActionSpeed.VERY_FAST
+            execute {
+                crickitNeoPixel[0, 7] = colorIntervalFromHSB(0f, 359f, 8)
+                    .map { WS2811.PixelColor(it, brightness = .02f) }
+                true
+            }
+        }
+        action {
+            execute {
+                KobotSleep.seconds(15)
+                true
+            }
+        }
+        action {
+            wavyThing rotate 0
+            execute {
+                crickitNeoPixel + Color.BLACK
                 true
             }
         }
@@ -48,9 +98,10 @@ object CannedSequences {
         (azimuth + AZIMUTH_OFFSET).let { az ->
             if (elevation < 0 || az >= Jimmy.ABSOLUTE_AZIMUTH_LIMIT) home
             else sequence {
+                name = "Set Sun"
                 action {
-                    Jimmy.sunAzimuth rotate az
-                    Jimmy.sunElevation rotate elevation
+                    sunAzimuth rotate az
+                    sunElevation rotate elevation
                 }
             }
         }
