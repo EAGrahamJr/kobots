@@ -31,6 +31,7 @@ import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalTime
 import java.util.concurrent.Future
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
@@ -123,13 +124,15 @@ object LargerMonitor : AppCommon.Startable {
                                     randomIdleTime = Duration.ofMinutes(Random.nextLong(1, 5).also {
                                         logger.debug("Screen on -- baller in ${it} min")
                                     })
+                                } else if (LocalTime.now().hour !in 8..20) {
+                                    // do nothing -- night-time
                                 } else {
                                     // has baller expired? (e.g. time to show
                                     if (ballerTimer.elapsed() > randomIdleTime) {
                                         logger.debug("Not on - time to show")
                                         ballerTimer = Instant.now() + Duration.ofSeconds(5)
                                         currentMode = Mode.BALLER
-                                        with(screen) {
+                                        if (LocalTime.now().hour in 8..20) with(screen) {
                                             visible(true)
                                             ball8.image()
                                             display(screenImage)
@@ -151,13 +154,16 @@ object LargerMonitor : AppCommon.Startable {
                         }
                     }
 
-                    DieAufseherin.SystemMode.IN_MOTION -> toMonitor()
-                    DieAufseherin.SystemMode.MANUAL -> toMonitor()
+//                    DieAufseherin.SystemMode.IN_MOTION -> toMonitor()
+//                    DieAufseherin.SystemMode.MANUAL -> toMonitor()
 
                     DieAufseherin.SystemMode.SHUTDOWN -> {
                         currentMode = Mode.OFF
                         screen.visible(false)
                         ballerTimer = Instant.now() + Duration.ofMinutes(5)
+                    }
+                    else -> {
+                        // TODO something else with the other things?
                     }
                 }
             }

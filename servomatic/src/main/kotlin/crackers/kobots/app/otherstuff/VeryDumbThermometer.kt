@@ -49,6 +49,13 @@ object VeryDumbThermometer {
         action {
             thermoStepper rotate 0
         }
+        action {
+            execute {
+                thermoStepper.release()
+                true
+            }
+        }
+
     }
 
     /**

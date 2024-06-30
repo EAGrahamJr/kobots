@@ -35,8 +35,8 @@ internal lateinit var multiplexor: I2CMultiplexer
 
 private val logger = LoggerFactory.getLogger("BRAINZ")
 
-private val startables = listOf(DisplayDos, Jimmy, DieAufseherin, LargerMonitor)
-private val stoppables = listOf(LargerMonitor, DieAufseherin, Jimmy, DisplayDos)
+private val startables = listOf(DisplayDos, Jimmy, DieAufseherin, LargerMonitor, Segmenter)
+private val stoppables = listOf(Segmenter, LargerMonitor, DieAufseherin, Jimmy, DisplayDos)
 private val stopFlag = AtomicBoolean(false)
 
 /**

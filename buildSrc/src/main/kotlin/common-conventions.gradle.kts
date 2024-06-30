@@ -38,7 +38,7 @@ kotlin {
 
 kotlinter {
     ignoreFailures = true
-    disabledRules = arrayOf("no-wildcard-imports")
+//    disabledRules = arrayOf("no-wildcard-imports")
 }
 
 tasks {

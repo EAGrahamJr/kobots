@@ -26,9 +26,7 @@ dependencies {
     implementation("org.eclipse.paho:org.eclipse.paho.mqttv5.client:1.2.5")
     implementation("org.json:json:20231013")
     // more HA craziness
-    implementation("crackers.automation:hassk:0.0.1") {
-        exclude(group = "ch.qos.logback")
-    }
+    implementation("crackers.automation:hassk:0+")
     implementation("com.typesafe:config:1.4.2")
 }
 

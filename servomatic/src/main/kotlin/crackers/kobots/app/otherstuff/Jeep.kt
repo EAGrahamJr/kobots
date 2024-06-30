@@ -25,9 +25,9 @@ import com.diozero.api.PwmOutputDevice
 object Jeep {
     val noodleLamp = PwmOutputDevice(4)
     val stepper1Pins = listOf(
-        DigitalOutputDevice(17),
-        DigitalOutputDevice(18),
-        DigitalOutputDevice(10),
-        DigitalOutputDevice(9)
+        DigitalOutputDevice(27),
+        DigitalOutputDevice(21),
+        DigitalOutputDevice(13),
+        DigitalOutputDevice(26)
     )
 }

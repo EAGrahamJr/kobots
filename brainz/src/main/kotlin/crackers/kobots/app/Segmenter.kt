@@ -31,11 +31,14 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * 4 digit 14 segment display
  */
-object Segmenter : AutoCloseable {
+object Segmenter : AutoCloseable, AppCommon.Startable {
     private val logger = LoggerFactory.getLogger("Segmenter")
-    private val segmenter = QwiicAlphanumericDisplay().apply {
-        brightness = 0.05f
-        clear()
+    private val segmenter by lazy {
+        val device = multiplexor.getI2CDevice(7, HT16K33.DEFAULT_I2C_ADDRESS + 1)
+        QwiicAlphanumericDisplay(listOf(device)).apply {
+            brightness = 0.05f
+            clear()
+        }
     }
     private lateinit var cluckFuture: Future<*>
 
@@ -59,7 +62,7 @@ object Segmenter : AutoCloseable {
     private val CLUCK_EXPIRES = java.time.Duration.ofSeconds(5)
     private val TIME_EXPIRES = java.time.Duration.ofSeconds(30)
 
-    fun start() {
+    override fun start() {
         segmenter.clear()
         var colon = true
 
@@ -114,8 +117,8 @@ object Segmenter : AutoCloseable {
     }
 
     override fun close() = stop()
-    fun stop() {
-        if (Segmenter::cluckFuture.isInitialized) {
+    override fun stop() {
+        if (::cluckFuture.isInitialized) {
             try {
                 cluckFuture.cancel(true)
                 segmenter.clear()
