@@ -43,7 +43,7 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     private lateinit var crickit: CRICKITHat
     private lateinit var polly: VCNL4040
 
-    private fun VCNL4040.wantsCracker() = proximity < CRACKER
+    private fun VCNL4040.wantsCracker() = AppCommon.ignoreErrors({ proximity < CRACKER }) ?: false
     private fun VCNL4040.hasCracker() = !wantsCracker()
 
     val crickitNeoPixel by lazy { crickit.neoPixel(8).apply { brightness = .005f } }

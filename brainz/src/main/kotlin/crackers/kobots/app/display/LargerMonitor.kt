@@ -20,18 +20,16 @@ import com.diozero.devices.oled.SH1106
 import com.diozero.devices.oled.SsdOledCommunicationChannel
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.enviro.DieAufseherin
+import crackers.kobots.app.isDaytime
 import crackers.kobots.app.multiplexor
 import crackers.kobots.graphics.loadImage
-import crackers.kobots.parts.elapsed
-import crackers.kobots.parts.scheduleWithFixedDelay
-import crackers.kobots.parts.sleep
+import crackers.kobots.parts.*
 import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalTime
 import java.util.concurrent.Future
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
@@ -77,32 +75,48 @@ object LargerMonitor : AppCommon.Startable {
         }
         loadImage("/oh-yeah.png").apply {
             screenGraphics.drawImage(this, 0, 0, MAX_WD, MAX_HT, null)
-            screen.setDisplayOn(true)
+            screen.display = on
             screen.display(screenImage)
-        }
-
-        var screenOn = true
-        fun SH1106.visible(b: Boolean) {
-            if (b) {
-                if (!screenOn) {
-                    screenOn = true
-                    setDisplayOn(true)
-                }
-            } else if (screenOn) {
-                screenOn = false
-                setDisplayOn(false)
-            }
         }
 
         // get ready for drawing our thing(s)
         screenGraphics.clear()
-        var ballerTimer = Instant.now()
+        var monitorTimer = Instant.now()
         var currentMode = Mode.OFF
         var randomIdleTime = Duration.ofMinutes(1)
 
+        fun notBusy() {
+            // don't show shit at night
+            if (!isDaytime) {
+                if (screen.display) screen.display = off
+            } else if (screen.display) {
+                screen.display = off
+
+                monitorTimer = Instant.now()
+                randomIdleTime = Duration.ofMinutes(Random.nextLong(1, 5).also {
+                    logger.debug("Screen on -- baller in ${it} min")
+                })
+            } else {
+                // has baller expired? (e.g. time to show
+                if (monitorTimer.elapsed() > randomIdleTime) {
+                    logger.debug("Not on - time to show")
+                    currentMode = Mode.BALLER
+                    with(screen) {
+                        display = on
+                        ball8.image()
+                        display(screenImage)
+                        5.seconds.sleep()
+                        ball8.next()
+                        display(screenImage)
+                    }
+                    monitorTimer = Instant.now()
+                }
+            }
+        }
+
         fun toMonitor() {
             if (currentMode != Mode.MONITOR) {
-                screen.visible(true)
+                screen.display = on
                 DisplayDos.showEyes(DisplayDos.LOOK_LEFT)
             }
             currentMode = Mode.MONITOR
@@ -112,59 +126,32 @@ object LargerMonitor : AppCommon.Startable {
         future = AppCommon.executor.scheduleWithFixedDelay(100.milliseconds, 100.milliseconds) {
             AppCommon.whileRunning {
                 when (DieAufseherin.currentMode) {
+                    // go away
+                    DieAufseherin.SystemMode.SHUTDOWN -> {
+                        screen.close()
+                    }
+                    // display shit when not doing anything
                     DieAufseherin.SystemMode.IDLE -> {
                         when (currentMode) {
-                            Mode.OFF -> {
-                                if (screenOn) {
-                                    screen.visible(false)
-                                    DisplayDos.eyesReset()
-                                    VerticalStatusDisplay.sleep()
-
-                                    ballerTimer = Instant.now()
-                                    randomIdleTime = Duration.ofMinutes(Random.nextLong(1, 5).also {
-                                        logger.debug("Screen on -- baller in ${it} min")
-                                    })
-                                } else if (LocalTime.now().hour !in 8..20) {
-                                    // do nothing -- night-time
-                                } else {
-                                    // has baller expired? (e.g. time to show
-                                    if (ballerTimer.elapsed() > randomIdleTime) {
-                                        logger.debug("Not on - time to show")
-                                        ballerTimer = Instant.now() + Duration.ofSeconds(5)
-                                        currentMode = Mode.BALLER
-                                        if (LocalTime.now().hour in 8..20) with(screen) {
-                                            visible(true)
-                                            ball8.image()
-                                            display(screenImage)
-                                            5.seconds.sleep()
-                                            ball8.next()
-                                            display(screenImage)
-                                        }
-                                    }
-                                }
-                            }
+                            Mode.OFF -> notBusy()
 
                             Mode.MONITOR -> {
                                 currentMode = Mode.OFF
+                                DisplayDos.eyesReset()
                             }
 
                             Mode.BALLER -> {
-                                if (ballerTimer.elapsed() > BALL8EXPIRY) currentMode = Mode.OFF
+                                if (monitorTimer.elapsed() > BALL8EXPIRY) currentMode = Mode.OFF
                             }
                         }
                     }
 
-//                    DieAufseherin.SystemMode.IN_MOTION -> toMonitor()
-//                    DieAufseherin.SystemMode.MANUAL -> toMonitor()
-
-                    DieAufseherin.SystemMode.SHUTDOWN -> {
-                        currentMode = Mode.OFF
-                        screen.visible(false)
-                        ballerTimer = Instant.now() + Duration.ofMinutes(5)
-                    }
                     else -> {
                         // TODO something else with the other things?
                     }
+//                    DieAufseherin.SystemMode.IN_MOTION -> toMonitor()
+//                    DieAufseherin.SystemMode.MANUAL -> toMonitor()
+
                 }
             }
         }

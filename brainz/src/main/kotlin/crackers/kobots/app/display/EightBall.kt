@@ -16,7 +16,9 @@
 
 package crackers.kobots.app.display
 
+import crackers.kobots.graphics.center
 import crackers.kobots.graphics.loadImage
+import crackers.kobots.graphics.middle
 import java.awt.Color
 import java.awt.Font
 import java.awt.Graphics2D
@@ -25,10 +27,16 @@ import kotlin.math.roundToInt
 /**
  * 8-ball for small displays. Default size is for a "large" OLED (128x128).
  *
- * An image of the 8-ball is first displayed for a given period of time (default 5 seconds) and then a randomly selected
- * "fortune" is presented.
+ * An image of the 8-ball is scaled to fit and the [next] function will print the fortune. Note that both will clear
+ * the designated region
  */
-class EightBall(private val graphics: Graphics2D, private val width: Int = 128, private val height: Int = 128) {
+class EightBall(
+    private val graphics: Graphics2D,
+    private val x: Int = 0,
+    private val y: Int = 0,
+    private val width: Int = 128,
+    private val height: Int = 128
+) {
     private val eightBallFont: Font
 
     // TODO use multi-line responses, line-breaks, and a bigger font!
@@ -57,7 +65,7 @@ class EightBall(private val graphics: Graphics2D, private val width: Int = 128, 
     private val imageX = (width - height) / 2
 
     fun image() = with(graphics) {
-        clearRect(0, 0, width, height)
+        clearRect(x, y, width, height)
         drawImage(eightBallImage, imageX, 0, height, height, null)
     }
 
@@ -66,10 +74,10 @@ class EightBall(private val graphics: Graphics2D, private val width: Int = 128, 
         background = Color.BLACK
         font = eightBallFont
 
-        clearRect(0, 0, width, height)
+        clearRect(y, x, width, height)
         val sayThis = eightBallList.random()
-        val x = (width - fontMetrics.stringWidth(sayThis)) / 2
-        val y = fontMetrics.ascent + (height - fontMetrics.height) / 2
-        drawString(sayThis, x, y)
+        val textX = fontMetrics.center(sayThis, width)
+        val textY = fontMetrics.middle(height)
+        drawString(sayThis, textX + x, textY + y)
     }
 }

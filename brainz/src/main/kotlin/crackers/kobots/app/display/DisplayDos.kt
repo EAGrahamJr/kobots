@@ -24,9 +24,9 @@ import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.whileRunning
 import crackers.kobots.app.multiplexor
 import crackers.kobots.graphics.animation.*
+import crackers.kobots.graphics.fitFont
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.elapsed
-import crackers.kobots.parts.fitFont
 import crackers.kobots.parts.scheduleWithFixedDelay
 import org.slf4j.LoggerFactory
 import java.awt.Color
@@ -45,7 +45,6 @@ import kotlin.time.Duration.Companion.seconds
  * Shows text and time in a multi-segment like font, as well as eyes.
  */
 object DisplayDos : AppCommon.Startable {
-
     private val logger = LoggerFactory.getLogger("DisplayDos")
     private lateinit var dosScreen: SSD1306
     private val MAX_WD = MonochromeSsdOled.DEFAULT_WIDTH
@@ -80,7 +79,7 @@ object DisplayDos : AppCommon.Startable {
                 logger.debug("Mode changed to {}", m)
                 mode.set(m)
                 timerStart = Instant.now()
-                dosScreen.setDisplayOn(m != Mode.IDLE)
+                dosScreen.display = m != Mode.IDLE
             }
         }
 
@@ -98,7 +97,7 @@ object DisplayDos : AppCommon.Startable {
             val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2c)
             SSD1306(channel, Height.SHORT).apply {
                 setContrast(0x20)
-                setDisplayOn(false)
+                display = false
             }
         }
         clear()

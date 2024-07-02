@@ -22,9 +22,11 @@ import crackers.kobots.app.AppCommon.convenientStartupHook
 import crackers.kobots.app.AppCommon.executor
 import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.display.LargerMonitor
+import crackers.kobots.app.display.VerticalStatusDisplay
 import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.devices.expander.I2CMultiplexer
 import org.slf4j.LoggerFactory
+import java.time.LocalTime
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
@@ -35,8 +37,8 @@ internal lateinit var multiplexor: I2CMultiplexer
 
 private val logger = LoggerFactory.getLogger("BRAINZ")
 
-private val startables = listOf(DisplayDos, Jimmy, DieAufseherin, LargerMonitor, Segmenter)
-private val stoppables = listOf(Segmenter, LargerMonitor, DieAufseherin, Jimmy, DisplayDos)
+private val startables = listOf(DisplayDos, VerticalStatusDisplay, Jimmy, DieAufseherin, LargerMonitor)
+private val stoppables = listOf(VerticalStatusDisplay, LargerMonitor, DieAufseherin, Jimmy, DisplayDos)
 private val stopFlag = AtomicBoolean(false)
 
 /**
@@ -68,3 +70,6 @@ private fun stopAll() {
         multiplexor.close()
     }
 }
+
+internal val isDaytime: Boolean
+    get() = LocalTime.now().hour in 8..22

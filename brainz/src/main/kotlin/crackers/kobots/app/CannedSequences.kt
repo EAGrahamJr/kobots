@@ -24,6 +24,7 @@ import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.parts.ORANGISH
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.colorIntervalFromHSB
+import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.DefaultActionSpeed
 import crackers.kobots.parts.movement.sequence
 import java.awt.Color
@@ -94,9 +95,11 @@ object CannedSequences {
     }
 
     const val AZIMUTH_OFFSET = 15
-    fun setSun(azimuth: Int, elevation: Int) =
+    fun setSun(azimuth: Int, elevation: Int): ActionSequence? =
         (azimuth + AZIMUTH_OFFSET).let { az ->
-            if (elevation < 0 || az >= Jimmy.ABSOLUTE_AZIMUTH_LIMIT) home
+            if (elevation < 0 || az >= Jimmy.ABSOLUTE_AZIMUTH_LIMIT) {
+                if (sunAzimuth.current() != 0) home else null
+            }
             else sequence {
                 name = "Set Sun"
                 action {
