@@ -19,6 +19,7 @@ package crackers.kobots.app
 import com.diozero.api.ServoTrim
 import com.diozero.devices.PCA9685
 import com.diozero.devices.ServoController
+import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.app.newarm.Predestination
 import crackers.kobots.app.otherstuff.Jeep
 import crackers.kobots.devices.set
@@ -55,7 +56,8 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
 
         logger.info("Setting latch")
         stopLatch = CountDownLatch(1)
-        val fullStopSequence = Predestination.gripperOpen + Predestination.outOfTheWay + Predestination.homeSequence
+        val fullStopSequence = VeryDumbThermometer.reset + Predestination.gripperOpen + Predestination.outOfTheWay +
+            Predestination.homeSequence
         handleRequest(SequenceRequest(fullStopSequence))
         if (!stopLatch.await(30, TimeUnit.SECONDS)) {
             logger.error("Arm not homed in 30 seconds")

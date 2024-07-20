@@ -17,14 +17,12 @@
 package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
+import crackers.kobots.app.CannedSequences
 import crackers.kobots.app.Jimmy
 import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.mqtt.homeassistant.*
 import crackers.kobots.parts.enumValue
-import crackers.kobots.parts.movement.DefaultActionSpeed
 import crackers.kobots.parts.movement.SequenceRequest
-import crackers.kobots.parts.movement.sequence
-import kotlin.math.roundToInt
 
 object HAStuff : AppCommon.Startable {
     val haIdentifier = DeviceIdentifier("Kobots", "BRAINZ")
@@ -61,21 +59,39 @@ object HAStuff : AppCommon.Startable {
         override fun currentState() = Jimmy.wavyThing.current().toFloat()
 
         override fun set(target: Float) {
-            Jimmy.handleRequest(SequenceRequest(sequence {
-                action {
-                    Jimmy.wavyThing rotate target.roundToInt()
-                    requestedSpeed = DefaultActionSpeed.VERY_FAST
-                }
-            }))
+            Jimmy.handleRequest(SequenceRequest(CannedSequences.setWavy(target)))
         }
     }
     private val wavyEntity = KobotNumberEntity(
         wavyHandler, "brainz_wavy", "Wavy Thing", haIdentifier,
         min = 0, max = 90, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "deg"
     )
+    private val liftyHandler = object : KobotNumberEntity.Companion.NumberHandler {
+        override fun currentState() = Jimmy.liftyThing.current().toFloat()
+
+        override fun set(target: Float) {
+            Jimmy.handleRequest(SequenceRequest(CannedSequences.setLifter(target)))
+        }
+    }
+    private val liftyEntity = KobotNumberEntity(
+        liftyHandler, "brainz_lift", "Lift", haIdentifier,
+        min = 0, max = 100, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "%"
+    )
+
+    private val twistyHandler = object : KobotNumberEntity.Companion.NumberHandler {
+        override fun currentState() = Jimmy.twistyThing.current().toFloat()
+
+        override fun set(target: Float) {
+            Jimmy.handleRequest(SequenceRequest(CannedSequences.setTwisty(target)))
+        }
+    }
+    private val twistyEntity = KobotNumberEntity(
+        twistyHandler, "brainz_twisty", "Twisty THing", haIdentifier,
+        min = 0, max = 180, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "deg"
+    )
 
     override fun start() {
-        listOf(selector, rosetteStrand, textDosEntity, wavyEntity).forEach { it.start() }
+        listOf(selector, rosetteStrand, textDosEntity, wavyEntity, liftyEntity, twistyEntity).forEach { it.start() }
     }
 
     override fun stop() {
@@ -83,6 +99,6 @@ object HAStuff : AppCommon.Startable {
     }
 
     internal fun updateEverything() {
-        listOf(wavyEntity).forEach { it.sendCurrentState() }
+        listOf(wavyEntity, liftyEntity, twistyEntity).forEach { it.sendCurrentState() }
     }
 }

@@ -39,6 +39,7 @@ import java.time.Instant
 import java.time.LocalTime
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -79,7 +80,7 @@ object DisplayDos : AppCommon.Startable {
                 logger.debug("Mode changed to {}", m)
                 mode.set(m)
                 timerStart = Instant.now()
-                dosScreen.display = m != Mode.IDLE
+                if (m == Mode.IDLE) matrixRain.start { dosScreen.display(image) } else matrixRain.stop()
             }
         }
 
@@ -91,13 +92,21 @@ object DisplayDos : AppCommon.Startable {
     private var eyesLastChanged = Instant.EPOCH
     private val currentExpression = AtomicReference<Expression>()
 
+    // pretty stuff
+    private val matrixRain = MatrixRain(
+        graphics, 0, 0, MAX_WD, MAX_HT,
+        displayFont = Font(Font.SANS_SERIF, Font.PLAIN, 4),
+        useBold = true,
+        updateSpeed = 75.milliseconds,
+        normalColor = Color.WHITE
+    )
     override fun start() {
         dosScreen = run {
             val i2c = multiplexor.getI2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
             val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2c)
             SSD1306(channel, Height.SHORT).apply {
                 setContrast(0x20)
-                display = false
+                display = true
             }
         }
         clear()

@@ -23,10 +23,7 @@ import crackers.kobots.app.enviro.HAStuff
 import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.parts.movement.BasicStepperRotator
-import crackers.kobots.parts.movement.SequenceExecutor
-import crackers.kobots.parts.movement.SequenceRequest
-import crackers.kobots.parts.movement.ServoRotator
+import crackers.kobots.parts.movement.*
 import crackers.kobots.parts.sleep
 import java.awt.Color
 import java.util.concurrent.CountDownLatch
@@ -47,12 +44,16 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     private fun VCNL4040.hasCracker() = !wantsCracker()
 
     val crickitNeoPixel by lazy { crickit.neoPixel(8).apply { brightness = .005f } }
+//    val statusPixel by lazy { crickit.statusPixel() }
 
     // steppers set to
     private val driveStepper by lazy { BasicStepperMotor(2048, crickit.unipolarStepperPort()) }
     private val motorStepper by lazy { BasicStepperMotor(2048, crickit.motorStepperPort()) }
     private val servo1 by lazy { crickit.servo(1, ServoTrim.MG90S).apply { angle = 0f } }
+
+    // "backwards" from adafruit drives the piston _out_ to lower the lift
     private val servo2 by lazy { crickit.servo(2, ServoTrim.TOWERPRO_SG90).apply { angle = 0f } }
+    private val servo3 by lazy { crickit.servo(3, ServoTrim.MG90S).apply { angle = 0f } }
 
     const val ABSOLUTE_AZIMUTH_LIMIT = 270
     val sunAzimuth by lazy {
@@ -91,6 +92,10 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     }
 
     val wavyThing by lazy { ServoRotator(servo2, 0..90) }
+    val twistyThing by lazy { ServoRotator(servo3, 0..ServoTrim.MG90S.maxAngle) }
+
+    private const val HOW_TALL = 1024 * 14
+    val liftyThing by lazy { StepperLinearActuator(motorStepper, HOW_TALL, true, StepStyle.INTERLEAVE) }
 
     override fun canRun() = AppCommon.applicationRunning
 
@@ -105,6 +110,7 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
 
     private lateinit var stopLatch: CountDownLatch
 
+    private const val SHUTDOWN_TIMEOUT = 90L
     override fun stop() {
         // already did this
         ::stopLatch.isInitialized && return
@@ -117,8 +123,8 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
         if (::crickit.isInitialized) {
             crickitNeoPixel.fill(WS2811.PixelColor(Color.RED, brightness = .1f))
             handleRequest(SequenceRequest(CannedSequences.home))
-            if (!stopLatch.await(30, TimeUnit.SECONDS)) {
-                logger.error("Arm not homed in 30 seconds")
+            if (!stopLatch.await(SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)) {
+                logger.error("Arm not homed in $SHUTDOWN_TIMEOUT seconds")
             }
             // ensure the steppers are released
             sunAzimuth.release()
@@ -134,6 +140,7 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
 
     override fun postExecution() {
         sunAzimuth.release()
+        liftyThing.release()
         DA.currentMode = DA.SystemMode.IDLE
         HAStuff.updateEverything()
         if (::stopLatch.isInitialized) stopLatch.countDown()

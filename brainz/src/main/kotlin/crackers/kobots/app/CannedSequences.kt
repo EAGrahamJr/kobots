@@ -17,14 +17,17 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.Jimmy.crickitNeoPixel
+import crackers.kobots.app.Jimmy.liftyThing
 import crackers.kobots.app.Jimmy.sunAzimuth
 import crackers.kobots.app.Jimmy.sunElevation
+import crackers.kobots.app.Jimmy.twistyThing
 import crackers.kobots.app.Jimmy.wavyThing
 import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.parts.ORANGISH
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.colorIntervalFromHSB
 import crackers.kobots.parts.movement.ActionSequence
+import crackers.kobots.parts.movement.ActionSpeed
 import crackers.kobots.parts.movement.DefaultActionSpeed
 import crackers.kobots.parts.movement.sequence
 import java.awt.Color
@@ -33,17 +36,31 @@ import java.awt.Color
  * Ibid
  */
 object CannedSequences {
+    val goFast = object : ActionSpeed {
+        override val millis = 0L
+    }
+
+    var lightsOn = false
     val home = sequence {
         name = "Home"
         action {
             execute {
-                if (crickitNeoPixel[7].color != Color.RED)
+                if (!lightsOn && crickitNeoPixel[7].color != Color.RED) {
                     crickitNeoPixel + WS2811.PixelColor(ORANGISH, brightness = .1f)
-                true
+                    lightsOn = true
+                }
+                lightsOn
             }
+        }
+        action {
+            liftyThing goTo 0
+            requestedSpeed = DefaultActionSpeed.VERY_FAST
+        }
+        action {
             sunElevation rotate 0
             sunAzimuth rotate 0
             wavyThing rotate 0
+            twistyThing rotate 0
         }
         action {
             execute {
@@ -108,4 +125,23 @@ object CannedSequences {
                 }
             }
         }
+
+    fun setWavy(target: Float) = sequence {
+        action {
+            wavyThing rotate target.toInt()
+        }
+    }
+
+    fun setLifter(target: Float) = sequence {
+        action {
+            liftyThing goTo target.toInt()
+            requestedSpeed = goFast
+        }
+    }
+
+    fun setTwisty(target: Float) = sequence {
+        action {
+            twistyThing rotate target.toInt()
+        }
+    }
 }
