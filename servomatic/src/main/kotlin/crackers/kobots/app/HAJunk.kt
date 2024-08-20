@@ -31,7 +31,6 @@ import crackers.kobots.app.SuzerainOfServos.boomLink
 import crackers.kobots.app.SuzerainOfServos.bucketLink
 import crackers.kobots.app.SuzerainOfServos.gripper
 import crackers.kobots.app.SuzerainOfServos.swing
-import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.app.otherstuff.Jeep
 import crackers.kobots.mqtt.homeassistant.*
 import crackers.kobots.parts.movement.*
@@ -173,12 +172,6 @@ object HAJunk : Startable {
         bucketEntity.start()
         commandSelectEntity.start()
         tofSensor.start()
-        // assume we can get to temperature at this point
-        with(AppCommon.hasskClient) {
-            val payload = sensor("office_enviro_temperature").state().state
-            val temp = payload.toFloat()
-            VeryDumbThermometer.setTemperature(temp)
-        }
     }
 
     fun sendUpdatedStates() {

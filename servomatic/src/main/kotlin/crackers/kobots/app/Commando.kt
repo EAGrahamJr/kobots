@@ -17,7 +17,6 @@
 package crackers.kobots.app
 
 
-import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.app.newarm.DumbFunc
 import crackers.kobots.app.newarm.Position
 import crackers.kobots.app.newarm.Predestination
@@ -41,7 +40,6 @@ object Commando : KobotSelectEntity.Companion.SelectHandler {
     fun sendItHome() {
         suzi(
             sequence { name = "Home Sweet Home" } +
-                VeryDumbThermometer.reset +
                 Predestination.gripperOpen +
                 Predestination.outOfTheWay +
                 Predestination.homeSequence

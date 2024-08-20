@@ -37,15 +37,29 @@ object HAStuff : AppCommon.Startable {
             val payloadToEnum = enumValue<DieAufseherin.BrainzActions>(select.uppercase())
             DieAufseherin.actionTime(payloadToEnum)
         }
-    }
-    private val selector = KobotSelectEntity(selectorHandler, "brainz_selector", "Brainz", haIdentifier)
 
+    }
+    private val selector = object : KobotSelectEntity(selectorHandler, "brainz_selector", "Brainz", haIdentifier) {
+        override fun currentState(): String {
+            return "None"
+        }
+    }
+
+
+    private val effectList = mapOf(
+        "cycle" to Jimmy::cycleNeo,
+        "pulse" to Jimmy::pulseNeo
+    )
 
     /**
      * Run the 8-bit circular NeoPixel thing
      */
     private val rosetteStrand =
-        KobotRGBLight("crickit_rosette", PixelBufController(Jimmy.crickitNeoPixel), "Crickit Neopixel", haIdentifier)
+        KobotRGBLight(
+            "crickit_rosette", PixelBufController(Jimmy.crickitNeoPixel, emptyMap()),
+            "Crickit Neopixel",
+            haIdentifier
+        )
 
     /**
      * Write stuff to small screen.
@@ -66,32 +80,32 @@ object HAStuff : AppCommon.Startable {
         wavyHandler, "brainz_wavy", "Wavy Thing", haIdentifier,
         min = 0, max = 90, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "deg"
     )
-    private val liftyHandler = object : KobotNumberEntity.Companion.NumberHandler {
-        override fun currentState() = Jimmy.liftyThing.current().toFloat()
+//    private val liftyHandler = object : KobotNumberEntity.Companion.NumberHandler {
+//        override fun currentState() = Jimmy.liftyThing.current().toFloat()
+//
+//        override fun set(target: Float) {
+//            Jimmy.handleRequest(SequenceRequest(CannedSequences.setLifter(target)))
+//        }
+//    }
+//    private val liftyEntity = KobotNumberEntity(
+//        liftyHandler, "brainz_lift", "Lift", haIdentifier,
+//        min = 0, max = 100, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "%"
+//    )
 
-        override fun set(target: Float) {
-            Jimmy.handleRequest(SequenceRequest(CannedSequences.setLifter(target)))
-        }
-    }
-    private val liftyEntity = KobotNumberEntity(
-        liftyHandler, "brainz_lift", "Lift", haIdentifier,
-        min = 0, max = 100, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "%"
-    )
-
-    private val twistyHandler = object : KobotNumberEntity.Companion.NumberHandler {
-        override fun currentState() = Jimmy.twistyThing.current().toFloat()
-
-        override fun set(target: Float) {
-            Jimmy.handleRequest(SequenceRequest(CannedSequences.setTwisty(target)))
-        }
-    }
-    private val twistyEntity = KobotNumberEntity(
-        twistyHandler, "brainz_twisty", "Twisty THing", haIdentifier,
-        min = 0, max = 180, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "deg"
-    )
+//    private val twistyHandler = object : KobotNumberEntity.Companion.NumberHandler {
+//        override fun currentState() = Jimmy.twistyThing.current().toFloat()
+//
+//        override fun set(target: Float) {
+//            Jimmy.handleRequest(SequenceRequest(CannedSequences.setTwisty(target)))
+//        }
+//    }
+//    private val twistyEntity = KobotNumberEntity(
+//        twistyHandler, "brainz_twisty", "Twisty THing", haIdentifier,
+//        min = 0, max = 180, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "deg"
+//    )
 
     override fun start() {
-        listOf(selector, rosetteStrand, textDosEntity, wavyEntity, liftyEntity, twistyEntity).forEach { it.start() }
+        listOf(selector, rosetteStrand, textDosEntity, wavyEntity).forEach { it.start() }
     }
 
     override fun stop() {
@@ -99,6 +113,6 @@ object HAStuff : AppCommon.Startable {
     }
 
     internal fun updateEverything() {
-        listOf(wavyEntity, liftyEntity, twistyEntity).forEach { it.sendCurrentState() }
+        listOf(wavyEntity, selector).forEach { it.sendCurrentState() }
     }
 }

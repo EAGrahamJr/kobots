@@ -20,10 +20,16 @@ import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperController.StepStyle
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.enviro.HAStuff
+import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.devices.expander.CRICKITHat
+import crackers.kobots.devices.lighting.PixelBuf
 import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.parts.movement.*
+import crackers.kobots.parts.colorIntervalFromHSB
+import crackers.kobots.parts.movement.BasicStepperRotator
+import crackers.kobots.parts.movement.SequenceExecutor
+import crackers.kobots.parts.movement.SequenceRequest
+import crackers.kobots.parts.movement.ServoRotator
 import crackers.kobots.parts.sleep
 import java.awt.Color
 import java.util.concurrent.CountDownLatch
@@ -44,14 +50,12 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     private fun VCNL4040.hasCracker() = !wantsCracker()
 
     val crickitNeoPixel by lazy { crickit.neoPixel(8).apply { brightness = .005f } }
-//    val statusPixel by lazy { crickit.statusPixel() }
+    val statusPixel by lazy { crickit.statusPixel() }
 
-    // steppers set to
     private val driveStepper by lazy { BasicStepperMotor(2048, crickit.unipolarStepperPort()) }
     private val motorStepper by lazy { BasicStepperMotor(2048, crickit.motorStepperPort()) }
-    private val servo1 by lazy { crickit.servo(1, ServoTrim.MG90S).apply { angle = 0f } }
 
-    // "backwards" from adafruit drives the piston _out_ to lower the lift
+    private val servo1 by lazy { crickit.servo(1, ServoTrim.MG90S).apply { angle = 0f } }
     private val servo2 by lazy { crickit.servo(2, ServoTrim.TOWERPRO_SG90).apply { angle = 0f } }
     private val servo3 by lazy { crickit.servo(3, ServoTrim.MG90S).apply { angle = 0f } }
 
@@ -92,10 +96,11 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     }
 
     val wavyThing by lazy { ServoRotator(servo2, 0..90) }
-    val twistyThing by lazy { ServoRotator(servo3, 0..ServoTrim.MG90S.maxAngle) }
+//    val twistyThing by lazy { ServoRotator(servo3, 0..ServoTrim.MG90S.maxAngle) }
 
-    private const val HOW_TALL = 1024 * 14
-    val liftyThing by lazy { StepperLinearActuator(motorStepper, HOW_TALL, true, StepStyle.INTERLEAVE) }
+    // "backwards" from adafruit drives the piston _out_ to lower the lift
+//    private const val HOW_TALL = 1024 * 14
+//    val liftyThing by lazy { StepperLinearActuator(motorStepper, HOW_TALL, true, StepStyle.INTERLEAVE) }
 
     override fun canRun() = AppCommon.applicationRunning
 
@@ -106,6 +111,8 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
             proximityLEDCurrent = VCNL4040.LEDCurrent.LED_100MA
         }
         crickit = CRICKITHat()
+        statusPixel.brightness = .1f
+        VeryDumbThermometer.init(motorStepper)
     }
 
     private lateinit var stopLatch: CountDownLatch
@@ -122,7 +129,7 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
 
         if (::crickit.isInitialized) {
             crickitNeoPixel.fill(WS2811.PixelColor(Color.RED, brightness = .1f))
-            handleRequest(SequenceRequest(CannedSequences.home))
+            handleRequest(SequenceRequest(VeryDumbThermometer.reset + CannedSequences.home))
             if (!stopLatch.await(SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)) {
                 logger.error("Arm not homed in $SHUTDOWN_TIMEOUT seconds")
             }
@@ -139,10 +146,43 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     }
 
     override fun postExecution() {
-        sunAzimuth.release()
-        liftyThing.release()
+        driveStepper.release()
+        motorStepper.release()
         DA.currentMode = DA.SystemMode.IDLE
         HAStuff.updateEverything()
+        statusPixel.brightness = .1f
         if (::stopLatch.isInitialized) stopLatch.countDown()
+    }
+
+    override fun updateCurrentState() {
+        super.updateCurrentState()
+//        println("Running ${currentSequence}")
+    }
+
+    fun cycleNeo(b: PixelBuf) {
+        val allTheColors = colorIntervalFromHSB(0f, 359f, 360).map { WS2811.PixelColor(it, brightness = 0.005f) }
+        var lastColor = 0
+        while (true) {
+            b.fill(allTheColors[lastColor++])
+            if (lastColor >= allTheColors.size) lastColor = 0
+            3.milliseconds.sleep()
+        }
+    }
+
+    fun pulseNeo(buf: PixelBuf) {
+        var lastBright = 0
+        var diff = 1
+        while (true) {
+            val b = lastBright * .001f
+            buf.fill(WS2811.PixelColor(Color.RED, brightness = b))
+            if (lastBright == 10) {
+                diff = -1
+            } else if (lastBright == 0) {
+                diff = 1
+            }
+            lastBright += diff
+            5.milliseconds.sleep()
+        }
+
     }
 }

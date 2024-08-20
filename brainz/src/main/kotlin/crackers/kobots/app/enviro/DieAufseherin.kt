@@ -52,7 +52,7 @@ object DieAufseherin : AppCommon.Startable {
 
 
     enum class BrainzActions {
-        HOME, SAY_HI, STOP, CLUCK, MANUAL, RANDOM_EYES, RESET
+        HOME, SAY_HI, STOP, CLUCK, RANDOM_EYES, RESET
     }
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
@@ -83,7 +83,7 @@ object DieAufseherin : AppCommon.Startable {
 
     private fun mqttStuff() {
         with(AppCommon.mqttClient) {
-//            startAliveCheck()
+            startAliveCheck()
             allowEmergencyStop()
         }
     }
@@ -95,12 +95,12 @@ object DieAufseherin : AppCommon.Startable {
     internal fun actionTime(payload: BrainzActions?) {
         when (payload) {
             BrainzActions.STOP -> {
+                currentMode = SystemMode.IDLE
                 Jimmy.stop()
                 AppCommon.applicationRunning = false
             }
 
             BrainzActions.HOME -> jimmy(CannedSequences.home)
-            BrainzActions.MANUAL -> currentMode = SystemMode.MANUAL
 //            BrainzActions.CLUCK -> DisplayDos.cluck()
 //            BrainzActions.RANDOM_EYES -> DisplayDos.randomEye()
             BrainzActions.RESET -> jimmy(CannedSequences.resetHome)

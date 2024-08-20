@@ -16,9 +16,9 @@
 
 package crackers.kobots.app.enviro
 
-import com.diozero.devices.sandpit.motor.BasicStepperController.*
+import com.diozero.devices.sandpit.motor.BasicStepperController.StepStyle
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
-import crackers.kobots.app.otherstuff.Jeep
+import crackers.kobots.app.AppCommon
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.movement.BasicStepperRotator
 import crackers.kobots.parts.movement.sequence
@@ -29,23 +29,40 @@ import kotlin.math.roundToInt
  * This is very silly - it's a stepper motor that rotates to reflect the temperature in the room. Each degree of
  * temperature is 18 degrees of stepper rotation, with the median temperature being 75 degrees.
  */
-object VeryDumbThermometer {
+object VeryDumbThermometer : AppCommon.Startable {
 
     private val degreesRange = (70f..90f)
     private val degreesTotal = degreesRange.endInclusive - degreesRange.start
     private val arcRange = (0..180)
 
-    private val motor by lazy {
-        val pins = Jeep.stepper1Pins.map { GpioStepperPin(it) }.toTypedArray()
-        val controller = UnipolarBasicController(pins)
-        BasicStepperMotor(2048, controller)
+    private lateinit var thermoStepper: BasicStepperRotator
+
+    fun init(stepper: BasicStepperMotor) {
+        thermoStepper = BasicStepperRotator(stepper, stepStyle = StepStyle.INTERLEAVE, stepsPerRotation = 4096)
     }
 
-    private val thermoStepper by lazy {
-        BasicStepperRotator(motor, stepStyle = StepStyle.INTERLEAVE, stepsPerRotation = 4096)
+    override fun start() {
+        AppCommon.mqttClient.subscribeJSON("kobots_auto/office_enviro_temperature/state") { payload ->
+            if (payload.has("state")) {
+                val temp = payload.optString("state", "75").toFloat()
+                setTemperature(temp)
+            }
+        }
+
+        // assume we can get to temperature at this point
+        with(AppCommon.hasskClient) {
+            val payload = sensor("office_enviro_temperature").state().state
+            val temp = payload.toFloat()
+            setTemperature(temp)
+        }
     }
 
-    val reset = sequence {
+    override fun stop() {
+//        TODO("Not yet implemented")
+    }
+
+    val reset by lazy {
+        sequence {
         action {
             thermoStepper rotate 0
         }
@@ -57,11 +74,9 @@ object VeryDumbThermometer {
         }
 
     }
+    }
 
-    /**
-     * Allow for setting from external events.
-     */
-    fun setTemperature(temp: Float) {
+    private fun setTemperature(temp: Float) {
         Logger.info("Setting temp: {}", temp)
         val diff = (temp - degreesRange.start) / degreesTotal
         val angle = (180 * diff).roundToInt()

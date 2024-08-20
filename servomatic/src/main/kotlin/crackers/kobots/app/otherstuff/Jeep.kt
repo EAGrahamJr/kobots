@@ -18,6 +18,9 @@ package crackers.kobots.app.otherstuff
 
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.PwmOutputDevice
+import com.diozero.devices.sandpit.motor.BasicStepperController.GpioStepperPin
+import com.diozero.devices.sandpit.motor.BasicStepperController.UnipolarBasicController
+import com.diozero.devices.sandpit.motor.BasicStepperMotor
 
 /**
  * GPIO (GP == Jeep)
@@ -30,4 +33,10 @@ object Jeep {
         DigitalOutputDevice(13),
         DigitalOutputDevice(26)
     )
+    val stepper1 by lazy {
+        val pins = Jeep.stepper1Pins.map { GpioStepperPin(it) }.toTypedArray()
+        val controller = UnipolarBasicController(pins)
+        BasicStepperMotor(2048, controller)
+    }
+
 }

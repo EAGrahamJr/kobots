@@ -53,7 +53,7 @@ object ArmMonitor : Startable {
         SH1106(comm).apply {
             setContrast(0x20)
             clear()
-            setDisplayOn(false)
+            display = false
         }
     }
 

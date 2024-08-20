@@ -17,10 +17,10 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.Jimmy.crickitNeoPixel
-import crackers.kobots.app.Jimmy.liftyThing
+//import crackers.kobots.app.Jimmy.liftyThing
 import crackers.kobots.app.Jimmy.sunAzimuth
 import crackers.kobots.app.Jimmy.sunElevation
-import crackers.kobots.app.Jimmy.twistyThing
+//import crackers.kobots.app.Jimmy.twistyThing
 import crackers.kobots.app.Jimmy.wavyThing
 import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.parts.ORANGISH
@@ -52,15 +52,15 @@ object CannedSequences {
                 lightsOn
             }
         }
-        action {
-            liftyThing goTo 0
-            requestedSpeed = DefaultActionSpeed.VERY_FAST
-        }
+//        action {
+//            liftyThing goTo 0
+//            requestedSpeed = DefaultActionSpeed.VERY_FAST
+//        }
         action {
             sunElevation rotate 0
             sunAzimuth rotate 0
             wavyThing rotate 0
-            twistyThing rotate 0
+//            twistyThing rotate 0
         }
         action {
             execute {
@@ -132,16 +132,16 @@ object CannedSequences {
         }
     }
 
-    fun setLifter(target: Float) = sequence {
-        action {
-            liftyThing goTo target.toInt()
-            requestedSpeed = goFast
-        }
-    }
-
-    fun setTwisty(target: Float) = sequence {
-        action {
-            twistyThing rotate target.toInt()
-        }
-    }
+//    fun setLifter(target: Float) = sequence {
+//        action {
+//            liftyThing goTo target.toInt()
+//            requestedSpeed = goFast
+//        }
+//    }
+//
+//    fun setTwisty(target: Float) = sequence {
+//        action {
+//            twistyThing rotate target.toInt()
+//        }
+//    }
 }

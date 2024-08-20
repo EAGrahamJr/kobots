@@ -24,6 +24,7 @@ import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.display.LargerMonitor
 import crackers.kobots.app.display.VerticalStatusDisplay
 import crackers.kobots.app.enviro.DieAufseherin
+import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.devices.expander.I2CMultiplexer
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
@@ -52,6 +53,7 @@ fun main(args: Array<String>? = null) {
     multiplexor = I2CMultiplexer()
     // start all the things to be started
     startables.convenientStartupHook()
+    VeryDumbThermometer.start()
 
     // and then we wait and stop
     Runtime.getRuntime().addShutdownHook(thread(start = false, block = ::stopAll))

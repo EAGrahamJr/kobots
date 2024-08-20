@@ -18,7 +18,6 @@ package crackers.kobots.app
 
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
-import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.app.newarm.ArmMonitor
 import crackers.kobots.app.otherstuff.Sensei
 import org.slf4j.LoggerFactory
@@ -69,13 +68,12 @@ fun main(args: Array<String>?) {
     mqttClient.apply {
 //        startAliveCheck()
         allowEmergencyStop()
-        subscribeJSON("kobots_auto/office_enviro_temperature/state") { payload ->
-            if (payload.has("state")) {
-                val temp = payload.optString("state", "75").toFloat()
-                VeryDumbThermometer.setTemperature(temp)
-            }
-        }
     }
+
+//    VeryDumbThermometer.apply {
+//        init(Jeep.stepper1)
+//        start()
+//    }
 
     AppCommon.awaitTermination()
     stopEverything()
