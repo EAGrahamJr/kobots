@@ -22,6 +22,7 @@ import crackers.kobots.app.AppCommon
 import crackers.kobots.app.enviro.DieAufseherin
 import crackers.kobots.app.isDaytime
 import crackers.kobots.app.multiplexor
+import crackers.kobots.graphics.animation.EightBall
 import crackers.kobots.graphics.loadImage
 import crackers.kobots.parts.*
 import org.slf4j.LoggerFactory

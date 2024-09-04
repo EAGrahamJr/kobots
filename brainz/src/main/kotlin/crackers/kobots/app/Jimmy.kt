@@ -62,10 +62,8 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     const val ABSOLUTE_AZIMUTH_LIMIT = 270
     val sunAzimuth by lazy {
         object : BasicStepperRotator(driveStepper, stepStyle = StepStyle.INTERLEAVE, stepsPerRotation = 4096) {
-            override fun limitCheck(whereTo: Int): Boolean {
-                return angleLocation > ABSOLUTE_AZIMUTH_LIMIT || polly.hasCracker().also {
-                    if (it) super.reset()
-                }
+            override fun rotateTo(angle: Int): Boolean {
+                return angleLocation > ABSOLUTE_AZIMUTH_LIMIT || polly.hasCracker() || super.rotateTo(angle)
             }
 
             override fun reset() {

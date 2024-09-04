@@ -18,6 +18,8 @@ package crackers.kobots.app.enviro
 
 //import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.AppCommon
+import crackers.kobots.app.AppCommon.ignoreErrors
+import crackers.kobots.app.AppCommon.whileRunning
 import crackers.kobots.app.CannedSequences
 import crackers.kobots.app.Jimmy
 import crackers.kobots.parts.movement.ActionSequence
@@ -72,11 +74,14 @@ object DieAufseherin : AppCommon.Startable {
 
     private fun localStuff() {
         AppCommon.hasskClient.run {
-            AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
+            val block = {
                 val elevation = sensor("sun_solar_elevation").state().state.toFloat().roundToInt()
                 val azimuth = sensor("sun_solar_azimuth").state().state.toFloat().roundToInt()
                 logger.debug("elevation: ${elevation}, azimuth: ${azimuth}")
                 CannedSequences.setSun(azimuth, elevation)?.let { seq -> jimmy(seq) }
+            }
+            AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
+                whileRunning { ignoreErrors(block, true) }
             }
         }
     }
@@ -84,7 +89,6 @@ object DieAufseherin : AppCommon.Startable {
     private fun mqttStuff() {
         with(AppCommon.mqttClient) {
             startAliveCheck()
-            allowEmergencyStop()
         }
     }
 

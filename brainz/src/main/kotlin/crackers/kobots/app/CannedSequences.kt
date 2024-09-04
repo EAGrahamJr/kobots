@@ -16,11 +16,11 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.Jimmy.crickitNeoPixel
 //import crackers.kobots.app.Jimmy.liftyThing
+//import crackers.kobots.app.Jimmy.twistyThing
+import crackers.kobots.app.Jimmy.crickitNeoPixel
 import crackers.kobots.app.Jimmy.sunAzimuth
 import crackers.kobots.app.Jimmy.sunElevation
-//import crackers.kobots.app.Jimmy.twistyThing
 import crackers.kobots.app.Jimmy.wavyThing
 import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.parts.ORANGISH
@@ -30,6 +30,7 @@ import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.ActionSpeed
 import crackers.kobots.parts.movement.DefaultActionSpeed
 import crackers.kobots.parts.movement.sequence
+import org.slf4j.LoggerFactory
 import java.awt.Color
 
 /**
@@ -116,12 +117,14 @@ object CannedSequences {
         (azimuth + AZIMUTH_OFFSET).let { az ->
             if (elevation < 0 || az >= Jimmy.ABSOLUTE_AZIMUTH_LIMIT) {
                 if (sunAzimuth.current() != 0) home else null
-            }
-            else sequence {
-                name = "Set Sun"
-                action {
-                    sunAzimuth rotate az
-                    sunElevation rotate elevation
+            } else run {
+                LoggerFactory.getLogger("Orrery").warn("Setting $az, $elevation")
+                sequence {
+                    name = "Set Sun"
+                    action {
+                        sunAzimuth rotate az
+                        sunElevation rotate elevation
+                    }
                 }
             }
         }
