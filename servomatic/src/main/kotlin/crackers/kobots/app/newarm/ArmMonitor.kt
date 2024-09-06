@@ -19,20 +19,21 @@ package crackers.kobots.app.newarm
 import com.diozero.devices.oled.SH1106
 import com.diozero.devices.oled.SsdOledCommunicationChannel
 import crackers.kobots.app.AppCommon
-import crackers.kobots.app.I2CFactory.armMonitorDevice
 import crackers.kobots.app.Startable
-import crackers.kobots.app.SuzerainOfServos.BOOM_DOWN
-import crackers.kobots.app.SuzerainOfServos.SWING_MAX
-import crackers.kobots.app.SuzerainOfServos.armLink
-import crackers.kobots.app.SuzerainOfServos.boomLink
-import crackers.kobots.app.SuzerainOfServos.bucketLink
-import crackers.kobots.app.SuzerainOfServos.swing
 import crackers.kobots.app.SystemState
+import crackers.kobots.app.dostuff.I2CFactory.armMonitorDevice
+import crackers.kobots.app.dostuff.SuzerainOfServos.ELBOW_MAX
+import crackers.kobots.app.dostuff.SuzerainOfServos.elbow
+import crackers.kobots.app.dostuff.SuzerainOfServos.shoulder
+import crackers.kobots.app.dostuff.SuzerainOfServos.waist
+import crackers.kobots.app.dostuff.SuzerainOfServos.wrist
 import crackers.kobots.app.systemState
 import crackers.kobots.graphics.widgets.DirectionPointer
 import crackers.kobots.graphics.widgets.VerticalPercentageIndicator
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.movement.LimitedRotator
+import crackers.kobots.parts.off
+import crackers.kobots.parts.on
 import crackers.kobots.parts.scheduleWithFixedDelay
 import java.awt.Color
 import java.awt.Font
@@ -69,41 +70,41 @@ object ArmMonitor : Startable {
                 color = Color.WHITE
             }
         }
-        val pointer = DirectionPointer(
+        val waistPointer = DirectionPointer(
             graphics,
             SMALL_FONT,
             32,
             clockWise = false,
-            endAngle = SWING_MAX
+            endAngle = 180
         ).apply {
             drawStatic()
         }
 
-        val boomPointer = DirectionPointer(
+        val shoulderPointer = DirectionPointer(
             graphics,
             SMALL_FONT,
             32,
             y = 32,
-            endAngle = BOOM_DOWN,
+            endAngle = ELBOW_MAX,
             clockWise = false
         ).apply {
             drawStatic()
         }
 
-        val armPointer = VerticalPercentageIndicator(
+        val elbowPointer = VerticalPercentageIndicator(
             graphics,
             SMALL_FONT,
             screen.height,
-            x = boomPointer.bounds.x + boomPointer.bounds.width + 3,
+            x = shoulderPointer.bounds.x + shoulderPointer.bounds.width + 3,
             label = "Arm"
         ).apply {
             drawStatic()
         }
-        val bucketPointer = VerticalPercentageIndicator(
+        val wristPointer = VerticalPercentageIndicator(
             graphics,
             SMALL_FONT,
             screen.height,
-            x = armPointer.bounds.x + armPointer.bounds.width + 3,
+            x = elbowPointer.bounds.x + elbowPointer.bounds.width + 3,
             label = "Bkt"
         ).apply {
             drawStatic()
@@ -116,7 +117,7 @@ object ArmMonitor : Startable {
                     SystemState.IDLE -> {
                         if (screenOn) {
                             screen.clear()
-                            screen.setDisplayOn(false)
+                            screen.display = off
                             screenOn = false
                         }
                     }
@@ -127,13 +128,13 @@ object ArmMonitor : Startable {
 
                     else -> {
                         if (!screenOn) {
-                            screen.setDisplayOn(true)
+                            screen.display = on
                             screenOn = true
                         }
-                        pointer.updateValue(swing.current())
-                        armPointer.updateValue(armLink.percentage())
-                        boomPointer.updateValue(boomLink.current())
-                        bucketPointer.updateValue(bucketLink.percentage())
+                        waistPointer.updateValue(waist.current())
+                        shoulderPointer.updateValue(shoulder.current())
+                        elbowPointer.updateValue(elbow.percentage())
+                        wristPointer.updateValue(wrist.percentage())
                         screen.display(image)
                     }
                 }

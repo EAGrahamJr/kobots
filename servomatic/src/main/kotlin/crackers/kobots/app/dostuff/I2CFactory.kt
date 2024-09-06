@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app
+package crackers.kobots.app.dostuff
 
 import com.diozero.api.I2CDevice
 import com.diozero.devices.PCA9685

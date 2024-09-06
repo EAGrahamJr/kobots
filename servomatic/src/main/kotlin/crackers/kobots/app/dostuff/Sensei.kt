@@ -14,11 +14,10 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.otherstuff
+package crackers.kobots.app.dostuff
 
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.HAJunk
-import crackers.kobots.app.I2CFactory
 import crackers.kobots.app.Startable
 import crackers.kobots.devices.sensors.VL6180X
 import crackers.kobots.parts.scheduleWithDelay

@@ -14,19 +14,20 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app
+package crackers.kobots.app.dostuff
 
 import com.diozero.api.ServoTrim
 import com.diozero.devices.PCA9685
 import com.diozero.devices.ServoController
+import com.diozero.devices.sandpit.motor.BasicStepperController.StepStyle
+import crackers.kobots.app.*
 import crackers.kobots.app.newarm.Predestination
-import crackers.kobots.app.otherstuff.Jeep
 import crackers.kobots.devices.set
+import crackers.kobots.parts.movement.BasicStepperRotator
 import crackers.kobots.parts.movement.LimitedRotator.Companion.rotator
 import crackers.kobots.parts.movement.SequenceExecutor
 import crackers.kobots.parts.movement.SequenceRequest
 import crackers.kobots.parts.movement.ServoLinearActuator
-import crackers.kobots.parts.movement.ServoRotator
 import crackers.kobots.parts.off
 import crackers.kobots.parts.on
 import java.util.concurrent.CountDownLatch
@@ -48,21 +49,20 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
     private lateinit var stopLatch: CountDownLatch
     override fun stop() {
         // already did this
-        ::stopLatch.isInitialized && return
+        SuzerainOfServos::stopLatch.isInitialized && return
 
         // forces everything to stop
         super.stop()
 
         logger.info("Setting latch")
         stopLatch = CountDownLatch(1)
-        val fullStopSequence = Predestination.gripperOpen + Predestination.outOfTheWay + Predestination.homeSequence
-        handleRequest(SequenceRequest(fullStopSequence))
+        handleRequest(SequenceRequest(Predestination.homeSequence))
         if (!stopLatch.await(30, TimeUnit.SECONDS)) {
             logger.error("Arm not homed in 30 seconds")
         }
     }
 
-    override fun canRun() = AppCommon.applicationRunning || ::stopLatch.isInitialized
+    override fun canRun() = AppCommon.applicationRunning
 
     override fun preExecution() {
         systemState = SystemState.MOVING
@@ -72,56 +72,58 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
     }
 
     override fun postExecution() {
+        waist.release()
         Jeep.noodleLamp set off
         HAJunk.sendUpdatedStates()
         super.postExecution()
         systemState = SystemState.IDLE
-        if (::stopLatch.isInitialized) stopLatch.countDown()
+        if (SuzerainOfServos::stopLatch.isInitialized) stopLatch.countDown()
     }
 
-    const val SWING_HOME = 0
-    const val SWING_MAX = 133
+    const val WAIST_HOME = 0
+    const val WAIST_MAX = 360
 
-    const val BOOM_UP = 0
-    const val BOOM_HOME = 0
-    const val BOOM_DOWN = 70
+    const val SHOULDER_HOME = 0
+    const val SHOULDER_MAX = 120
 
-    const val ARM_DOWN = 0
-    const val ARM_HOME = 0
-    const val ARM_UP = 90
+    const val ELBOW_HOME = 0
+    const val ELBOW_MAX = 107
 
-    const val GRIPPER_OPEN = 0
-    const val GRIPPER_CLOSED = 100
+    const val PALM_DOWN = 0
+    const val PALM_UP = 180
 
-    const val BUCKET_HOME = 0
-    const val BUCKET_MAX = 180
+    const val FINGERS_OPEN = 0
+    const val FINGERS_CLOSED = 100
 
     // hardware! =====================================================================================================
 
     private val maxServoRange = 0..ServoTrim.MG90S.maxAngle
 
     // TODO D-H frame coordinate system, these are almost all _reversed_ for right-hand coordinate system
-    val swing by lazy {
-        hat.getServo(0, ServoTrim.MG90S, 0).rotator(SWING_HOME..SWING_MAX, maxServoRange)
+    // TODO now a stepper, so 1:2.22
+    val shoulder by lazy {
+        hat.getServo(0, ServoTrim.MG90S, 0).rotator(SHOULDER_HOME..SHOULDER_MAX)
     }
 
-    val boomLink by lazy {
-        hat.getServo(1, ServoTrim.MG90S, 0).rotator(BOOM_UP..BOOM_DOWN, 0..140)
+    val elbow by lazy {
+        hat.getServo(1, ServoTrim.MG90S, 0).rotator(ELBOW_HOME..ELBOW_MAX, 0..180)
     }
 
-    val armLink by lazy {
-        hat.getServo(2, ServoTrim.MG90S, 0).rotator(ARM_DOWN..ARM_UP, maxServoRange)
+    val wrist by lazy {
+        hat.getServo(2, ServoTrim.MG90S, 0).rotator(PALM_DOWN..PALM_UP)
     }
 
-    val gripper by lazy {
-        hat.getServo(3, ServoTrim.MG90S, 0).let { servo -> ServoLinearActuator(servo, 0f, 80f) }
+    val fingers by lazy {
+        hat.getServo(3, ServoTrim.MG90S, 0).let { servo -> ServoLinearActuator(servo, 0f, 60f) }
     }
 
-    val bucketLink by lazy {
-        val servo = hat.getServo(4, ServoTrim.MG90S, 0)
-        val range = 0..BUCKET_MAX
-        object : ServoRotator(servo, range) {
-            override fun rotateTo(angle: Int) = (armLink.current() <= 5) || super.rotateTo(angle)
-        }
+    // technically not a servo
+    val waist by lazy {
+        BasicStepperRotator(
+            Jeep.stepper1,
+            gearRatio = 1.5f,
+            stepStyle = StepStyle.INTERLEAVE,
+            stepsPerRotation = 4096
+        )
     }
 }

@@ -18,8 +18,9 @@ package crackers.kobots.app
 
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
+import crackers.kobots.app.dostuff.Sensei
+import crackers.kobots.app.dostuff.SuzerainOfServos
 import crackers.kobots.app.newarm.ArmMonitor
-import crackers.kobots.app.otherstuff.Sensei
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
@@ -67,7 +68,6 @@ fun main(args: Array<String>?) {
     HAJunk.start()
     mqttClient.apply {
 //        startAliveCheck()
-        allowEmergencyStop()
     }
 
 //    VeryDumbThermometer.apply {

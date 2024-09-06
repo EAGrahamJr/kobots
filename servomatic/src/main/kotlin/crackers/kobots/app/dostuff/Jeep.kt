@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.otherstuff
+package crackers.kobots.app.dostuff
 
 import com.diozero.api.DigitalOutputDevice
 import com.diozero.api.PwmOutputDevice
