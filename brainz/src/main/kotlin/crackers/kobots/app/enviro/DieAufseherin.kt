@@ -54,7 +54,7 @@ object DieAufseherin : AppCommon.Startable {
 
 
     enum class BrainzActions {
-        HOME, SAY_HI, STOP, CLUCK, RANDOM_EYES, RESET
+        HOME, SAY_HI, STOP, CLUCK, RANDOM_EYES, RESET, THERMO_RESET
     }
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
@@ -105,10 +105,9 @@ object DieAufseherin : AppCommon.Startable {
             }
 
             BrainzActions.HOME -> jimmy(CannedSequences.home)
-//            BrainzActions.CLUCK -> DisplayDos.cluck()
-//            BrainzActions.RANDOM_EYES -> DisplayDos.randomEye()
             BrainzActions.RESET -> jimmy(CannedSequences.resetHome)
             BrainzActions.SAY_HI -> jimmy(CannedSequences.holySpit)
+            BrainzActions.THERMO_RESET -> jimmy(VeryDumbThermometer.reset)
             else -> logger.warn("Unknown command: $payload")
         }
     }

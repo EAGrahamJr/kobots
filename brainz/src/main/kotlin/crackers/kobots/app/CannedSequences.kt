@@ -16,12 +16,11 @@
 
 package crackers.kobots.app
 
-//import crackers.kobots.app.Jimmy.liftyThing
-//import crackers.kobots.app.Jimmy.twistyThing
 import crackers.kobots.app.Jimmy.crickitNeoPixel
 import crackers.kobots.app.Jimmy.sunAzimuth
 import crackers.kobots.app.Jimmy.sunElevation
 import crackers.kobots.app.Jimmy.wavyThing
+import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.parts.ORANGISH
 import crackers.kobots.parts.app.KobotSleep
@@ -44,6 +43,7 @@ object CannedSequences {
     var lightsOn = false
     val home = sequence {
         name = "Home"
+
         action {
             execute {
                 if (!lightsOn && crickitNeoPixel[7].color != Color.RED) {
@@ -53,15 +53,13 @@ object CannedSequences {
                 lightsOn
             }
         }
-//        action {
-//            liftyThing goTo 0
-//            requestedSpeed = DefaultActionSpeed.VERY_FAST
-//        }
+
+        this append VeryDumbThermometer.home
+
         action {
             sunElevation rotate 0
             sunAzimuth rotate 0
             wavyThing rotate 0
-//            twistyThing rotate 0
         }
         action {
             execute {

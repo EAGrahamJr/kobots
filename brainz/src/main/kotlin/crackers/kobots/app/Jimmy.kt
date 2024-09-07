@@ -52,6 +52,10 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     val crickitNeoPixel by lazy { crickit.neoPixel(8).apply { brightness = .005f } }
     val statusPixel by lazy { crickit.statusPixel() }
 
+    val switch1 by lazy {
+        crickit.signalDigitalIn(1)
+    }
+
     private val driveStepper by lazy { BasicStepperMotor(2048, crickit.unipolarStepperPort()) }
     private val motorStepper by lazy { BasicStepperMotor(2048, crickit.motorStepperPort()) }
 
@@ -62,9 +66,10 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     const val ABSOLUTE_AZIMUTH_LIMIT = 270
     val sunAzimuth by lazy {
         object : BasicStepperRotator(driveStepper, stepStyle = StepStyle.INTERLEAVE, stepsPerRotation = 4096) {
-            override fun rotateTo(angle: Int): Boolean {
-                return angleLocation > ABSOLUTE_AZIMUTH_LIMIT || polly.hasCracker() || super.rotateTo(angle)
-            }
+            // TODO fix this
+//            override fun rotateTo(angle: Int): Boolean {
+//                return angleLocation > ABSOLUTE_AZIMUTH_LIMIT || polly.hasCracker() || super.rotateTo(angle)
+//            }
 
             override fun reset() {
                 // run it forward a little bit
@@ -110,7 +115,7 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
         }
         crickit = CRICKITHat()
         statusPixel.brightness = .1f
-        VeryDumbThermometer.init(motorStepper)
+        VeryDumbThermometer.init(motorStepper, switch1)
     }
 
     private lateinit var stopLatch: CountDownLatch
@@ -127,7 +132,7 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
 
         if (::crickit.isInitialized) {
             crickitNeoPixel.fill(WS2811.PixelColor(Color.RED, brightness = .1f))
-            handleRequest(SequenceRequest(VeryDumbThermometer.reset + CannedSequences.home))
+            handleRequest(SequenceRequest(CannedSequences.home))
             if (!stopLatch.await(SHUTDOWN_TIMEOUT, TimeUnit.SECONDS)) {
                 logger.error("Arm not homed in $SHUTDOWN_TIMEOUT seconds")
             }
