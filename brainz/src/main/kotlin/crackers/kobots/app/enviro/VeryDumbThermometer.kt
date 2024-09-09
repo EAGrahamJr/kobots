@@ -99,7 +99,7 @@ object VeryDumbThermometer {
 
     private fun setTemperature(temp: Float) {
         logger.info("Setting temp: {}", temp)
-        val diff = (temp - degreesRange.start) / degreesTotal
+        val diff = (temp.coerceIn(degreesRange) - degreesRange.start) / degreesTotal
         val angle = (180 * diff).roundToInt()
         while (!thermoStepper.rotateTo(angle)) {
             KobotSleep.millis(10)
