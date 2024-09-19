@@ -19,6 +19,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":robot"))
 //    implementation("com.diozero:diozero-provider-pigpio:$DIOZERO_VER")
 //    implementation("com.diozero:diozero-provider-remote:$DIOZERO_VER")
 }

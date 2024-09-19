@@ -18,24 +18,23 @@ package crackers.kobots.app.dostuff
 
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.HAJunk
-import crackers.kobots.app.Startable
 import crackers.kobots.devices.sensors.VL6180X
 import crackers.kobots.parts.scheduleWithDelay
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Future
 import kotlin.time.Duration.Companion.seconds
 
-object Sensei : Startable {
+object Sensei : AppCommon.Startable {
     private val logger = LoggerFactory.getLogger("Sensei")
     private val toffle by lazy { VL6180X(I2CFactory.toffleDevice) }
 
-    private fun VL6180X.distance(): Float = try {
-        range.toFloat()
-    } catch (e: Exception) {
-        logger.error(e.localizedMessage)
-        0f
-    }
-
+    private fun VL6180X.distance(): Float =
+        try {
+            range.toFloat()
+        } catch (e: Exception) {
+            logger.error(e.localizedMessage)
+            0f
+        }
 
     private lateinit var future: Future<*>
 
@@ -43,14 +42,15 @@ object Sensei : Startable {
         // initialize the sensor
         toffle.range
 
-        future = AppCommon.executor.scheduleWithDelay(1.seconds) {
-            AppCommon.whileRunning {
-                // time-of-flight
-                toffle.distance().run {
-                    if (this < 200) HAJunk.tofSensor.currentState = toString()
+        future =
+            AppCommon.executor.scheduleWithDelay(1.seconds) {
+                AppCommon.whileRunning {
+                    // time-of-flight
+                    toffle.distance().run {
+                        if (this < 200) HAJunk.tofSensor.currentState = toString()
+                    }
                 }
             }
-        }
     }
 
     override fun stop() {

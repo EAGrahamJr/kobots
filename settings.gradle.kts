@@ -19,5 +19,4 @@ plugins {
 }
 
 rootProject.name = "kobots"
-include("brainz", "servomatic")
-include("notused")
+include("robot", "brainz", "servomatic")

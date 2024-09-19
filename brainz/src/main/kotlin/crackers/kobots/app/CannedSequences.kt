@@ -36,102 +36,113 @@ import java.awt.Color
  * Ibid
  */
 object CannedSequences {
-    val goFast = object : ActionSpeed {
-        override val millis = 0L
-    }
+    val goFast =
+        object : ActionSpeed {
+            override val millis = 0L
+        }
 
     var lightsOn = false
-    val home = sequence {
-        name = "Home"
+    val home =
+        sequence {
+            name = "Home"
 
-        action {
-            execute {
-                if (!lightsOn && crickitNeoPixel[7].color != Color.RED) {
-                    crickitNeoPixel + WS2811.PixelColor(ORANGISH, brightness = .1f)
-                    lightsOn = true
+            action {
+                execute {
+                    if (!lightsOn && crickitNeoPixel[7].color != Color.RED) {
+                        crickitNeoPixel + WS2811.PixelColor(ORANGISH, brightness = .1f)
+                        lightsOn = true
+                    }
+                    lightsOn
                 }
-                lightsOn
             }
-        }
 
-        this append VeryDumbThermometer.home
+            this append VeryDumbThermometer.home
 
-        action {
-            sunElevation rotate 0
-            sunAzimuth rotate 0
-            wavyThing rotate 0
-        }
-        action {
-            execute {
-                crickitNeoPixel + Color.BLACK
-                true
+            action {
+                sunElevation rotate 0
+                sunAzimuth rotate 0
+                wavyThing rotate 0
             }
-        }
-    }
-
-    val resetHome = sequence {
-        name = "Reset Sun Azimuth"
-        this += home
-        action {
-            execute {
-                sunAzimuth.apply {
-                    reset()
-                    release()
+            action {
+                execute {
+                    crickitNeoPixel + Color.BLACK
+                    true
                 }
-                true
             }
         }
-    }
 
+    val resetHome =
+        sequence {
+            name = "Reset Sun Azimuth"
+            this += home
+            action {
+                execute {
+                    sunAzimuth.apply {
+                        reset()
+                        release()
+                    }
+                    true
+                }
+            }
+        }
 
-    val holySpit = sequence {
-        name = "Holy Spit!"
-        action {
-            wavyThing rotate 90
-            requestedSpeed = DefaultActionSpeed.VERY_FAST
-            execute {
-                crickitNeoPixel[0, 7] = colorIntervalFromHSB(0f, 359f, 8)
-                    .map { WS2811.PixelColor(it, brightness = .02f) }
-                true
+    val holySpit =
+        sequence {
+            name = "Holy Spit!"
+            action {
+                wavyThing rotate 90
+                requestedSpeed = DefaultActionSpeed.VERY_FAST
+                execute {
+                    crickitNeoPixel[0, 7] =
+                        colorIntervalFromHSB(0f, 359f, 8)
+                            .map { WS2811.PixelColor(it, brightness = .02f) }
+                    true
+                }
+            }
+            action {
+                execute {
+                    KobotSleep.seconds(15)
+                    true
+                }
+            }
+            action {
+                wavyThing rotate 0
+                execute {
+                    crickitNeoPixel + Color.BLACK
+                    true
+                }
             }
         }
-        action {
-            execute {
-                KobotSleep.seconds(15)
-                true
-            }
-        }
-        action {
-            wavyThing rotate 0
-            execute {
-                crickitNeoPixel + Color.BLACK
-                true
-            }
-        }
-    }
 
     const val AZIMUTH_OFFSET = 15
-    fun setSun(azimuth: Int, elevation: Int): ActionSequence? =
+
+    fun setSun(
+        azimuth: Int,
+        elevation: Int,
+    ): ActionSequence? =
         (azimuth + AZIMUTH_OFFSET).let { az ->
             if (elevation < 0 || az >= Jimmy.ABSOLUTE_AZIMUTH_LIMIT) {
                 if (sunAzimuth.current() != 0) home else null
-            } else run {
-                LoggerFactory.getLogger("Orrery").warn("Setting $az, $elevation")
-                sequence {
-                    name = "Set Sun"
-                    action {
-                        sunAzimuth rotate az
-                        sunElevation rotate elevation
+            } else {
+                run {
+                    LoggerFactory.getLogger("Orrery").warn("Setting $az, $elevation")
+                    sequence {
+                        name = "Set Sun"
+                        action {
+                            sunAzimuth rotate az
+                            sunElevation rotate elevation
+                        }
                     }
                 }
             }
         }
 
-    fun setWavy(target: Float) = sequence {
-        action {
-            wavyThing rotate target.toInt()
+    fun setWavy(target: Float) =
+        sequence {
+            action {
+                wavyThing rotate target.toInt()
+            }
         }
-    }
 
 //    fun setLifter(target: Float) = sequence {
 //        action {

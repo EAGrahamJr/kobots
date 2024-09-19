@@ -42,7 +42,10 @@ object VeryDumbThermometer {
     private lateinit var thermoStepper: BasicStepperRotator
     private lateinit var limitSwitch: DigitalInputDevice
 
-    fun init(stepper: BasicStepperMotor, switch: DigitalInputDevice) {
+    fun init(
+        stepper: BasicStepperMotor,
+        switch: DigitalInputDevice,
+    ) {
         theStepper = stepper
         thermoStepper = BasicStepperRotator(stepper, stepStyle = StepStyle.INTERLEAVE, stepsPerRotation = 4096)
         limitSwitch = switch
@@ -58,13 +61,14 @@ object VeryDumbThermometer {
         getTemperatureNow()
     }
 
-    private fun getTemperatureNow() = with(AppCommon.hasskClient) {
-        val payload = sensor("office_enviro_temperature").state().state
-        val temp = payload.toFloat()
-        logger.info("Starting temp ${temp}")
-        setTemperature(temp)
-        true
-    }
+    private fun getTemperatureNow() =
+        with(AppCommon.hasskClient) {
+            val payload = sensor("office_enviro_temperature").state().state
+            val temp = payload.toFloat()
+            logger.info("Starting temp $temp")
+            setTemperature(temp)
+            true
+        }
 
     val home by lazy {
         action { thermoStepper rotate 0 }
@@ -93,7 +97,6 @@ object VeryDumbThermometer {
                     getTemperatureNow()
                 }
             }
-
         }
     }
 

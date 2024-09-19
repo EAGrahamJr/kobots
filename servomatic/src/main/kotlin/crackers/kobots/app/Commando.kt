@@ -16,7 +16,6 @@
 
 package crackers.kobots.app
 
-
 import crackers.kobots.app.newarm.Predestination
 import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
 import crackers.kobots.parts.enumValue
@@ -29,7 +28,13 @@ import crackers.kobots.app.dostuff.SuzerainOfServos as Suzi
  */
 object Commando : KobotSelectEntity.Companion.SelectHandler {
     enum class Command {
-        IDLE, STOP, HOME, SAY_HI, CRA_CRAY, FOUR_TWENTY, GUARD
+        IDLE,
+        STOP,
+        HOME,
+        SAY_HI,
+        CRA_CRAY,
+        FOUR_TWENTY,
+        GUARD,
     }
 
     override val options = Command.entries.map { it.name }.sorted()

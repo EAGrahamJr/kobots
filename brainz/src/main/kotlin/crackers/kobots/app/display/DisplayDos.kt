@@ -54,20 +54,26 @@ object DisplayDos : AppCommon.Startable {
     private val graphics: Graphics2D
     private val lcdFontOffset: Int
     private val lcdFont: Font
-    private val image = BufferedImage(MAX_WD, MAX_HT, BufferedImage.TYPE_BYTE_BINARY).also {
-        val f = Font.createFont(Font.TRUETYPE_FONT, this.javaClass.getResourceAsStream("/lcd.ttf")).deriveFont(12f)
-        graphics = (it.graphics as Graphics2D).apply {
-            background = Color.BLACK
-            color = Color.WHITE
-            lcdFont = fitFont(f, Height.SHORT.lines)
-            lcdFontOffset = getFontMetrics(lcdFont).height
+    private val image =
+        BufferedImage(MAX_WD, MAX_HT, BufferedImage.TYPE_BYTE_BINARY).also {
+            val f = Font.createFont(Font.TRUETYPE_FONT, this.javaClass.getResourceAsStream("/lcd.ttf")).deriveFont(12f)
+            graphics =
+                (it.graphics as Graphics2D).apply {
+                    background = Color.BLACK
+                    color = Color.WHITE
+                    lcdFont = fitFont(f, Height.SHORT.lines)
+                    lcdFontOffset = getFontMetrics(lcdFont).height
+                }
         }
-    }
 
     private lateinit var cluckFuture: Future<*>
 
     private enum class Mode {
-        IDLE, CLUCK, TEXT, EYES, RANDOM
+        IDLE,
+        CLUCK,
+        TEXT,
+        EYES,
+        RANDOM,
     }
 
     private val mode = AtomicReference(Mode.IDLE)
@@ -93,67 +99,72 @@ object DisplayDos : AppCommon.Startable {
     private val currentExpression = AtomicReference<Expression>()
 
     // pretty stuff
-    private val matrixRain = MatrixRain(
-        graphics, 0, 0, MAX_WD, MAX_HT,
-        displayFont = Font(Font.SANS_SERIF, Font.PLAIN, 4),
-        useBold = true,
-        updateSpeed = 75.milliseconds,
-        normalColor = Color.WHITE
-    )
+    private val matrixRain =
+        MatrixRain(
+            graphics, 0, 0, MAX_WD, MAX_HT,
+            displayFont = Font(Font.SANS_SERIF, Font.PLAIN, 4),
+            useBold = true,
+            updateSpeed = 75.milliseconds,
+            normalColor = Color.WHITE,
+        )
+
     override fun start() {
-        dosScreen = run {
-            val i2c = multiplexor.getI2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
-            val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2c)
-            SSD1306(channel, Height.SHORT).apply {
-                setContrast(0x20)
-                display = true
+        dosScreen =
+            run {
+                val i2c = multiplexor.getI2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
+                val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2c)
+                SSD1306(channel, Height.SHORT).apply {
+                    setContrast(0x20)
+                    display = true
+                }
             }
-        }
         clear()
         var colon = true
 
-        cluckFuture = AppCommon.executor.scheduleWithFixedDelay(1.seconds, 1.seconds) {
-            whileRunning {
-                val now = LocalTime.now()
-                when (currentMode) {
-                    // flip to cluck mode every 5 minutes
-                    Mode.IDLE -> if (now.minute % 5 == 0) {
-                        currentMode = Mode.CLUCK
-                        graphics.printLcd("Cluck")
-                    }
+        cluckFuture =
+            AppCommon.executor.scheduleWithFixedDelay(1.seconds, 1.seconds) {
+                whileRunning {
+                    val now = LocalTime.now()
+                    when (currentMode) {
+                        // flip to cluck mode every 5 minutes
+                        Mode.IDLE ->
+                            if (now.minute % 5 == 0) {
+                                currentMode = Mode.CLUCK
+                                graphics.printLcd("Cluck")
+                            }
 
-                    // if text mode, assume the display contains the requested text already
-                    Mode.TEXT -> {
-                        if (timerStart.elapsed() > TEXT_EXPIRES) currentMode = Mode.IDLE
-                        // TODO initiate a scroll?
-                    }
-
-                    Mode.CLUCK -> {
-                        if (timerStart.elapsed() > TIME_EXPIRES) {
-                            currentMode = Mode.IDLE
-                        } else if (timerStart.elapsed() > CLUCK_EXPIRES) {
-                            val timeString = if (colon) "%2d:%02d" else "%2d %02d"
-                            graphics.printLcd(String.format(timeString, now.hour, now.minute))
-                            colon = !colon
+                        // if text mode, assume the display contains the requested text already
+                        Mode.TEXT -> {
+                            if (timerStart.elapsed() > TEXT_EXPIRES) currentMode = Mode.IDLE
+                            // TODO initiate a scroll?
                         }
-                    }
 
-                    Mode.EYES -> {
-                        blink(currentExpression.get())
-                    }
+                        Mode.CLUCK -> {
+                            if (timerStart.elapsed() > TIME_EXPIRES) {
+                                currentMode = Mode.IDLE
+                            } else if (timerStart.elapsed() > CLUCK_EXPIRES) {
+                                val timeString = if (colon) "%2d:%02d" else "%2d %02d"
+                                graphics.printLcd(String.format(timeString, now.hour, now.minute))
+                                colon = !colon
+                            }
+                        }
 
-                    Mode.RANDOM -> {
-                        if (timerStart.elapsed() > EYES_EXPIRES) {
-                            currentMode = Mode.IDLE
-                        } // choose a random eye after 10 seconds
-                        else {
-                            val random = (CannedExpressions.entries - CannedExpressions.CLOSED).random().expression
-                            blink(random)
+                        Mode.EYES -> {
+                            blink(currentExpression.get())
+                        }
+
+                        Mode.RANDOM -> {
+                            if (timerStart.elapsed() > EYES_EXPIRES) {
+                                currentMode = Mode.IDLE
+                            } // choose a random eye after 10 seconds
+                            else {
+                                val random = (CannedExpressions.entries - CannedExpressions.CLOSED).random().expression
+                                blink(random)
+                            }
                         }
                     }
                 }
             }
-        }
     }
 
     fun text(s: String) {
@@ -187,14 +198,16 @@ object DisplayDos : AppCommon.Startable {
     }
 
     // EYE STUFF ------------------------------------------------------------------------------------------------------
-    val LOOK_RIGHT = Expression(
-        lidPosition = Eye.LidPosition.ONE_QUARTER,
-        pupilPosition = Pupil.Position.RIGHT + Pupil.Position.CENTER
-    )
-    val LOOK_LEFT = Expression(
-        lidPosition = Eye.LidPosition.ONE_QUARTER,
-        pupilPosition = Pupil.Position.LEFT + Pupil.Position.CENTER
-    )
+    val LOOK_RIGHT =
+        Expression(
+            lidPosition = Eye.LidPosition.ONE_QUARTER,
+            pupilPosition = Pupil.Position.RIGHT + Pupil.Position.CENTER,
+        )
+    val LOOK_LEFT =
+        Expression(
+            lidPosition = Eye.LidPosition.ONE_QUARTER,
+            pupilPosition = Pupil.Position.LEFT + Pupil.Position.CENTER,
+        )
 
     // show a random image
     private val CHANGE_EYES = Duration.ofSeconds(5)

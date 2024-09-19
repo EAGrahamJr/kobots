@@ -16,7 +16,7 @@
 
 package crackers.kobots.app.enviro
 
-//import crackers.kobots.app.display.DisplayDos
+// import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.AppCommon.ignoreErrors
 import crackers.kobots.app.AppCommon.whileRunning
@@ -40,7 +40,7 @@ object DieAufseherin : AppCommon.Startable {
         IDLE,
         IN_MOTION,
         MANUAL,
-        SHUTDOWN
+        SHUTDOWN,
     }
 
     private val theMode = AtomicReference(SystemMode.IDLE)
@@ -52,9 +52,14 @@ object DieAufseherin : AppCommon.Startable {
 //            if (v == SystemMode.IDLE) resetThings()
         }
 
-
     enum class BrainzActions {
-        HOME, SAY_HI, STOP, CLUCK, RANDOM_EYES, RESET, THERMO_RESET
+        HOME,
+        SAY_HI,
+        STOP,
+        CLUCK,
+        RANDOM_EYES,
+        RESET,
+        THERMO_RESET,
     }
 
     private val logger = LoggerFactory.getLogger("DieAufseherin")
@@ -77,7 +82,7 @@ object DieAufseherin : AppCommon.Startable {
             val block = {
                 val elevation = sensor("sun_solar_elevation").state().state.toFloat().roundToInt()
                 val azimuth = sensor("sun_solar_azimuth").state().state.toFloat().roundToInt()
-                logger.debug("elevation: ${elevation}, azimuth: ${azimuth}")
+                logger.debug("elevation: $elevation, azimuth: $azimuth")
                 CannedSequences.setSun(azimuth, elevation)?.let { seq -> jimmy(seq) }
             }
             AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {

@@ -17,14 +17,21 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.AppCommon.REMOTE_PI
+import crackers.kobots.app.AppCommon.ignoreErrors
 import crackers.kobots.app.AppCommon.mqttClient
+import crackers.kobots.app.dostuff.Jeep
 import crackers.kobots.app.dostuff.Sensei
 import crackers.kobots.app.dostuff.SuzerainOfServos
 import crackers.kobots.app.newarm.ArmMonitor
+import crackers.kobots.app.newarm.Rooty
+import crackers.kobots.devices.set
+import crackers.kobots.parts.off
+import crackers.kobots.parts.sleep
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Handles a bunch of different servos for various things. Everything should have an HA interface.
@@ -32,14 +39,12 @@ import kotlin.system.exitProcess
 
 val logger = LoggerFactory.getLogger("Servomatic")
 
-internal interface Startable {
-    fun start()
-    fun stop()
-}
-
 // because we might be doing something else?
 enum class SystemState {
-    IDLE, MOVING, SHUTDOWN
+    IDLE,
+    MOVING,
+    SHUTDOWN,
+    MANUAL
 }
 
 private val state = AtomicReference(SystemState.IDLE)
@@ -48,7 +53,7 @@ internal var systemState: SystemState
     set(v) {
         val current = state.get()
         if (v != current) {
-            logger.warn("State change from '$current' to '$v'")
+            logger.debug("State change from '$current' to '$v'")
             state.set(v)
             // TODO trigger things?
         }
@@ -66,15 +71,14 @@ fun main(args: Array<String>?) {
     SuzerainOfServos.start()
     ArmMonitor.start()
     HAJunk.start()
-    mqttClient.apply {
-//        startAliveCheck()
+    ignoreErrors(Rooty::start, true)
+    mqttClient.startAliveCheck()
+
+    repeat(3) {
+        Jeep.noodleLamp set .5f
+        250.milliseconds.sleep()
+        Jeep.noodleLamp set off
     }
-
-//    VeryDumbThermometer.apply {
-//        init(Jeep.stepper1)
-//        start()
-//    }
-
     AppCommon.awaitTermination()
     stopEverything()
     exitProcess(0)
@@ -91,6 +95,7 @@ fun stopEverything() {
 
     ArmMonitor.stop()
     Sensei.stop()
+    ignoreErrors(Rooty::stop)
 
     AppCommon.executor.shutdownNow()
     logger.warn("Servomatic exit")

@@ -48,11 +48,13 @@ object LargerMonitor : AppCommon.Startable {
     private val imageType = BufferedImage.TYPE_BYTE_BINARY
 
     private val screenGraphics: Graphics2D
-    private val screenImage = BufferedImage(MAX_WD, MAX_HT, imageType).also { img: BufferedImage ->
-        screenGraphics = (img.graphics as Graphics2D).apply {
-            background = Color.BLACK
+    private val screenImage =
+        BufferedImage(MAX_WD, MAX_HT, imageType).also { img: BufferedImage ->
+            screenGraphics =
+                (img.graphics as Graphics2D).apply {
+                    background = Color.BLACK
+                }
         }
-    }
 
     private fun Graphics2D.clear() = clearRect(0, 0, MAX_WD, MAX_HT)
 
@@ -70,10 +72,11 @@ object LargerMonitor : AppCommon.Startable {
     private enum class Mode { OFF, BALLER, MONITOR }
 
     override fun start() {
-        screen = run {
-            val i2CDevice = multiplexor.getI2CDevice(0, SH1106.DEFAULT_I2C_ADDRESS)
-            SH1106(SsdOledCommunicationChannel.I2cCommunicationChannel(i2CDevice)).apply { setContrast(.2f) }
-        }
+        screen =
+            run {
+                val i2CDevice = multiplexor.getI2CDevice(0, SH1106.DEFAULT_I2C_ADDRESS)
+                SH1106(SsdOledCommunicationChannel.I2cCommunicationChannel(i2CDevice)).apply { setContrast(.2f) }
+            }
         loadImage("/oh-yeah.png").apply {
             screenGraphics.drawImage(this, 0, 0, MAX_WD, MAX_HT, null)
             screen.display = on
@@ -94,9 +97,12 @@ object LargerMonitor : AppCommon.Startable {
                 screen.display = off
 
                 monitorTimer = Instant.now()
-                randomIdleTime = Duration.ofMinutes(Random.nextLong(1, 5).also {
-                    logger.debug("Screen on -- baller in ${it} min")
-                })
+                randomIdleTime =
+                    Duration.ofMinutes(
+                        Random.nextLong(1, 5).also {
+                            logger.debug("Screen on -- baller in $it min")
+                        },
+                    )
             } else {
                 // has baller expired? (e.g. time to show
                 if (monitorTimer.elapsed() > randomIdleTime) {
@@ -124,38 +130,38 @@ object LargerMonitor : AppCommon.Startable {
             updateStatusDisplays()
         }
 
-        future = AppCommon.executor.scheduleWithFixedDelay(100.milliseconds, 100.milliseconds) {
-            AppCommon.whileRunning {
-                when (DieAufseherin.currentMode) {
-                    // go away
-                    DieAufseherin.SystemMode.SHUTDOWN -> {
-                        screen.close()
-                    }
-                    // display shit when not doing anything
-                    DieAufseherin.SystemMode.IDLE -> {
-                        when (currentMode) {
-                            Mode.OFF -> notBusy()
+        future =
+            AppCommon.executor.scheduleWithFixedDelay(100.milliseconds, 100.milliseconds) {
+                AppCommon.whileRunning {
+                    when (DieAufseherin.currentMode) {
+                        // go away
+                        DieAufseherin.SystemMode.SHUTDOWN -> {
+                            screen.close()
+                        }
+                        // display shit when not doing anything
+                        DieAufseherin.SystemMode.IDLE -> {
+                            when (currentMode) {
+                                Mode.OFF -> notBusy()
 
-                            Mode.MONITOR -> {
-                                currentMode = Mode.OFF
-                                DisplayDos.eyesReset()
-                            }
+                                Mode.MONITOR -> {
+                                    currentMode = Mode.OFF
+                                    DisplayDos.eyesReset()
+                                }
 
-                            Mode.BALLER -> {
-                                if (monitorTimer.elapsed() > BALL8EXPIRY) currentMode = Mode.OFF
+                                Mode.BALLER -> {
+                                    if (monitorTimer.elapsed() > BALL8EXPIRY) currentMode = Mode.OFF
+                                }
                             }
                         }
-                    }
 
-                    else -> {
-                        // TODO something else with the other things?
-                    }
+                        else -> {
+                            // TODO something else with the other things?
+                        }
 //                    DieAufseherin.SystemMode.IN_MOTION -> toMonitor()
 //                    DieAufseherin.SystemMode.MANUAL -> toMonitor()
-
+                    }
                 }
             }
-        }
     }
 
     private fun updateStatusDisplays() {

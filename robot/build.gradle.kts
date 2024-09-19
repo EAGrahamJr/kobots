@@ -14,15 +14,11 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.things
+plugins {
+    id("kobots-hardware-conventions")
+    `java-library`
+}
 
-import com.diozero.api.I2CDeviceInterface
-import crackers.kobots.devices.display.HT16K33.Companion.DEFAULT_I2C_ADDRESS
-
-/**
- * Stubs around I2C for junk.
- */
-object I2CFactory {
-    val segmundAddress = DEFAULT_I2C_ADDRESS + 1
-    lateinit var segmundDevice: I2CDeviceInterface
+dependencies {
+    implementation("crackers.kobots:kobots-parts:$PARTS_VER")
 }

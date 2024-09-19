@@ -44,7 +44,6 @@ import java.util.concurrent.Future
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-
 /**
  * Displays a status (0-100 percent) on a rotated 132x32 display. Or falling "matrix rain".
  */
@@ -56,29 +55,32 @@ object VerticalStatusDisplay : AppCommon.Startable {
     private val myGraphics: Graphics2D
     private val myImage =
         BufferedImage(IMG_HEIGHT, IMG_WIDTH, BufferedImage.TYPE_BYTE_BINARY).also { img ->
-            val theRotation = AffineTransform().apply {
-                rotate(-90.toRadians())
-                translate(-IMG_WIDTH.toDouble(), 0.0)
-            }
+            val theRotation =
+                AffineTransform().apply {
+                    rotate(-90.toRadians())
+                    translate(-IMG_WIDTH.toDouble(), 0.0)
+                }
             myGraphics = (img.graphics as Graphics2D).apply { transform(theRotation) }
         }
 
     // for statusy stuff
-    private val vpd = VerticalPercentageIndicator(
-        myGraphics,
-        Font(Font.SANS_SERIF, Font.BOLD, 10),
-        IMG_HEIGHT,
-        label = "Pct"
-    )
+    private val vpd =
+        VerticalPercentageIndicator(
+            myGraphics,
+            Font(Font.SANS_SERIF, Font.BOLD, 10),
+            IMG_HEIGHT,
+            label = "Pct",
+        )
 
     // pretty stuff
-    private val matrixRain = MatrixRain(
-        myGraphics, 0, 0, IMG_WIDTH, IMG_HEIGHT,
-        displayFont = Font(Font.MONOSPACED, Font.PLAIN, 6),
-        useBold = true,
-        updateSpeed = 120.milliseconds,
-        normalColor = Color.WHITE
-    )
+    private val matrixRain =
+        MatrixRain(
+            myGraphics, 0, 0, IMG_WIDTH, IMG_HEIGHT,
+            displayFont = Font(Font.MONOSPACED, Font.PLAIN, 6),
+            useBold = true,
+            updateSpeed = 120.milliseconds,
+            normalColor = Color.WHITE,
+        )
 
     private val MATRIX_RUN_TIME = Duration.ofMinutes(5)
     private val IM_BORED_NOW = Duration.ofMinutes(2) + Duration.ofSeconds(30)
@@ -91,48 +93,53 @@ object VerticalStatusDisplay : AppCommon.Startable {
     private val logger: Logger by lazy { LoggerFactory.getLogger("Vert") }
 
     private enum class WhatImDoing {
-        STARTUP, MATRIX, IDLE
+        STARTUP,
+        MATRIX,
+        IDLE,
     }
 
     override fun start() {
-        screen = run {
-            val i2CDevice = multiplexor.getI2CDevice(3, SH1106.DEFAULT_I2C_ADDRESS)
-            val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2CDevice)
-            SSD1306(channel, MonochromeSsdOled.Height.SHORT).apply { setContrast(0x10) }
-        }
+        screen =
+            run {
+                val i2CDevice = multiplexor.getI2CDevice(3, SH1106.DEFAULT_I2C_ADDRESS)
+                val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2CDevice)
+                SSD1306(channel, MonochromeSsdOled.Height.SHORT).apply { setContrast(0x10) }
+            }
         var whatImDoing = WhatImDoing.STARTUP
 
-        future = AppCommon.executor.scheduleWithFixedDelay(10.seconds, 100.milliseconds) {
-            AppCommon.whileRunning {
-                when (DieAufseherin.currentMode) {
-                    // if everything is cool, let's do our pretty stuff...
-                    DieAufseherin.SystemMode.IDLE -> {
-                        when (whatImDoing) {
-                            // boread yet?
-                            WhatImDoing.IDLE -> if (isDaytime && startTime.elapsed() > IM_BORED_NOW) {
-                                enterTheMatrix()
-                                whatImDoing = WhatImDoing.MATRIX
-                            }
-                            // done yet?
-                            WhatImDoing.MATRIX -> if (startTime.elapsed() > MATRIX_RUN_TIME) {
-                                sleep()
-                                whatImDoing = WhatImDoing.IDLE
-                            }
-                            // never started the sequence, so init everything
-                            WhatImDoing.STARTUP -> {
-                                enterTheMatrix()
-                                whatImDoing = WhatImDoing.MATRIX
+        future =
+            AppCommon.executor.scheduleWithFixedDelay(10.seconds, 100.milliseconds) {
+                AppCommon.whileRunning {
+                    when (DieAufseherin.currentMode) {
+                        // if everything is cool, let's do our pretty stuff...
+                        DieAufseherin.SystemMode.IDLE -> {
+                            when (whatImDoing) {
+                                // boread yet?
+                                WhatImDoing.IDLE ->
+                                    if (isDaytime && startTime.elapsed() > IM_BORED_NOW) {
+                                        enterTheMatrix()
+                                        whatImDoing = WhatImDoing.MATRIX
+                                    }
+                                // done yet?
+                                WhatImDoing.MATRIX ->
+                                    if (startTime.elapsed() > MATRIX_RUN_TIME) {
+                                        sleep()
+                                        whatImDoing = WhatImDoing.IDLE
+                                    }
+                                // never started the sequence, so init everything
+                                WhatImDoing.STARTUP -> {
+                                    enterTheMatrix()
+                                    whatImDoing = WhatImDoing.MATRIX
+                                }
                             }
                         }
 
-                    }
-
-                    else -> {
+                        else -> {
 //                        TODO -- everything else, like vertical percentage of what?
+                        }
                     }
                 }
             }
-        }
     }
 
     override fun stop() {

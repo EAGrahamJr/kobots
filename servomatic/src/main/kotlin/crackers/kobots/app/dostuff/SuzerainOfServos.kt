@@ -20,8 +20,11 @@ import com.diozero.api.ServoTrim
 import com.diozero.devices.PCA9685
 import com.diozero.devices.ServoController
 import com.diozero.devices.sandpit.motor.BasicStepperController.StepStyle
-import crackers.kobots.app.*
+import crackers.kobots.app.AppCommon
+import crackers.kobots.app.HAJunk
+import crackers.kobots.app.SystemState
 import crackers.kobots.app.newarm.Predestination
+import crackers.kobots.app.systemState
 import crackers.kobots.devices.set
 import crackers.kobots.parts.movement.BasicStepperRotator
 import crackers.kobots.parts.movement.LimitedRotator.Companion.rotator
@@ -36,7 +39,7 @@ import java.util.concurrent.TimeUnit
 /**
  * All the things
  */
-object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Startable {
+object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), AppCommon.Startable {
     internal const val INTERNAL_TOPIC = "Servo.Suzie"
     private val hat by lazy {
         ServoController(PCA9685(I2CFactory.suziDevice))
@@ -47,6 +50,7 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
     }
 
     private lateinit var stopLatch: CountDownLatch
+
     override fun stop() {
         // already did this
         SuzerainOfServos::stopLatch.isInitialized && return
@@ -54,7 +58,6 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
         // forces everything to stop
         super.stop()
 
-        logger.info("Setting latch")
         stopLatch = CountDownLatch(1)
         handleRequest(SequenceRequest(Predestination.homeSequence))
         if (!stopLatch.await(30, TimeUnit.SECONDS)) {
@@ -62,7 +65,7 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
         }
     }
 
-    override fun canRun() = AppCommon.applicationRunning
+    override fun canRun() = AppCommon.applicationRunning && systemState != SystemState.MANUAL
 
     override fun preExecution() {
         systemState = SystemState.MOVING
@@ -100,7 +103,6 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
     private val maxServoRange = 0..ServoTrim.MG90S.maxAngle
 
     // TODO D-H frame coordinate system, these are almost all _reversed_ for right-hand coordinate system
-    // TODO now a stepper, so 1:2.22
     val shoulder by lazy {
         hat.getServo(0, ServoTrim.MG90S, 0).rotator(SHOULDER_HOME..SHOULDER_MAX)
     }
@@ -121,9 +123,9 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), Start
     val waist by lazy {
         BasicStepperRotator(
             Jeep.stepper1,
-            gearRatio = 1.5f,
+            gearRatio = 2.25f, // the omg how frickin' big is this thing turntable 40-90
             stepStyle = StepStyle.INTERLEAVE,
-            stepsPerRotation = 4096
+            stepsPerRotation = 4096,
         )
     }
 }

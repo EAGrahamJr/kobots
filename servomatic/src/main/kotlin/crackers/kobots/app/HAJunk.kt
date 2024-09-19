@@ -32,143 +32,53 @@ import crackers.kobots.app.dostuff.SuzerainOfServos.fingers
 import crackers.kobots.app.dostuff.SuzerainOfServos.shoulder
 import crackers.kobots.app.dostuff.SuzerainOfServos.waist
 import crackers.kobots.app.dostuff.SuzerainOfServos.wrist
-import crackers.kobots.app.newarm.Predestination
 import crackers.kobots.mqtt.homeassistant.*
-import crackers.kobots.mqtt.homeassistant.KobotNumberEntity.Companion.NumberHandler
-import crackers.kobots.parts.movement.DefaultActionSpeed
-import crackers.kobots.parts.movement.LinearActuator
-import crackers.kobots.parts.movement.Rotator
-import crackers.kobots.parts.movement.sequence
-import kotlin.math.roundToInt
+import crackers.kobots.parts.movement.toSpeed
+import crackers.kobots.robot.remote.HAThingFactory
 import crackers.kobots.app.dostuff.SuzerainOfServos as Suzi
 
 /**
  * HA entities, etc.
  */
-object HAJunk : Startable {
-
+object HAJunk : AppCommon.Startable {
     private val haIdentifier = DeviceIdentifier("Kobots", "Servomatic")
-
+    private val maker = HAThingFactory("Arm", haIdentifier, Suzi)
 
     private val commandSelectEntity = KobotSelectEntity(Commando, "servo_selector", "Servo Selector", haIdentifier)
 
-    val tofSensor = KobotAnalogSensor(
-        "servomatic_tof",
-        "Bobbi Detector",
-        haIdentifier,
-        KobotAnalogSensor.Companion.AnalogDevice.DISTANCE,
-        unitOfMeasurement = "mm"
-    )
-
-    private class ArmRotateHandler(val rotator: Rotator, val thing: String) : NumberHandler {
-        override fun currentState() = rotator.current().toFloat()
-
-        override fun set(target: Float) {
-            Suzi does sequence {
-                name = "HA Move $thing"
-                action {
-                    requestedSpeed = DefaultActionSpeed.SLOW
-                    rotator rotate target.roundToInt()
-                }
-            }
-        }
-    }
-
-    private class PctHandler(val linear: LinearActuator, val thing: String) : NumberHandler {
-        override fun currentState() = linear.current().toFloat()
-
-        override fun set(target: Float) {
-            Suzi does sequence {
-                name = "HA Move $thing"
-                action {
-                    requestedSpeed = DefaultActionSpeed.SLOW
-                    linear goTo target.roundToInt()
-                }
-            }
-        }
-    }
+    val tofSensor =
+        KobotAnalogSensor(
+            "servomatic_tof",
+            "Bobbi Detector",
+            haIdentifier,
+            KobotAnalogSensor.Companion.AnalogDevice.DISTANCE,
+            unitOfMeasurement = "mm",
+        )
 
     /**
      * Turn it sideways
      */
-    private val waistEntity = object : KobotNumberEntity(
-        object : NumberHandler {
-            override fun currentState() = waist.current().toFloat()
-
-            override fun set(target: Float) {
-                Suzi does Predestination.whipIt(target.roundToInt(), waist, DefaultActionSpeed.VERY_FAST)
-            }
-        },
-        "arm_waist",
-        "Arm: Waist",
-        haIdentifier,
-        min = WAIST_HOME,
-        max = WAIST_MAX,
-        unitOfMeasurement = "degrees"
-    ) {
-        override val icon = "mdi:rotate-360"
-    }
+    private val waistEntity =
+        maker.rotateThing("Waist", waist, WAIST_HOME, WAIST_MAX, "mdi:rotate-360", 1L.toSpeed())
 
     /**
      * In and oot
-     */
-    private val shoulderEntity = object : KobotNumberEntity(
-        ArmRotateHandler(shoulder, "Shoulder"),
-        "arm_shoulder",
-        "Arm: Shoulder",
-        haIdentifier,
-        min = SHOULDER_HOME,
-        max = SHOULDER_MAX,
-        unitOfMeasurement = "degrees",
-        mode = Companion.DisplayMode.SLIDER
-    ) {
-        override val icon = "mdi:horizontal-rotate-clockwise"
-    }
-
-    /**
      * Hup down
      */
-    private val elbowEntity = object : KobotNumberEntity(
-        ArmRotateHandler(elbow, "Elbow"),
-        "arm_elbow",
-        "Arm: Elbow",
-        haIdentifier,
-        min = ELBOW_HOME,
-        max = ELBOW_MAX,
-        unitOfMeasurement = "degrees",
-        mode = Companion.DisplayMode.SLIDER
-    ) {
-        override val icon = "mdi:horizontal-rotate-clockwise"
-    }
+    private val shoulderEntity =
+        maker.rotateThing("Shoulder", shoulder, SHOULDER_HOME, SHOULDER_MAX, "mdi:horizontal-rotate-clockwise")
+    private val elbowEntity =
+        maker.rotateThing("Elbow", elbow, ELBOW_HOME, ELBOW_MAX, "mdi:horizontal-rotate-clockwise")
 
-    private val wristEntity = object : KobotNumberEntity(
-        ArmRotateHandler(wrist, "Wrist"),
-        "arm_wrist",
-        "Arm: Wrist",
-        haIdentifier,
-        min = PALM_DOWN,
-        max = PALM_UP,
-        unitOfMeasurement = "degrees",
-        mode = Companion.DisplayMode.SLIDER
-    ) {
-        override val icon = "mdi:hand-extended"
-    }
+    /**
+     * End of things
+     */
+    private val wristEntity = maker.rotateThing("Wrist", wrist, PALM_DOWN, PALM_UP, "mdi:hand-extended")
 
     /**
      * Grabby thing
      */
-    private val fingersEntity = object : KobotNumberEntity(
-        PctHandler(fingers, "Fingers"),
-        "arm_fingers",
-        "Arm: Fingers",
-        haIdentifier,
-        min = FINGERS_OPEN,
-        max = FINGERS_CLOSED,
-        mode = Companion.DisplayMode.SLIDER
-    ) {
-        override val icon = "mdi:hand-coin"
-    }
-
+    private val fingersEntity = maker.linearThing("Fingers", fingers, FINGERS_OPEN, FINGERS_CLOSED, "mdi:hand-coin")
 
     val noodleEntity = KobotLight("small_nood", BasicLightController(Jeep.noodleLamp), "Da Nood", haIdentifier)
 
@@ -189,6 +99,7 @@ object HAJunk : Startable {
     }
 
     fun sendUpdatedStates() {
+        commandSelectEntity.sendCurrentState("None")
         armEntities.forEach { it.sendCurrentState() }
     }
 

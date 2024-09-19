@@ -47,6 +47,7 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     private lateinit var polly: VCNL4040
 
     private fun VCNL4040.wantsCracker() = AppCommon.ignoreErrors({ proximity < CRACKER }) ?: false
+
     private fun VCNL4040.hasCracker() = !wantsCracker()
 
     val crickitNeoPixel by lazy { crickit.neoPixel(8).apply { brightness = .005f } }
@@ -89,7 +90,6 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
         }
     }
 
-
     val sunElevation by lazy {
         object : ServoRotator(servo1, 0..90) {
             override fun rotateTo(angle: Int): Boolean {
@@ -108,11 +108,12 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     override fun canRun() = AppCommon.applicationRunning
 
     override fun start() {
-        polly = VCNL4040().apply {
-            ambientLightEnabled = true
-            proximityEnabled = true
-            proximityLEDCurrent = VCNL4040.LEDCurrent.LED_100MA
-        }
+        polly =
+            VCNL4040().apply {
+                ambientLightEnabled = true
+                proximityEnabled = true
+                proximityLEDCurrent = VCNL4040.LEDCurrent.LED_100MA
+            }
         crickit = CRICKITHat()
         statusPixel.brightness = .1f
         VeryDumbThermometer.init(motorStepper, switch1)
@@ -121,6 +122,7 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     private lateinit var stopLatch: CountDownLatch
 
     private const val SHUTDOWN_TIMEOUT = 90L
+
     override fun stop() {
         // already did this
         ::stopLatch.isInitialized && return
@@ -186,6 +188,5 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
             lastBright += diff
             5.milliseconds.sleep()
         }
-
     }
 }

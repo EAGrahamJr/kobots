@@ -30,35 +30,37 @@ object HAStuff : AppCommon.Startable {
     /**
      * Actions
      */
-    private val selectorHandler = object : KobotSelectEntity.Companion.SelectHandler {
-        override val options = DieAufseherin.BrainzActions.entries.map { it.name }.sorted()
+    private val selectorHandler =
+        object : KobotSelectEntity.Companion.SelectHandler {
+            override val options = DieAufseherin.BrainzActions.entries.map { it.name }.sorted()
 
-        override fun executeOption(select: String) {
-            val payloadToEnum = enumValue<DieAufseherin.BrainzActions>(select.uppercase())
-            DieAufseherin.actionTime(payloadToEnum)
+            override fun executeOption(select: String) {
+                val payloadToEnum = enumValue<DieAufseherin.BrainzActions>(select.uppercase())
+                DieAufseherin.actionTime(payloadToEnum)
+            }
+        }
+    private val selector =
+        object : KobotSelectEntity(selectorHandler, "brainz_selector", "Brainz", haIdentifier) {
+            override fun currentState(): String {
+                return "None"
+            }
         }
 
-    }
-    private val selector = object : KobotSelectEntity(selectorHandler, "brainz_selector", "Brainz", haIdentifier) {
-        override fun currentState(): String {
-            return "None"
-        }
-    }
-
-
-    private val effectList = mapOf(
-        "cycle" to Jimmy::cycleNeo,
-        "pulse" to Jimmy::pulseNeo
-    )
+    private val effectList =
+        mapOf(
+            "cycle" to Jimmy::cycleNeo,
+            "pulse" to Jimmy::pulseNeo,
+        )
 
     /**
      * Run the 8-bit circular NeoPixel thing
      */
     private val rosetteStrand =
         KobotRGBLight(
-            "crickit_rosette", PixelBufController(Jimmy.crickitNeoPixel, emptyMap()),
+            "crickit_rosette",
+            PixelBufController(Jimmy.crickitNeoPixel, emptyMap()),
             "Crickit Neopixel",
-            haIdentifier
+            haIdentifier,
         )
 
     /**
@@ -69,17 +71,25 @@ object HAStuff : AppCommon.Startable {
     /**
      * Wavy thing
      */
-    private val wavyHandler = object : KobotNumberEntity.Companion.NumberHandler {
-        override fun currentState() = Jimmy.wavyThing.current().toFloat()
+    private val wavyHandler =
+        object : KobotNumberEntity.Companion.NumberHandler {
+            override fun currentState() = Jimmy.wavyThing.current().toFloat()
 
-        override fun set(target: Float) {
-            Jimmy.handleRequest(SequenceRequest(CannedSequences.setWavy(target)))
+            override fun set(target: Float) {
+                Jimmy.handleRequest(SequenceRequest(CannedSequences.setWavy(target)))
+            }
         }
-    }
-    private val wavyEntity = KobotNumberEntity(
-        wavyHandler, "brainz_wavy", "Wavy Thing", haIdentifier,
-        min = 0, max = 90, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "deg"
-    )
+    private val wavyEntity =
+        KobotNumberEntity(
+            wavyHandler,
+            "brainz_wavy",
+            "Wavy Thing",
+            haIdentifier,
+            min = 0,
+            max = 90,
+            mode = KobotNumberEntity.Companion.DisplayMode.SLIDER,
+            unitOfMeasurement = "deg",
+        )
 //    private val liftyHandler = object : KobotNumberEntity.Companion.NumberHandler {
 //        override fun currentState() = Jimmy.liftyThing.current().toFloat()
 //

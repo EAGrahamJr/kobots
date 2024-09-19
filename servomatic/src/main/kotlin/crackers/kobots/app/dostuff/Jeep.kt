@@ -27,16 +27,16 @@ import com.diozero.devices.sandpit.motor.BasicStepperMotor
  */
 object Jeep {
     val noodleLamp = PwmOutputDevice(4)
-    val stepper1Pins = listOf(
-        DigitalOutputDevice(27),
-        DigitalOutputDevice(21),
-        DigitalOutputDevice(13),
-        DigitalOutputDevice(26)
-    )
+    val stepper1Pins =
+        listOf(
+            DigitalOutputDevice(27),
+            DigitalOutputDevice(21),
+            DigitalOutputDevice(13),
+            DigitalOutputDevice(26),
+        )
     val stepper1 by lazy {
         val pins = Jeep.stepper1Pins.map { GpioStepperPin(it) }.toTypedArray()
         val controller = UnipolarBasicController(pins)
         BasicStepperMotor(2048, controller)
     }
-
 }
