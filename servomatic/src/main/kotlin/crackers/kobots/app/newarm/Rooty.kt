@@ -17,6 +17,7 @@
 package crackers.kobots.app.newarm
 
 import crackers.kobots.app.AppCommon
+import crackers.kobots.app.AppCommon.ignoreErrors
 import crackers.kobots.app.SystemState
 import crackers.kobots.app.dostuff.SuzerainOfServos.elbow
 import crackers.kobots.app.dostuff.SuzerainOfServos.fingers
@@ -29,10 +30,12 @@ import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.parts.GOLDENROD
 import crackers.kobots.parts.PURPLE
 import crackers.kobots.parts.movement.Actuator
+import crackers.kobots.parts.movement.BasicStepperRotator
 import crackers.kobots.parts.movement.LinearActuator
 import crackers.kobots.parts.movement.Rotator
 import crackers.kobots.parts.scheduleAtRate
 import crackers.kobots.parts.sleep
+import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.util.concurrent.Future
 import kotlin.time.Duration.Companion.milliseconds
@@ -42,6 +45,7 @@ import kotlin.time.Duration.Companion.milliseconds
  */
 object Rooty : AppCommon.Startable {
     private lateinit var encoder: QwiicTwist
+    private val logger = LoggerFactory.getLogger("Rooty")
 
     private var lastMode = SystemState.IDLE
 
@@ -93,16 +97,22 @@ object Rooty : AppCommon.Startable {
             }
         } else if (systemState == SystemState.MANUAL) {
             if (encoder.moved) {
-                val diff = encoder.difference
+                val diff = encoder.count
                 whichActuatorSelected?.let { act ->
                     val next = act.current().toInt() + diff
-                    if (act is Rotator)
-                        while (!act.rotateTo(next)) 1.milliseconds.sleep()
-                    else if (act is LinearActuator)
-                        while (!act.extendTo(next)) 1.milliseconds.sleep()
+                    ignoreErrors(moveSelectedThing(act, next), true)
                 }
+                encoder.count = 0
             }
         }
+    }
+
+    private fun moveSelectedThing(act: Actuator<*>, next: Int) = {
+        if (act is Rotator) {
+            while (!act.rotateTo(next)) 1.milliseconds.sleep()
+            if (act is BasicStepperRotator) act.release()
+        } else if (act is LinearActuator)
+            while (!act.extendTo(next)) 1.milliseconds.sleep()
     }
 
     private lateinit var future: Future<*>
