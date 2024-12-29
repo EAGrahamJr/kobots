@@ -24,6 +24,7 @@ import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.display.LargerMonitor
 import crackers.kobots.app.display.VerticalStatusDisplay
 import crackers.kobots.app.enviro.DieAufseherin
+import crackers.kobots.app.enviro.Sensei
 import crackers.kobots.devices.expander.I2CMultiplexer
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
@@ -37,8 +38,8 @@ internal lateinit var multiplexor: I2CMultiplexer
 
 private val logger = LoggerFactory.getLogger("BRAINZ")
 
-private val startables = listOf(DisplayDos, VerticalStatusDisplay, Jimmy, DieAufseherin, LargerMonitor)
-private val stoppables = listOf(VerticalStatusDisplay, LargerMonitor, DieAufseherin, Jimmy, DisplayDos)
+private val startables = listOf(Sensei, DisplayDos, VerticalStatusDisplay, Jimmy, DieAufseherin, LargerMonitor)
+private val stoppables = listOf(Sensei, VerticalStatusDisplay, LargerMonitor, DieAufseherin, Jimmy, DisplayDos)
 private val stopFlag = AtomicBoolean(false)
 
 /**

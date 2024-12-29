@@ -109,15 +109,13 @@ object DisplayDos : AppCommon.Startable {
         )
 
     override fun start() {
-        dosScreen =
-            run {
-                val i2c = multiplexor.getI2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
-                val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2c)
-                SSD1306(channel, Height.SHORT).apply {
-                    setContrast(0x20)
-                    display = true
-                }
-            }
+        val i2c = multiplexor.getI2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
+        val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2c)
+        dosScreen = SSD1306(channel, Height.SHORT).apply {
+            setContrast(0x20)
+            display = true
+        }
+
         clear()
         var colon = true
 
@@ -125,6 +123,8 @@ object DisplayDos : AppCommon.Startable {
             AppCommon.executor.scheduleWithFixedDelay(1.seconds, 1.seconds) {
                 whileRunning {
                     val now = LocalTime.now()
+                    if (now.hour >= 22 || now.hour <= 7) return@whileRunning
+
                     when (currentMode) {
                         // flip to cluck mode every 5 minutes
                         Mode.IDLE ->

@@ -42,7 +42,7 @@ object HAStuff : AppCommon.Startable {
     private val selector =
         object : KobotSelectEntity(selectorHandler, "brainz_selector", "Brainz", haIdentifier) {
             override fun currentState(): String {
-                return "None"
+                return ""
             }
         }
 
@@ -90,32 +90,18 @@ object HAStuff : AppCommon.Startable {
             mode = KobotNumberEntity.Companion.DisplayMode.SLIDER,
             unitOfMeasurement = "deg",
         )
-//    private val liftyHandler = object : KobotNumberEntity.Companion.NumberHandler {
-//        override fun currentState() = Jimmy.liftyThing.current().toFloat()
-//
-//        override fun set(target: Float) {
-//            Jimmy.handleRequest(SequenceRequest(CannedSequences.setLifter(target)))
-//        }
-//    }
-//    private val liftyEntity = KobotNumberEntity(
-//        liftyHandler, "brainz_lift", "Lift", haIdentifier,
-//        min = 0, max = 100, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "%"
-//    )
 
-//    private val twistyHandler = object : KobotNumberEntity.Companion.NumberHandler {
-//        override fun currentState() = Jimmy.twistyThing.current().toFloat()
-//
-//        override fun set(target: Float) {
-//            Jimmy.handleRequest(SequenceRequest(CannedSequences.setTwisty(target)))
-//        }
-//    }
-//    private val twistyEntity = KobotNumberEntity(
-//        twistyHandler, "brainz_twisty", "Twisty THing", haIdentifier,
-//        min = 0, max = 180, mode = KobotNumberEntity.Companion.DisplayMode.SLIDER, unitOfMeasurement = "deg"
-//    )
+    val tofSensor =
+        KobotAnalogSensor(
+            "brainz_tof",
+            "Feline Lounge Detector",
+            haIdentifier,
+            KobotAnalogSensor.Companion.AnalogDevice.DISTANCE,
+            unitOfMeasurement = "mm",
+        )
 
     override fun start() {
-        listOf(selector, rosetteStrand, textDosEntity, wavyEntity).forEach { it.start() }
+        listOf(selector, rosetteStrand, textDosEntity, wavyEntity, tofSensor).forEach { it.start() }
     }
 
     override fun stop() {

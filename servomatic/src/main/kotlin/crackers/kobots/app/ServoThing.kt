@@ -17,10 +17,8 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.AppCommon.REMOTE_PI
-import crackers.kobots.app.AppCommon.ignoreErrors
 import crackers.kobots.app.AppCommon.mqttClient
 import crackers.kobots.app.dostuff.Jeep
-import crackers.kobots.app.dostuff.Sensei
 import crackers.kobots.app.dostuff.SuzerainOfServos
 import crackers.kobots.app.newarm.ArmMonitor
 import crackers.kobots.app.newarm.Rooty
@@ -67,11 +65,10 @@ fun main(args: Array<String>?) {
     // add the shutdown hook
     Runtime.getRuntime().addShutdownHook(thread(start = false, block = ::stopEverything))
 
-    Sensei.start()
     SuzerainOfServos.start()
     ArmMonitor.start()
     HAJunk.start()
-    ignoreErrors(Rooty::start, true)
+    Rooty.start()
     mqttClient.startAliveCheck()
 
     repeat(3) {
@@ -80,7 +77,6 @@ fun main(args: Array<String>?) {
         Jeep.noodleLamp set off
     }
     AppCommon.awaitTermination()
-    stopEverything()
     exitProcess(0)
 }
 
@@ -94,8 +90,7 @@ fun stopEverything() {
     systemState = SystemState.SHUTDOWN
 
     ArmMonitor.stop()
-    Sensei.stop()
-    ignoreErrors(Rooty::stop)
+    Rooty.stop()
 
     AppCommon.executor.shutdownNow()
     logger.warn("Servomatic exit")

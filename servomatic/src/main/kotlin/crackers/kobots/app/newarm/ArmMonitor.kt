@@ -22,6 +22,7 @@ import crackers.kobots.app.AppCommon
 import crackers.kobots.app.SystemState
 import crackers.kobots.app.dostuff.I2CFactory.armMonitorDevice
 import crackers.kobots.app.dostuff.SuzerainOfServos.ELBOW_MAX
+import crackers.kobots.app.dostuff.SuzerainOfServos.PALM_UP
 import crackers.kobots.app.dostuff.SuzerainOfServos.elbow
 import crackers.kobots.app.dostuff.SuzerainOfServos.shoulder
 import crackers.kobots.app.dostuff.SuzerainOfServos.waist
@@ -30,8 +31,8 @@ import crackers.kobots.app.systemState
 import crackers.kobots.graphics.widgets.DirectionPointer
 import crackers.kobots.graphics.widgets.VerticalPercentageIndicator
 import crackers.kobots.parts.app.KobotSleep
-import crackers.kobots.parts.movement.Actuator
 import crackers.kobots.parts.movement.LimitedRotator
+import crackers.kobots.parts.movement.Rotator
 import crackers.kobots.parts.off
 import crackers.kobots.parts.on
 import crackers.kobots.parts.scheduleWithFixedDelay
@@ -112,12 +113,19 @@ object ArmMonitor : AppCommon.Startable {
             )
 
         var screenOn = false
-        var lastActuator: Actuator<*>? = null
         val actuatorToIndicator = mapOf(
             waist to waistPointer,
             shoulder to shoulderPointer,
             elbow to elbowPointer,
-            wrist to wristPointer
+            object : Rotator {
+                override fun current() = wrist.current() * 100 / PALM_UP
+
+                override fun rotateTo(angle: Int): Boolean {
+                    val actual = angle * PALM_UP / 100f
+                    return wrist.rotateTo(actual.roundToInt())
+                }
+
+            } to wristPointer
         )
         future =
             AppCommon.executor.scheduleWithFixedDelay(100.milliseconds, 100.milliseconds) {
@@ -133,32 +141,6 @@ object ArmMonitor : AppCommon.Startable {
 
                         SystemState.SHUTDOWN -> {
                             // ignore
-                        }
-
-                        SystemState.MANUAL -> {
-                            val whichActuatorSelected = Rooty.whichActuatorSelected
-                            val actuatorChanged = (whichActuatorSelected != lastActuator).also {
-                                if (it) {
-                                    if (!screenOn) {
-                                        screen.display = on
-                                        screenOn = true
-                                    }
-                                    graphics.clearRect(0, 0, screen.width, screen.height)
-                                    lastActuator = whichActuatorSelected
-                                }
-                            }
-
-                            // if it's a real thing
-                            whichActuatorSelected?.let { actuator ->
-                                // and we can draw it
-                                actuatorToIndicator[actuator]?.let { indicator ->
-                                    // activate the proper indicator
-                                    if (actuatorChanged) indicator.drawStatic()
-                                    // update
-                                    indicator.updateValue(actuator.current().toInt())
-                                    screen.display(image)
-                                }
-                            }
                         }
 
                         else -> {

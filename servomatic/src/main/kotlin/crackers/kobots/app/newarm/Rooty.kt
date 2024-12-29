@@ -17,113 +17,133 @@
 package crackers.kobots.app.newarm
 
 import crackers.kobots.app.AppCommon
-import crackers.kobots.app.AppCommon.ignoreErrors
+import crackers.kobots.app.HAJunk
 import crackers.kobots.app.SystemState
+import crackers.kobots.app.dostuff.I2CFactory
 import crackers.kobots.app.dostuff.SuzerainOfServos.elbow
-import crackers.kobots.app.dostuff.SuzerainOfServos.fingers
 import crackers.kobots.app.dostuff.SuzerainOfServos.shoulder
 import crackers.kobots.app.dostuff.SuzerainOfServos.waist
-import crackers.kobots.app.dostuff.SuzerainOfServos.wrist
 import crackers.kobots.app.systemState
+import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.devices.io.QwiicTwist
-import crackers.kobots.devices.lighting.WS2811
+import crackers.kobots.devices.lighting.WS2811.PixelColor
 import crackers.kobots.parts.GOLDENROD
-import crackers.kobots.parts.PURPLE
-import crackers.kobots.parts.movement.Actuator
-import crackers.kobots.parts.movement.BasicStepperRotator
-import crackers.kobots.parts.movement.LinearActuator
-import crackers.kobots.parts.movement.Rotator
+import crackers.kobots.parts.movement.LimitedRotator
 import crackers.kobots.parts.scheduleAtRate
 import crackers.kobots.parts.sleep
 import org.slf4j.LoggerFactory
 import java.awt.Color
+import java.time.LocalTime
 import java.util.concurrent.Future
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
- * Rotary encoder.
+ * Rotary encoder. It's button press enables/disables manual mode.
  */
 object Rooty : AppCommon.Startable {
     private lateinit var encoder: QwiicTwist
+    private lateinit var gp: GamepadQT
     private val logger = LoggerFactory.getLogger("Rooty")
 
-    private var lastMode = SystemState.IDLE
+    private var lastMode: SystemState? = null
 
-    private val mapTwistColors = mapOf(
-        waist to Color.GREEN,
-        shoulder to GOLDENROD,
-        elbow to PURPLE,
-        wrist to Color.BLUE,
-        fingers to Color.MAGENTA
-    )
-    private val listOfTwist = listOf(waist, shoulder, elbow, wrist, fingers)
-    private var lastTwist: Int = -1
+    private var midX = 0f
+    private var midY = 0f
 
-    private fun WS2811.setIt() {
-        if (lastTwist >= 0)
-            fill(mapTwistColors[listOfTwist[lastTwist]]!!)
-        else
-            fill(Color.YELLOW)
-    }
-
-    val whichActuatorSelected: Actuator<*>?
-        get() = if (lastTwist == -1 || lastTwist == listOfTwist.size) null else listOfTwist[lastTwist]
-
+    private const val LIGHT_ON = .3f
 
     private fun clickOrTwist() {
-        if (systemState != SystemState.MOVING && encoder.clicked) {
-            encoder.count = 0
-            lastTwist++
-            // check for state transition
-            if (lastTwist == 0) systemState = SystemState.MANUAL
-            else if (lastTwist >= listOfTwist.size) {
+        if (encoder.clicked) {
+            if (systemState == SystemState.IDLE) systemState = SystemState.MANUAL
+            else if (systemState == SystemState.MANUAL) {
+                HAJunk.sendUpdatedStates()
+                waist.release()
                 systemState = SystemState.IDLE
-                lastTwist = -1
-            } else encoder.pixel.setIt()
+            }
         }
-
         if (lastMode != systemState) {
             // check if we need to change what we're doing
             lastMode = systemState
             when (systemState) {
-                SystemState.IDLE -> {
-                    lastTwist = -1
-                    encoder.pixel.setIt()
-                }
-
-                SystemState.MOVING -> encoder.pixel.fill(Color.CYAN)
-                SystemState.SHUTDOWN -> encoder.pixel.fill(Color.RED)
-                SystemState.MANUAL -> encoder.pixel.setIt()
+                SystemState.IDLE -> encoder.pixel.fill(PixelColor(GOLDENROD, brightness = LIGHT_ON))
+                SystemState.MOVING -> encoder.pixel.fill(PixelColor(Color.CYAN, brightness = .5f))
+                SystemState.SHUTDOWN -> encoder.pixel.fill(PixelColor(Color.RED, brightness = 1f))
+                SystemState.MANUAL -> encoder.pixel.fill(PixelColor(Color.GREEN, brightness = LIGHT_ON))
             }
-        } else if (systemState == SystemState.MANUAL) {
+        }
+
+        // if manual mode, Suzi can't do anything, so it's up to this loop to do stuff
+        if (systemState == SystemState.MANUAL) {
+            // TODO this is a lot of shite to be going on in a single thread?
+            encoder.pixel.brightness = if (LocalTime.now().second % 2 == 0) 0f else LIGHT_ON // blink the encoder
             if (encoder.moved) {
                 val diff = encoder.count
-                whichActuatorSelected?.let { act ->
-                    val next = act.current().toInt() + diff
-                    ignoreErrors(moveSelectedThing(act, next), true)
-                }
+                val next = (waist.current() + diff).coerceIn(0, 359)
+                while (!waist.rotateTo(next)) 1.milliseconds.sleep()
+                waist.release()
                 encoder.count = 0
+            }
+            // gamepad stuff: buttons are start, select, a, b, x, y
+            gp.read().apply {
+                if (a) {
+                }
+                if (b) {
+                    // finger close
+                }
+                if (x) {
+                }
+                if (y) {
+                }
+                if (start) {
+                }
+                if (select) {
+                }
+            }
+
+            // and also check the joystick
+            (gp.xAxis - midX).let { diff ->
+                // the elbow has to be "up-ish" to be able to move the shoulder
+                if (elbow.current() > 30) {
+                    if (diff > 100) shoulder.less() else if (diff < -100) shoulder.more()
+                }
+            }
+            (gp.yAxis - midY).let { diff ->
+                if (diff > 100) elbow.less() else if (diff < -100) elbow.more()
             }
         }
     }
 
-    private fun moveSelectedThing(act: Actuator<*>, next: Int) = {
-        if (act is Rotator) {
-            while (!act.rotateTo(next)) 1.milliseconds.sleep()
-            if (act is BasicStepperRotator) act.release()
-        } else if (act is LinearActuator)
-            while (!act.extendTo(next)) 1.milliseconds.sleep()
+    private fun LimitedRotator.more() = try {
+        val next = current() + 1
+        while (rotateTo(next)) 1.milliseconds.sleep()
+    } catch (_: Throwable) {
+    }
+
+    private fun LimitedRotator.less() = try {
+        val next = current() - 1
+        while (rotateTo(next)) 1.milliseconds.sleep()
+    } catch (_: Throwable) {
     }
 
     private lateinit var future: Future<*>
 
     override fun start() {
-        encoder =
-            QwiicTwist().apply {
-                pixel.brightness = .1f
-                pixel.fill(Color.YELLOW)
-                clearInterrupts() // clear buffers
-            }
+        encoder = QwiicTwist(I2CFactory.twistDevice).apply {
+            pixel.brightness = .1f
+            pixel.fill(Color.YELLOW)
+            clearInterrupts() // clear buffers
+        }
+        gp = GamepadQT((I2CFactory.gamepadDevice))
+        logger.warn("Standby - calibrating gamepad")
+        repeat(5) {
+            midX += gp.xAxis
+            1.milliseconds.sleep()
+            midY += gp.yAxis
+            1.milliseconds.sleep()
+        }
+        midX /= 5
+        midY /= 5
+
         future = AppCommon.executor.scheduleAtRate(30.milliseconds, ::clickOrTwist)
     }
 

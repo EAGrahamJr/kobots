@@ -19,19 +19,23 @@ package crackers.kobots.app.dostuff
 import com.diozero.api.I2CDevice
 import com.diozero.devices.PCA9685
 import com.diozero.devices.oled.SH1106
-import crackers.kobots.devices.sensors.VL6180X
+import crackers.kobots.devices.io.GamepadQT
+import crackers.kobots.devices.io.QwiicTwist
 
 /**
  * Masks whatever the bleep I'm doing with I2C
  */
 object I2CFactory {
-    val toffleDevice by lazy {
-        I2CDevice(1, VL6180X.DEFAULT_I2C_ADDR)
-    }
     val suziDevice by lazy {
         I2CDevice(1, PCA9685.DEFAULT_ADDRESS)
     }
     val armMonitorDevice by lazy {
         I2CDevice(1, SH1106.DEFAULT_I2C_ADDRESS)
+    }
+    val twistDevice by lazy {
+        QwiicTwist.DEFAULT_I2C_DEVICE
+    }
+    val gamepadDevice by lazy {
+        I2CDevice(1, GamepadQT.DEFAULT_I2C_ADDRESS)
     }
 }

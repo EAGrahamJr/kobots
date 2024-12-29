@@ -32,7 +32,10 @@ import crackers.kobots.app.dostuff.SuzerainOfServos.fingers
 import crackers.kobots.app.dostuff.SuzerainOfServos.shoulder
 import crackers.kobots.app.dostuff.SuzerainOfServos.waist
 import crackers.kobots.app.dostuff.SuzerainOfServos.wrist
-import crackers.kobots.mqtt.homeassistant.*
+import crackers.kobots.mqtt.homeassistant.BasicLightController
+import crackers.kobots.mqtt.homeassistant.DeviceIdentifier
+import crackers.kobots.mqtt.homeassistant.KobotLight
+import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
 import crackers.kobots.parts.movement.toSpeed
 import crackers.kobots.robot.remote.HAThingFactory
 import crackers.kobots.app.dostuff.SuzerainOfServos as Suzi
@@ -46,14 +49,6 @@ object HAJunk : AppCommon.Startable {
 
     private val commandSelectEntity = KobotSelectEntity(Commando, "servo_selector", "Servo Selector", haIdentifier)
 
-    val tofSensor =
-        KobotAnalogSensor(
-            "servomatic_tof",
-            "Bobbi Detector",
-            haIdentifier,
-            KobotAnalogSensor.Companion.AnalogDevice.DISTANCE,
-            unitOfMeasurement = "mm",
-        )
 
     /**
      * Turn it sideways
@@ -95,7 +90,6 @@ object HAJunk : AppCommon.Startable {
         wristEntity.start()
         fingersEntity.start()
         commandSelectEntity.start()
-        tofSensor.start()
     }
 
     fun sendUpdatedStates() {

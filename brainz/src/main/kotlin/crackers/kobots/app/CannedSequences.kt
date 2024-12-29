@@ -74,7 +74,10 @@ object CannedSequences {
     val resetHome =
         sequence {
             name = "Reset Sun Azimuth"
-            this += home
+            action {
+                sunElevation rotate 0
+                sunAzimuth rotate 0
+            }
             action {
                 execute {
                     sunAzimuth.apply {
@@ -137,23 +140,5 @@ object CannedSequences {
             }
         }
 
-    fun setWavy(target: Float) =
-        sequence {
-            action {
-                wavyThing rotate target.toInt()
-            }
-        }
-
-//    fun setLifter(target: Float) = sequence {
-//        action {
-//            liftyThing goTo target.toInt()
-//            requestedSpeed = goFast
-//        }
-//    }
-//
-//    fun setTwisty(target: Float) = sequence {
-//        action {
-//            twistyThing rotate target.toInt()
-//        }
-//    }
+    fun setWavy(target: Float) = sequence { action { wavyThing rotate target.toInt() } }
 }

@@ -14,10 +14,9 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.dostuff
+package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
-import crackers.kobots.app.HAJunk
 import crackers.kobots.devices.sensors.VL6180X
 import crackers.kobots.parts.scheduleWithDelay
 import org.slf4j.LoggerFactory
@@ -26,7 +25,7 @@ import kotlin.time.Duration.Companion.seconds
 
 object Sensei : AppCommon.Startable {
     private val logger = LoggerFactory.getLogger("Sensei")
-    private val toffle by lazy { VL6180X(I2CFactory.toffleDevice) }
+    private val toffle by lazy { VL6180X() }
 
     private fun VL6180X.distance(): Float =
         try {
@@ -47,7 +46,7 @@ object Sensei : AppCommon.Startable {
                 AppCommon.whileRunning {
                     // time-of-flight
                     toffle.distance().run {
-                        if (this < 200) HAJunk.tofSensor.currentState = toString()
+                        if (this < 200) HAStuff.tofSensor.currentState = toString()
                     }
                 }
             }
