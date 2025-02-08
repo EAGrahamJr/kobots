@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import crackers.kobots.app.Jimmy.crickitNeoPixel
 import crackers.kobots.app.Jimmy.sunAzimuth
 import crackers.kobots.app.Jimmy.sunElevation
 import crackers.kobots.app.Jimmy.wavyThing
-import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.parts.ORANGISH
 import crackers.kobots.parts.app.KobotSleep
@@ -56,7 +55,7 @@ object CannedSequences {
                 }
             }
 
-            this append VeryDumbThermometer.home
+//            this append VeryDumbThermometer.home
 
             action {
                 sunElevation rotate 0
@@ -122,10 +121,10 @@ object CannedSequences {
     fun setSun(
         azimuth: Int,
         elevation: Int,
-    ): ActionSequence? =
+    ): ActionSequence =
         (azimuth + AZIMUTH_OFFSET).let { az ->
             if (elevation < 0 || az >= Jimmy.ABSOLUTE_AZIMUTH_LIMIT) {
-                if (sunAzimuth.current() != 0) home else null
+                home
             } else {
                 run {
                     LoggerFactory.getLogger("Orrery").warn("Setting $az, $elevation")

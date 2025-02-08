@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ object Rooty : AppCommon.Startable {
             encoder.pixel.brightness = if (LocalTime.now().second % 2 == 0) 0f else LIGHT_ON // blink the encoder
             if (encoder.moved) {
                 val diff = encoder.count
-                val next = (waist.current() + diff).coerceIn(0, 359)
+                val next = (waist.current + diff).coerceIn(0, 359)
                 while (!waist.rotateTo(next)) 1.milliseconds.sleep()
                 waist.release()
                 encoder.count = 0
@@ -103,7 +103,7 @@ object Rooty : AppCommon.Startable {
             // and also check the joystick
             (gp.xAxis - midX).let { diff ->
                 // the elbow has to be "up-ish" to be able to move the shoulder
-                if (elbow.current() > 30) {
+                if (elbow.current.toInt() > 30) {
                     if (diff > 100) shoulder.less() else if (diff < -100) shoulder.more()
                 }
             }
@@ -114,13 +114,13 @@ object Rooty : AppCommon.Startable {
     }
 
     private fun LimitedRotator.more() = try {
-        val next = current() + 1
+        val next = current.toInt() + 1
         while (rotateTo(next)) 1.milliseconds.sleep()
     } catch (_: Throwable) {
     }
 
     private fun LimitedRotator.less() = try {
-        val next = current() - 1
+        val next = current.toInt() - 1
         while (rotateTo(next)) 1.milliseconds.sleep()
     } catch (_: Throwable) {
     }

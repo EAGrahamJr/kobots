@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,8 +117,8 @@ object ArmMonitor : AppCommon.Startable {
             waist to waistPointer,
             shoulder to shoulderPointer,
             elbow to elbowPointer,
-            object : Rotator {
-                override fun current() = wrist.current() * 100 / PALM_UP
+            object : Rotator() {
+                override val current = wrist.current.toInt() * 100 / PALM_UP
 
                 override fun rotateTo(angle: Int): Boolean {
                     val actual = angle * PALM_UP / 100f
@@ -150,7 +150,7 @@ object ArmMonitor : AppCommon.Startable {
                                 screenOn = true
                                 actuatorToIndicator.values.forEach { it.drawStatic() }
                             }
-                            actuatorToIndicator.forEach { rotator, widget -> widget.updateValue(rotator.current()) }
+                            actuatorToIndicator.forEach { rotator, widget -> widget.updateValue(rotator.current.toInt()) }
                             screen.display(image)
                         }
                     }
@@ -160,7 +160,7 @@ object ArmMonitor : AppCommon.Startable {
 
     private fun LimitedRotator.percentage(): Int {
         val scope = physicalRange.endInclusive - physicalRange.first
-        return (current() * 100f / scope).roundToInt().coerceIn(0, 100)
+        return (current.toFloat() * 100f / scope).roundToInt().coerceIn(0, 100)
     }
 
     override fun stop() {

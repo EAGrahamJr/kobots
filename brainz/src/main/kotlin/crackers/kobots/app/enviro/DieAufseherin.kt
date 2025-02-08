@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ object DieAufseherin : AppCommon.Startable {
                 val elevation = sensor("sun_solar_elevation").state().state.toFloat().roundToInt()
                 val azimuth = sensor("sun_solar_azimuth").state().state.toFloat().roundToInt()
                 logger.debug("elevation: $elevation, azimuth: $azimuth")
-                CannedSequences.setSun(azimuth, elevation)?.let { seq -> jimmy(seq) }
+//                CannedSequences.setSun(azimuth, elevation)?.let { seq -> jimmy(seq) }
             }
             AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
                 whileRunning { ignoreErrors(block, true) }
@@ -102,6 +102,7 @@ object DieAufseherin : AppCommon.Startable {
     }
 
     internal fun actionTime(payload: BrainzActions?) {
+        logger.info(payload.toString())
         when (payload) {
             BrainzActions.STOP -> {
                 currentMode = SystemMode.IDLE

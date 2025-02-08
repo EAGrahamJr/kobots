@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
 //            override fun rotateTo(angle: Int): Boolean {
 //                return angleLocation > ABSOLUTE_AZIMUTH_LIMIT || polly.hasCracker() || super.rotateTo(angle)
 //            }
-
+            private val maxReset = 1024
             override fun reset() {
                 // run it forward a little bit
                 logger.info("Stepping away")
@@ -80,22 +80,20 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
                     5.milliseconds.sleep()
                 }
                 logger.info("Looking for cracker")
-                while (polly.wantsCracker()) {
+                var stepCounter = 0
+                while (polly.wantsCracker() && ++stepCounter < maxReset) {
                     driveStepper.step(backwardDirection, StepStyle.INTERLEAVE)
                     5.milliseconds.sleep()
                 }
-                logger.info("Cracker acquired")
+                if (polly.hasCracker()) logger.info("Cracker acquired")
+                else logger.error("Calibration too far out of bounds -- manual reset required")
                 super.reset()
             }
         }
     }
 
     val sunElevation by lazy {
-        object : ServoRotator(servo1, 0..90) {
-            override fun rotateTo(angle: Int): Boolean {
-                return super.rotateTo(if (angle > 0) angle else 0)
-            }
-        }
+        ServoRotator(servo1, 0..90)
     }
 
     val wavyThing by lazy { ServoRotator(servo2, 0..90) }

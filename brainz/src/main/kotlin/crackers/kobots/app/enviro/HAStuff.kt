@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ object HAStuff : AppCommon.Startable {
      */
     private val wavyHandler =
         object : KobotNumberEntity.Companion.NumberHandler {
-            override fun currentState() = Jimmy.wavyThing.current().toFloat()
+            override fun currentState() = Jimmy.wavyThing.current.toFloat()
 
             override fun set(target: Float) {
                 Jimmy.handleRequest(SequenceRequest(CannedSequences.setWavy(target)))

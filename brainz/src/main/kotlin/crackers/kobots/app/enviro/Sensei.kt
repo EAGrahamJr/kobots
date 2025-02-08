@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ object Sensei : AppCommon.Startable {
                 AppCommon.whileRunning {
                     // time-of-flight
                     toffle.distance().run {
-                        if (this < 200) HAStuff.tofSensor.currentState = toString()
+                        HAStuff.tofSensor.currentState = toString()
                     }
                 }
             }

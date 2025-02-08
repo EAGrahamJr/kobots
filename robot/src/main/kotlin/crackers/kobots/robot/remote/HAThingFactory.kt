@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,11 +47,11 @@ class HAThingFactory(
     ): KobotNumberEntity {
         val handler =
             object : NumberHandler {
-                override fun currentState() = rotator.current().toFloat()
+                override fun currentState() = rotator.current.toFloat()
 
                 override fun set(target: Float) {
                     sequenceExecutor does
-                        crackers.kobots.parts.movement.sequence {
+                        sequence {
                             name = "HA Move $thing"
                             action {
                                 requestedSpeed = speed
@@ -88,7 +88,7 @@ class HAThingFactory(
     ): KobotNumberEntity {
         val handler =
             object : NumberHandler {
-                override fun currentState() = actuator.current().toFloat()
+                override fun currentState() = actuator.current.toFloat()
 
                 override fun set(target: Float) {
                     sequenceExecutor does

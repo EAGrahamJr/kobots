@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,15 +57,14 @@ object Predestination {
                 name = "Home"
 
                 // make sure not holding anything
-                this + gripperOpen
+                this += gripperOpen
 
                 // since not entirely sure where everything is, back off
                 action {
-                    if (elbow.current() != 0) elbow rotate (elbow.current() + 10).coerceIn(ELBOW_HOME, ELBOW_MAX)
-                    if (shoulder.current() != 0) shoulder rotate (shoulder.current() - 10).coerceIn(
-                        SHOULDER_HOME,
-                        SHOULDER_MAX
-                    )
+                    if (elbow.current != 0) elbow rotate (elbow.current.toInt() + 10)
+                        .coerceIn(ELBOW_HOME, ELBOW_MAX)
+                    if (shoulder.current != 0) shoulder rotate (shoulder.current.toInt() - 10)
+                        .coerceIn(SHOULDER_HOME, SHOULDER_MAX)
                     wrist rotate PALM_DOWN
                 }
 
@@ -74,7 +73,7 @@ object Predestination {
                     elbow rotate ELBOW_HOME
                     shoulder rotate SHOULDER_HOME
                 }
-                this + waist(WAIST_HOME)
+                this += waist(WAIST_HOME)
             }
 
     /**
@@ -84,7 +83,7 @@ object Predestination {
         sequence {
             name = "Say Hi"
 
-            this + waist(45)
+            this += waist(45)
             action {
                 elbow rotate 90
                 shoulder rotate 70

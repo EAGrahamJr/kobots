@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,8 +38,9 @@ internal lateinit var multiplexor: I2CMultiplexer
 
 private val logger = LoggerFactory.getLogger("BRAINZ")
 
-private val startables = listOf(Sensei, DisplayDos, VerticalStatusDisplay, Jimmy, DieAufseherin, LargerMonitor)
-private val stoppables = listOf(Sensei, VerticalStatusDisplay, LargerMonitor, DieAufseherin, Jimmy, DisplayDos)
+private val displaysNotUsed = listOf(DisplayDos, VerticalStatusDisplay, LargerMonitor)
+private val startables = listOf(Sensei, Jimmy, DieAufseherin)
+private val stoppables = listOf(Sensei, DieAufseherin, Jimmy)
 private val stopFlag = AtomicBoolean(false)
 
 /**
@@ -50,7 +51,7 @@ fun main(args: Array<String>? = null) {
     // NOTE: this requires a diozero daemon running on the remote pi and the diozero remote jar in the classpath
     if (args?.isNotEmpty() == true) System.setProperty(REMOTE_PI, args[0])
 
-    multiplexor = I2CMultiplexer()
+//    multiplexor = I2CMultiplexer()
     // start all the things to be started
     startables.convenientStartupHook()
 
