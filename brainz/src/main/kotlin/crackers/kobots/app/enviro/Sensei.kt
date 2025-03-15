@@ -17,6 +17,7 @@
 package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
+import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.devices.sensors.VL6180X
 import crackers.kobots.parts.scheduleWithDelay
 import org.slf4j.LoggerFactory
@@ -26,27 +27,41 @@ import kotlin.time.Duration.Companion.seconds
 object Sensei : AppCommon.Startable {
     private val logger = LoggerFactory.getLogger("Sensei")
     private val toffle by lazy { VL6180X() }
+    private val polly by lazy {
+        VCNL4040().apply {
+            ambientLightEnabled = true
+            proximityEnabled = true
+            proximityLEDCurrent = VCNL4040.LEDCurrent.LED_100MA
+        }
+    }
 
-    private fun VL6180X.distance(): Float =
-        try {
-            range.toFloat()
+    val distance: Int
+        get() = try {
+            toffle.range
         } catch (e: Exception) {
             logger.error(e.localizedMessage)
-            0f
+            0
         }
+
+    val proximity: Int
+        get() = polly.proximity.toInt()
+
+    val ambientLight: Int
+        get() = polly.ambientLight.toInt()
 
     private lateinit var future: Future<*>
 
     override fun start() {
-        // initialize the sensor
+        // initialize the sensors
         toffle.range
+        polly.proximity
 
         future =
             AppCommon.executor.scheduleWithDelay(1.seconds) {
                 AppCommon.whileRunning {
-                    // time-of-flight
-                    toffle.distance().run {
-                        HAStuff.tofSensor.currentState = toString()
+                    // proximity sensor
+                    proximity.run {
+                        HAStuff.proxSensor.currentState = toString()
                     }
                 }
             }

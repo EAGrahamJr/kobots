@@ -69,7 +69,7 @@ private fun stopAll() {
     if (stopFlag.compareAndSet(false, true)) {
         stoppables.convenientShutdownHook(true)
         executor.shutdownNow()
-        multiplexor.close()
+        if (::multiplexor.isInitialized) multiplexor.close()
     }
 }
 

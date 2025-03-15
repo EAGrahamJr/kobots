@@ -91,17 +91,16 @@ object HAStuff : AppCommon.Startable {
             unitOfMeasurement = "deg",
         )
 
-    val tofSensor =
+    val proxSensor =
         KobotAnalogSensor(
-            "brainz_tof",
+            "brainz_proximity",
             "Feline Lounge Detector",
             haIdentifier,
-            KobotAnalogSensor.Companion.AnalogDevice.DISTANCE,
-            unitOfMeasurement = "mm",
+            KobotAnalogSensor.Companion.AnalogDevice.NONE,
         )
 
     override fun start() {
-        listOf(selector, rosetteStrand, textDosEntity, wavyEntity, tofSensor).forEach { it.start() }
+        listOf(selector, rosetteStrand, textDosEntity, wavyEntity, proxSensor).forEach { it.start() }
     }
 
     override fun stop() {

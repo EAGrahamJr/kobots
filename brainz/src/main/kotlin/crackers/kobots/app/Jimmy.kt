@@ -20,11 +20,11 @@ import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperController.StepStyle
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.enviro.HAStuff
+import crackers.kobots.app.enviro.Sensei
 import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.devices.lighting.PixelBuf
 import crackers.kobots.devices.lighting.WS2811
-import crackers.kobots.devices.sensors.VCNL4040
 import crackers.kobots.parts.colorIntervalFromHSB
 import crackers.kobots.parts.movement.BasicStepperRotator
 import crackers.kobots.parts.movement.SequenceExecutor
@@ -41,14 +41,8 @@ import crackers.kobots.app.enviro.DieAufseherin as DA
  * Stuff for the CRICKIT
  */
 object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttClient) {
-    const val CRACKER = 90
 
     private lateinit var crickit: CRICKITHat
-    private lateinit var polly: VCNL4040
-
-    private fun VCNL4040.wantsCracker() = AppCommon.ignoreErrors({ proximity < CRACKER }) ?: false
-
-    private fun VCNL4040.hasCracker() = !wantsCracker()
 
     val crickitNeoPixel by lazy { crickit.neoPixel(8).apply { brightness = .005f } }
     val statusPixel by lazy { crickit.statusPixel() }
@@ -67,25 +61,24 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     const val ABSOLUTE_AZIMUTH_LIMIT = 270
     val sunAzimuth by lazy {
         object : BasicStepperRotator(driveStepper, stepStyle = StepStyle.INTERLEAVE, stepsPerRotation = 4096) {
-            // TODO fix this
 //            override fun rotateTo(angle: Int): Boolean {
-//                return angleLocation > ABSOLUTE_AZIMUTH_LIMIT || polly.hasCracker() || super.rotateTo(angle)
+//                return angleLocation > ABSOLUTE_AZIMUTH_LIMIT || Sensei.distance < 10  || super.rotateTo(angle)
 //            }
-            private val maxReset = 1024
             override fun reset() {
+    val maxReset = driveStepper.stepsPerRotation / 4
                 // run it forward a little bit
                 logger.info("Stepping away")
                 (1..driveStepper.stepsPerRotation / 8).forEach {
                     driveStepper.step(forwardDirection, StepStyle.INTERLEAVE)
                     5.milliseconds.sleep()
                 }
-                logger.info("Looking for cracker")
+    logger.info("Looking for home")
                 var stepCounter = 0
-                while (polly.wantsCracker() && ++stepCounter < maxReset) {
+    while (Sensei.distance > 10 && ++stepCounter < maxReset) {
                     driveStepper.step(backwardDirection, StepStyle.INTERLEAVE)
                     5.milliseconds.sleep()
                 }
-                if (polly.hasCracker()) logger.info("Cracker acquired")
+    if (Sensei.distance in (8..12)) logger.info("Home sweet home")
                 else logger.error("Calibration too far out of bounds -- manual reset required")
                 super.reset()
             }
@@ -106,12 +99,6 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
     override fun canRun() = AppCommon.applicationRunning
 
     override fun start() {
-        polly =
-            VCNL4040().apply {
-                ambientLightEnabled = true
-                proximityEnabled = true
-                proximityLEDCurrent = VCNL4040.LEDCurrent.LED_100MA
-            }
         crickit = CRICKITHat()
         statusPixel.brightness = .1f
         VeryDumbThermometer.init(motorStepper, switch1)
@@ -141,7 +128,6 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
             crickitNeoPixel.fill(Color.BLACK)
             crickit.close()
         }
-        if (::polly.isInitialized) polly.close()
     }
 
     override fun preExecution() {
@@ -155,11 +141,6 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
         HAStuff.updateEverything()
         statusPixel.brightness = .1f
         if (::stopLatch.isInitialized) stopLatch.countDown()
-    }
-
-    override fun updateCurrentState() {
-        super.updateCurrentState()
-//        println("Running ${currentSequence}")
     }
 
     fun cycleNeo(b: PixelBuf) {

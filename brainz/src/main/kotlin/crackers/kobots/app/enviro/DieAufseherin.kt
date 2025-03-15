@@ -83,7 +83,7 @@ object DieAufseherin : AppCommon.Startable {
                 val elevation = sensor("sun_solar_elevation").state().state.toFloat().roundToInt()
                 val azimuth = sensor("sun_solar_azimuth").state().state.toFloat().roundToInt()
                 logger.debug("elevation: $elevation, azimuth: $azimuth")
-//                CannedSequences.setSun(azimuth, elevation)?.let { seq -> jimmy(seq) }
+                CannedSequences.setSun(azimuth, elevation)?.let { seq -> jimmy(seq) }
             }
             AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
                 whileRunning { ignoreErrors(block, true) }

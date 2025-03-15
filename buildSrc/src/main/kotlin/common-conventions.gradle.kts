@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,13 @@
  * permissions and limitations under the License.
  */
 
+import crackers.buildstuff.semver.SimpleSemverVersion
+
 plugins {
     kotlin("jvm")
     id("org.jmailen.kotlinter")
     idea
+    id("crackers.buildstuff.simple-semver")
 }
 
 repositories {
@@ -31,6 +34,10 @@ dependencies {
 }
 
 group = "crackers.kobots"
+
+// set the project version to the semver version
+val semver: Provider<SimpleSemverVersion> by project
+version = semver.get().toString()
 
 kotlin {
     jvmToolchain(21)

@@ -27,5 +27,6 @@ repositories {
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21")
     implementation("com.github.johnrengelman:shadow:8.1.1")
-    implementation("org.jmailen.gradle:kotlinter-gradle:4.1.1")
+    implementation("org.jmailen.gradle:kotlinter-gradle:4.5.0")
+    implementation("crackers.buildstuff:crackers-gradle-plugins:1.3.0")
 }
