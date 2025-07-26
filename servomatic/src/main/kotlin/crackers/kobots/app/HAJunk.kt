@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,29 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.dostuff.Jeep
-import crackers.kobots.app.dostuff.SuzerainOfServos.ELBOW_HOME
-import crackers.kobots.app.dostuff.SuzerainOfServos.ELBOW_MAX
-import crackers.kobots.app.dostuff.SuzerainOfServos.FINGERS_CLOSED
-import crackers.kobots.app.dostuff.SuzerainOfServos.FINGERS_OPEN
-import crackers.kobots.app.dostuff.SuzerainOfServos.PALM_DOWN
-import crackers.kobots.app.dostuff.SuzerainOfServos.PALM_UP
-import crackers.kobots.app.dostuff.SuzerainOfServos.SHOULDER_HOME
-import crackers.kobots.app.dostuff.SuzerainOfServos.SHOULDER_MAX
-import crackers.kobots.app.dostuff.SuzerainOfServos.WAIST_HOME
-import crackers.kobots.app.dostuff.SuzerainOfServos.WAIST_MAX
-import crackers.kobots.app.dostuff.SuzerainOfServos.elbow
-import crackers.kobots.app.dostuff.SuzerainOfServos.fingers
-import crackers.kobots.app.dostuff.SuzerainOfServos.shoulder
-import crackers.kobots.app.dostuff.SuzerainOfServos.waist
-import crackers.kobots.app.dostuff.SuzerainOfServos.wrist
+import crackers.kobots.app.mechanicals.Jeep
+import crackers.kobots.app.mechanicals.SuzerainOfServos.ELBOW_HOME
+import crackers.kobots.app.mechanicals.SuzerainOfServos.ELBOW_MAX
+import crackers.kobots.app.mechanicals.SuzerainOfServos.FINGERS_CLOSED
+import crackers.kobots.app.mechanicals.SuzerainOfServos.FINGERS_OPEN
+import crackers.kobots.app.mechanicals.SuzerainOfServos.SHOULDER_HOME
+import crackers.kobots.app.mechanicals.SuzerainOfServos.SHOULDER_MAX
+import crackers.kobots.app.mechanicals.SuzerainOfServos.WAIST_HOME
+import crackers.kobots.app.mechanicals.SuzerainOfServos.WAIST_MAX
+import crackers.kobots.app.mechanicals.SuzerainOfServos.WRIST_COCKED
+import crackers.kobots.app.mechanicals.SuzerainOfServos.WRIST_REST
+import crackers.kobots.app.mechanicals.SuzerainOfServos.elbow
+import crackers.kobots.app.mechanicals.SuzerainOfServos.fingers
+import crackers.kobots.app.mechanicals.SuzerainOfServos.shoulder
+import crackers.kobots.app.mechanicals.SuzerainOfServos.waist
+import crackers.kobots.app.mechanicals.SuzerainOfServos.wrist
 import crackers.kobots.mqtt.homeassistant.BasicLightController
 import crackers.kobots.mqtt.homeassistant.DeviceIdentifier
 import crackers.kobots.mqtt.homeassistant.KobotLight
 import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
 import crackers.kobots.parts.movement.toSpeed
 import crackers.kobots.robot.remote.HAThingFactory
-import crackers.kobots.app.dostuff.SuzerainOfServos as Suzi
+import crackers.kobots.app.mechanicals.SuzerainOfServos as Suzi
 
 /**
  * HA entities, etc.
@@ -48,7 +48,6 @@ object HAJunk : AppCommon.Startable {
     private val maker = HAThingFactory("Arm", haIdentifier, Suzi)
 
     private val commandSelectEntity = KobotSelectEntity(Commando, "servo_selector", "Servo Selector", haIdentifier)
-
 
     /**
      * Turn it sideways
@@ -68,7 +67,7 @@ object HAJunk : AppCommon.Startable {
     /**
      * End of things
      */
-    private val wristEntity = maker.rotateThing("Wrist", wrist, PALM_DOWN, PALM_UP, "mdi:hand-extended")
+    private val wristEntity = maker.rotateThing("Wrist", wrist, WRIST_REST, WRIST_COCKED, "mdi:hand-extended")
 
     /**
      * Grabby thing

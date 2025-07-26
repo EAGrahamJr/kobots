@@ -44,7 +44,7 @@ kotlin {
 }
 
 kotlinter {
-    ignoreFailures = true
+//    ignoreFailures = true
 //    disabledRules = arrayOf("no-wildcard-imports")
 }
 

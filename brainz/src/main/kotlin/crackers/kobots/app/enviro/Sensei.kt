@@ -36,12 +36,13 @@ object Sensei : AppCommon.Startable {
     }
 
     val distance: Int
-        get() = try {
-            toffle.range
-        } catch (e: Exception) {
-            logger.error(e.localizedMessage)
-            0
-        }
+        get() =
+            try {
+                toffle.range
+            } catch (e: Exception) {
+                logger.error(e.localizedMessage)
+                0
+            }
 
     val proximity: Int
         get() = polly.proximity.toInt()

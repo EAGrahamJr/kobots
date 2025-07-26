@@ -16,35 +16,22 @@
 
 package crackers.kobots.app.newarm
 
-import crackers.kobots.app.dostuff.SuzerainOfServos.ELBOW_HOME
-import crackers.kobots.app.dostuff.SuzerainOfServos.ELBOW_MAX
-import crackers.kobots.app.dostuff.SuzerainOfServos.FINGERS_CLOSED
-import crackers.kobots.app.dostuff.SuzerainOfServos.FINGERS_OPEN
-import crackers.kobots.app.dostuff.SuzerainOfServos.PALM_DOWN
-import crackers.kobots.app.dostuff.SuzerainOfServos.PALM_UP
-import crackers.kobots.app.dostuff.SuzerainOfServos.SHOULDER_HOME
-import crackers.kobots.app.dostuff.SuzerainOfServos.SHOULDER_MAX
-import crackers.kobots.app.dostuff.SuzerainOfServos.WAIST_HOME
-import crackers.kobots.app.dostuff.SuzerainOfServos.elbow
-import crackers.kobots.app.dostuff.SuzerainOfServos.fingers
-import crackers.kobots.app.dostuff.SuzerainOfServos.shoulder
-import crackers.kobots.app.dostuff.SuzerainOfServos.waist
-import crackers.kobots.app.dostuff.SuzerainOfServos.wrist
 import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.DefaultActionSpeed
 import crackers.kobots.parts.movement.action
 import crackers.kobots.parts.movement.sequence
+import crackers.kobots.app.mechanicals.SuzerainOfServos as suzi
 
 /**
  * Pre-canned sequences, esp the home one.
  */
 object Predestination {
-    val gripperOpen = action { fingers goTo FINGERS_OPEN }
-    val gripperClose = action { fingers goTo FINGERS_CLOSED }
+    val gripperOpen = action { suzi.fingers goTo suzi.FINGERS_OPEN }
+    val gripperClose = action { suzi.fingers goTo suzi.FINGERS_CLOSED }
 
     fun waist(where: Int) =
         action {
-            waist rotate where
+            suzi.waist rotate where
             requestedSpeed = DefaultActionSpeed.VERY_FAST
         }
 
@@ -61,19 +48,27 @@ object Predestination {
 
                 // since not entirely sure where everything is, back off
                 action {
-                    if (elbow.current != 0) elbow rotate (elbow.current.toInt() + 10)
-                        .coerceIn(ELBOW_HOME, ELBOW_MAX)
-                    if (shoulder.current != 0) shoulder rotate (shoulder.current.toInt() - 10)
-                        .coerceIn(SHOULDER_HOME, SHOULDER_MAX)
-                    wrist rotate PALM_DOWN
+                    suzi.elbow.let { el ->
+                        if (el.current != 0) {
+                            val target = (el.current.toInt() + 10).coerceIn(suzi.ELBOW_HOME, suzi.ELBOW_MAX)
+                            el rotate target
+                        }
+                    }
+                    suzi.shoulder.let { sh ->
+                        if (sh.current != 0) {
+                            val target = (sh.current.toInt() - 10).coerceIn(suzi.SHOULDER_HOME, suzi.SHOULDER_MAX)
+                            sh rotate target
+                        }
+                    }
+                    suzi.wrist rotate suzi.WRIST_REST
                 }
 
                 // drop everything and twist home
                 action {
-                    elbow rotate ELBOW_HOME
-                    shoulder rotate SHOULDER_HOME
+                    suzi.elbow rotate suzi.ELBOW_HOME
+                    suzi.shoulder rotate suzi.SHOULDER_HOME
                 }
-                this += waist(WAIST_HOME)
+                this += waist(suzi.WAIST_HOME)
             }
 
     /**
@@ -83,20 +78,19 @@ object Predestination {
         sequence {
             name = "Say Hi"
 
-            this += waist(45)
+            this += waist(135)
             action {
-                elbow rotate 90
-                shoulder rotate 70
-                wrist rotate PALM_UP
+                suzi.elbow rotate suzi.ELBOW_MAX
+                suzi.wrist rotate suzi.WRIST_COCKED
             }
 
             repeat(4) {
                 action {
-                    fingers goTo FINGERS_CLOSED
+                    suzi.fingers goTo suzi.FINGERS_CLOSED
                     requestedSpeed = DefaultActionSpeed.FAST
                 }
                 action {
-                    fingers goTo FINGERS_OPEN
+                    suzi.fingers goTo suzi.FINGERS_OPEN
                     requestedSpeed = DefaultActionSpeed.FAST
                 }
             }
@@ -120,10 +114,10 @@ object Predestination {
         sequence {
             action {
                 requestedSpeed = DefaultActionSpeed.VERY_FAST
-                shoulder rotate 60
-                elbow rotate 40
-                wrist rotate 90
-                fingers goTo 50
+                suzi.shoulder rotate 60
+                suzi.elbow rotate 40
+                suzi.wrist rotate 90
+                suzi.fingers goTo 50
             }
         }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * permissions and limitations under the License.
  */
 
-package crackers.kobots.app.dostuff
+package crackers.kobots.app.mechanicals
 
 import com.diozero.api.ServoTrim
 import com.diozero.devices.PCA9685
@@ -87,13 +87,13 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), AppCo
     const val WAIST_MAX = 360
 
     const val SHOULDER_HOME = 0
-    const val SHOULDER_MAX = 120
+    const val SHOULDER_MAX = 135
 
     const val ELBOW_HOME = 0
-    const val ELBOW_MAX = 107
+    const val ELBOW_MAX = 135
 
-    const val PALM_DOWN = 0
-    const val PALM_UP = 180
+    const val WRIST_REST = 0
+    const val WRIST_COCKED = 90
 
     const val FINGERS_OPEN = 0
     const val FINGERS_CLOSED = 100
@@ -108,15 +108,15 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), AppCo
     }
 
     val elbow by lazy {
-        hat.getServo(1, ServoTrim.MG90S, 0).rotator(ELBOW_HOME..ELBOW_MAX, 0..180)
+        hat.getServo(1, ServoTrim.MG90S, 0).rotator(ELBOW_HOME..ELBOW_MAX)
     }
 
     val wrist by lazy {
-        hat.getServo(2, ServoTrim.MG90S, 0).rotator(PALM_DOWN..PALM_UP)
+        hat.getServo(2, ServoTrim.MG90S, 0).rotator(WRIST_REST..WRIST_COCKED)
     }
 
-    val fingers by lazy {
-        hat.getServo(3, ServoTrim.MG90S, 0).let { servo -> ServoLinearActuator(servo, 0f, 60f) }
+    val fingers: ServoLinearActuator by lazy {
+        hat.getServo(3, ServoTrim.MG90S, 0).let { servo -> ServoLinearActuator(servo, 0f, 150f) }
     }
 
     // technically not a servo

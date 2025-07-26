@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 plugins {
     id("kobots-hardware-conventions")
-    id("com.github.johnrengelman.shadow")
+    id("com.gradleup.shadow")
     application
 }
 

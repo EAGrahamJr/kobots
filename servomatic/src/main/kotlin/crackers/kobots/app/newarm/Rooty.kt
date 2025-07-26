@@ -17,18 +17,27 @@
 package crackers.kobots.app.newarm
 
 import crackers.kobots.app.AppCommon
+import crackers.kobots.app.AppCommon.ignoreErrors
 import crackers.kobots.app.HAJunk
 import crackers.kobots.app.SystemState
-import crackers.kobots.app.dostuff.I2CFactory
-import crackers.kobots.app.dostuff.SuzerainOfServos.elbow
-import crackers.kobots.app.dostuff.SuzerainOfServos.shoulder
-import crackers.kobots.app.dostuff.SuzerainOfServos.waist
+import crackers.kobots.app.mechanicals.I2CFactory
+import crackers.kobots.app.mechanicals.SuzerainOfServos.ELBOW_HOME
+import crackers.kobots.app.mechanicals.SuzerainOfServos.FINGERS_OPEN
+import crackers.kobots.app.mechanicals.SuzerainOfServos.SHOULDER_HOME
+import crackers.kobots.app.mechanicals.SuzerainOfServos.WAIST_HOME
+import crackers.kobots.app.mechanicals.SuzerainOfServos.WRIST_COCKED
+import crackers.kobots.app.mechanicals.SuzerainOfServos.elbow
+import crackers.kobots.app.mechanicals.SuzerainOfServos.fingers
+import crackers.kobots.app.mechanicals.SuzerainOfServos.shoulder
+import crackers.kobots.app.mechanicals.SuzerainOfServos.waist
+import crackers.kobots.app.mechanicals.SuzerainOfServos.wrist
 import crackers.kobots.app.systemState
 import crackers.kobots.devices.io.GamepadQT
 import crackers.kobots.devices.io.QwiicTwist
 import crackers.kobots.devices.lighting.WS2811.PixelColor
 import crackers.kobots.parts.GOLDENROD
 import crackers.kobots.parts.movement.LimitedRotator
+import crackers.kobots.parts.movement.LinearActuator
 import crackers.kobots.parts.scheduleAtRate
 import crackers.kobots.parts.sleep
 import org.slf4j.LoggerFactory
@@ -54,8 +63,9 @@ object Rooty : AppCommon.Startable {
 
     private fun clickOrTwist() {
         if (encoder.clicked) {
-            if (systemState == SystemState.IDLE) systemState = SystemState.MANUAL
-            else if (systemState == SystemState.MANUAL) {
+            if (systemState == SystemState.IDLE) {
+                systemState = SystemState.MANUAL
+            } else if (systemState == SystemState.MANUAL) {
                 HAJunk.sendUpdatedStates()
                 waist.release()
                 systemState = SystemState.IDLE
@@ -79,24 +89,33 @@ object Rooty : AppCommon.Startable {
             if (encoder.moved) {
                 val diff = encoder.count
                 val next = (waist.current + diff).coerceIn(0, 359)
-                while (!waist.rotateTo(next)) 1.milliseconds.sleep()
-                waist.release()
+                waistGo(next)
                 encoder.count = 0
             }
             // gamepad stuff: buttons are start, select, a, b, x, y
             gp.read().apply {
                 if (a) {
+                    fingers.more()
                 }
                 if (b) {
-                    // finger close
+                    wrist.more()
                 }
                 if (x) {
+                    wrist.less()
                 }
                 if (y) {
+                    fingers.less()
                 }
                 if (start) {
+                    fingers.go(FINGERS_OPEN)
+                    wrist.go(WRIST_COCKED)
+                    shoulder.go(30)
+                    elbow.go(ELBOW_HOME)
+                    shoulder.go(SHOULDER_HOME)
+                    waistGo(WAIST_HOME)
                 }
                 if (select) {
+                    // quit this mode?
                 }
             }
 
@@ -104,35 +123,52 @@ object Rooty : AppCommon.Startable {
             (gp.xAxis - midX).let { diff ->
                 // the elbow has to be "up-ish" to be able to move the shoulder
                 if (elbow.current.toInt() > 30) {
-                    if (diff > 100) shoulder.less() else if (diff < -100) shoulder.more()
+                    if (diff > 100) {
+                        shoulder.less()
+                    } else if (diff < -100) {
+                        shoulder.more()
+                    }
                 }
             }
             (gp.yAxis - midY).let { diff ->
-                if (diff > 100) elbow.less() else if (diff < -100) elbow.more()
+                if (diff > 100) {
+                    elbow.less()
+                } else if (diff < -100) {
+                    elbow.more()
+                }
             }
         }
     }
 
-    private fun LimitedRotator.more() = try {
-        val next = current.toInt() + 1
-        while (rotateTo(next)) 1.milliseconds.sleep()
-    } catch (_: Throwable) {
+    private fun waistGo(next: Int) {
+        while (!waist.rotateTo(next)) 1.milliseconds.sleep()
+        waist.release()
     }
 
-    private fun LimitedRotator.less() = try {
-        val next = current.toInt() - 1
-        while (rotateTo(next)) 1.milliseconds.sleep()
-    } catch (_: Throwable) {
-    }
+    private fun LinearActuator.more() = go(current.toInt() + 1)
+
+    private fun LinearActuator.less() = go(current.toInt() - 1)
+
+    private fun LinearActuator.go(where: Int) =
+        try {
+            while (extendTo(where)) 1.milliseconds.sleep()
+        } catch (_: Throwable) {
+        }
+
+    private fun LimitedRotator.more() = go(current.toInt() + 1)
+
+    private fun LimitedRotator.less() = go(current.toInt() - 1)
+
+    private fun LimitedRotator.go(where: Int) =
+        try {
+            while (rotateTo(where)) 1.milliseconds.sleep()
+        } catch (_: Throwable) {
+        }
 
     private lateinit var future: Future<*>
 
     override fun start() {
-        encoder = QwiicTwist(I2CFactory.twistDevice).apply {
-            pixel.brightness = .1f
-            pixel.fill(Color.YELLOW)
-            clearInterrupts() // clear buffers
-        }
+        encoder = QwiicTwist(I2CFactory.twistDevice)
         gp = GamepadQT((I2CFactory.gamepadDevice))
         logger.warn("Standby - calibrating gamepad")
         repeat(5) {
@@ -143,6 +179,14 @@ object Rooty : AppCommon.Startable {
         }
         midX /= 5
         midY /= 5
+
+        encoder.apply {
+            ignoreErrors({
+                             pixel.brightness = .1f
+                             pixel.fill(Color.YELLOW)
+                             clearInterrupts() // clear buffers
+                         })
+        }
 
         future = AppCommon.executor.scheduleAtRate(30.milliseconds, ::clickOrTwist)
     }

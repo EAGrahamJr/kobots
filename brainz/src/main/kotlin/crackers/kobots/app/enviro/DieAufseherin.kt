@@ -80,8 +80,18 @@ object DieAufseherin : AppCommon.Startable {
     private fun localStuff() {
         AppCommon.hasskClient.run {
             val block = {
-                val elevation = sensor("sun_solar_elevation").state().state.toFloat().roundToInt()
-                val azimuth = sensor("sun_solar_azimuth").state().state.toFloat().roundToInt()
+                val elevation =
+                    sensor("sun_solar_elevation")
+                        .state()
+                        .state
+                        .toFloat()
+                        .roundToInt()
+                val azimuth =
+                    sensor("sun_solar_azimuth")
+                        .state()
+                        .state
+                        .toFloat()
+                        .roundToInt()
                 logger.debug("elevation: $elevation, azimuth: $azimuth")
                 CannedSequences.setSun(azimuth, elevation)?.let { seq -> jimmy(seq) }
             }

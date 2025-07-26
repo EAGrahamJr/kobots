@@ -31,7 +31,7 @@ import kotlin.math.roundToInt
 class HAThingFactory(
     val name: String,
     val deviceIdentifier: DeviceIdentifier,
-    private val sequenceExecutor: SequenceExecutor
+    private val sequenceExecutor: SequenceExecutor,
 ) {
     /**
      * Binds an HA number slider to a rotatable element. The default speed is `SLOW` because these are mostly servos
@@ -68,7 +68,6 @@ class HAThingFactory(
             min = min,
             max = max,
             unitOfMeasurement = "deg",
-            mode = Companion.DisplayMode.SLIDER,
         ) {
             override val icon = iconName
         }
@@ -109,7 +108,6 @@ class HAThingFactory(
             min = min,
             max = max,
             unitOfMeasurement = "pct",
-            mode = Companion.DisplayMode.SLIDER,
         ) {
             override val icon = iconName
         }

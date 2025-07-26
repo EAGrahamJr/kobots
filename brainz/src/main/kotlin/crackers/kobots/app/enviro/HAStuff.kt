@@ -32,7 +32,10 @@ object HAStuff : AppCommon.Startable {
      */
     private val selectorHandler =
         object : KobotSelectEntity.Companion.SelectHandler {
-            override val options = DieAufseherin.BrainzActions.entries.map { it.name }.sorted()
+            override val options =
+                DieAufseherin.BrainzActions.entries
+                    .map { it.name }
+                    .sorted()
 
             override fun executeOption(select: String) {
                 val payloadToEnum = enumValue<DieAufseherin.BrainzActions>(select.uppercase())
@@ -41,9 +44,7 @@ object HAStuff : AppCommon.Startable {
         }
     private val selector =
         object : KobotSelectEntity(selectorHandler, "brainz_selector", "Brainz", haIdentifier) {
-            override fun currentState(): String {
-                return ""
-            }
+            override fun currentState(): String = ""
         }
 
     private val effectList =

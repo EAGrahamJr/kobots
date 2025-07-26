@@ -15,7 +15,7 @@
  */
 
 plugins {
-    kotlin("jvm") version "2.0.21"
+    kotlin("jvm") version "2.2.0"
     `kotlin-dsl`
 }
 
@@ -25,8 +25,8 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21")
-    implementation("com.github.johnrengelman:shadow:8.1.1")
-    implementation("org.jmailen.gradle:kotlinter-gradle:4.5.0")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0")
+    implementation("com.gradleup.shadow:shadow-gradle-plugin:9.0.0-rc2")
+    implementation("org.jmailen.gradle:kotlinter-gradle:5.0.2")
     implementation("crackers.buildstuff:crackers-gradle-plugins:1.3.0")
 }

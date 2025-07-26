@@ -20,19 +20,19 @@ import com.diozero.devices.oled.SH1106
 import com.diozero.devices.oled.SsdOledCommunicationChannel
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.SystemState
-import crackers.kobots.app.dostuff.I2CFactory.armMonitorDevice
-import crackers.kobots.app.dostuff.SuzerainOfServos.ELBOW_MAX
-import crackers.kobots.app.dostuff.SuzerainOfServos.PALM_UP
-import crackers.kobots.app.dostuff.SuzerainOfServos.elbow
-import crackers.kobots.app.dostuff.SuzerainOfServos.shoulder
-import crackers.kobots.app.dostuff.SuzerainOfServos.waist
-import crackers.kobots.app.dostuff.SuzerainOfServos.wrist
+import crackers.kobots.app.mechanicals.I2CFactory.armMonitorDevice
+import crackers.kobots.app.mechanicals.SuzerainOfServos.ELBOW_MAX
+import crackers.kobots.app.mechanicals.SuzerainOfServos.SHOULDER_MAX
+import crackers.kobots.app.mechanicals.SuzerainOfServos.WRIST_COCKED
+import crackers.kobots.app.mechanicals.SuzerainOfServos.elbow
+import crackers.kobots.app.mechanicals.SuzerainOfServos.shoulder
+import crackers.kobots.app.mechanicals.SuzerainOfServos.waist
+import crackers.kobots.app.mechanicals.SuzerainOfServos.wrist
 import crackers.kobots.app.systemState
 import crackers.kobots.graphics.widgets.DirectionPointer
 import crackers.kobots.graphics.widgets.VerticalPercentageIndicator
 import crackers.kobots.parts.app.KobotSleep
 import crackers.kobots.parts.movement.LimitedRotator
-import crackers.kobots.parts.movement.Rotator
 import crackers.kobots.parts.off
 import crackers.kobots.parts.on
 import crackers.kobots.parts.scheduleWithFixedDelay
@@ -91,7 +91,7 @@ object ArmMonitor : AppCommon.Startable {
                 SMALL_FONT,
                 32,
                 y = 32,
-                endAngle = ELBOW_MAX,
+                endAngle = SHOULDER_MAX,
                 clockWise = false,
             )
 
@@ -101,7 +101,7 @@ object ArmMonitor : AppCommon.Startable {
                 SMALL_FONT,
                 screen.height,
                 x = shoulderPointer.bounds.x + shoulderPointer.bounds.width + 3,
-                label = "Arm",
+                label = "Elb",
             )
         val wristPointer =
             VerticalPercentageIndicator(
@@ -109,24 +109,17 @@ object ArmMonitor : AppCommon.Startable {
                 SMALL_FONT,
                 screen.height,
                 x = elbowPointer.bounds.x + elbowPointer.bounds.width + 3,
-                label = "Bkt",
+                label = "Wst",
             )
 
         var screenOn = false
-        val actuatorToIndicator = mapOf(
-            waist to waistPointer,
-            shoulder to shoulderPointer,
-            elbow to elbowPointer,
-            object : Rotator() {
-                override val current = wrist.current.toInt() * 100 / PALM_UP
-
-                override fun rotateTo(angle: Int): Boolean {
-                    val actual = angle * PALM_UP / 100f
-                    return wrist.rotateTo(actual.roundToInt())
-                }
-
-            } to wristPointer
-        )
+        val actuatorToIndicator =
+            mapOf(
+                { waist.current } to waistPointer,
+                { shoulder.current } to shoulderPointer,
+                { elbow.current.toInt() * 100.0 / ELBOW_MAX } to elbowPointer,
+                { wrist.current.toInt() * 100.0 / WRIST_COCKED } to wristPointer,
+            )
         future =
             AppCommon.executor.scheduleWithFixedDelay(100.milliseconds, 100.milliseconds) {
                 AppCommon.whileRunning {
@@ -150,7 +143,7 @@ object ArmMonitor : AppCommon.Startable {
                                 screenOn = true
                                 actuatorToIndicator.values.forEach { it.drawStatic() }
                             }
-                            actuatorToIndicator.forEach { rotator, widget -> widget.updateValue(rotator.current.toInt()) }
+                            actuatorToIndicator.forEach { cFunc, widget -> widget.updateValue(cFunc.invoke().toInt()) }
                             screen.display(image)
                         }
                     }
@@ -168,6 +161,6 @@ object ArmMonitor : AppCommon.Startable {
             future.cancel(true)
             while (!future.isDone) KobotSleep.millis(20)
         }
-        screen.close()
+//        screen.close()
     }
 }

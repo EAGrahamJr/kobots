@@ -41,7 +41,6 @@ import crackers.kobots.app.enviro.DieAufseherin as DA
  * Stuff for the CRICKIT
  */
 object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttClient) {
-
     private lateinit var crickit: CRICKITHat
 
     val crickitNeoPixel by lazy { crickit.neoPixel(8).apply { brightness = .005f } }
@@ -78,8 +77,11 @@ object Jimmy : AppCommon.Startable, SequenceExecutor("brainz", AppCommon.mqttCli
                     driveStepper.step(backwardDirection, StepStyle.INTERLEAVE)
                     5.milliseconds.sleep()
                 }
-    if (Sensei.distance in (8..12)) logger.info("Home sweet home")
-                else logger.error("Calibration too far out of bounds -- manual reset required")
+    if (Sensei.distance in (8..12)) {
+        logger.info("Home sweet home")
+    } else {
+        logger.error("Calibration too far out of bounds -- manual reset required")
+    }
                 super.reset()
             }
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2025 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,7 +101,11 @@ object DisplayDos : AppCommon.Startable {
     // pretty stuff
     private val matrixRain =
         MatrixRain(
-            graphics, 0, 0, MAX_WD, MAX_HT,
+            graphics,
+            0,
+            0,
+            MAX_WD,
+            MAX_HT,
             displayFont = Font(Font.SANS_SERIF, Font.PLAIN, 4),
             useBold = true,
             updateSpeed = 75.milliseconds,
@@ -111,10 +115,11 @@ object DisplayDos : AppCommon.Startable {
     override fun start() {
         val i2c = multiplexor.getI2CDevice(1, SSD1306.DEFAULT_I2C_ADDRESS)
         val channel = SsdOledCommunicationChannel.I2cCommunicationChannel(i2c)
-        dosScreen = SSD1306(channel, Height.SHORT).apply {
-            setContrast(0x20)
-            display = true
-        }
+        dosScreen =
+            SSD1306(channel, Height.SHORT).apply {
+                setContrast(0x20)
+                display = true
+            }
 
         clear()
         var colon = true
