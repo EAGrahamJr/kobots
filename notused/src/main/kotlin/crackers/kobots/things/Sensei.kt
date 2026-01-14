@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,15 @@ package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
 import crackers.kobots.devices.sensors.VCNL4040
-import crackers.kobots.devices.sensors.VL6180X
-import crackers.kobots.parts.scheduleWithDelay
+import crackers.kobots.parts.movement.async.AppScope
+import kotlinx.coroutines.Job
 import org.slf4j.LoggerFactory
-import java.util.concurrent.Future
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+
 
 object Sensei : AppCommon.Startable {
     private val logger = LoggerFactory.getLogger("Sensei")
-    private val toffle by lazy { VL6180X() }
     private val polly by lazy {
         VCNL4040().apply {
             ambientLightEnabled = true
@@ -35,40 +35,31 @@ object Sensei : AppCommon.Startable {
         }
     }
 
-    val distance: Int
-        get() =
-            try {
-                toffle.range
-            } catch (e: Exception) {
-                logger.error(e.localizedMessage)
-                0
-            }
-
     val proximity: Int
         get() = polly.proximity.toInt()
 
-    val ambientLight: Int
-        get() = polly.ambientLight.toInt()
+    val ambientLight: Double
+        get() = polly.ambientLight.toDouble()
 
-    private lateinit var future: Future<*>
+    private lateinit var future: Job
 
     override fun start() {
         // initialize the sensors
-        toffle.range
         polly.proximity
 
         future =
-            AppCommon.executor.scheduleWithDelay(1.seconds) {
+            AppScope.scheduleWithFixedDelay(10.seconds, 1.minutes) {
                 AppCommon.whileRunning {
-                    // proximity sensor
-                    proximity.run {
-                        HAStuff.proxSensor.currentState = toString()
-                    }
+                    HAStuff.ambientLightSensor.currentState = ambientLight
                 }
             }
     }
 
     override fun stop() {
-        Sensei::future.isInitialized && future.cancel(true)
+        if (::future.isInitialized) {
+            future.cancel()
+            polly.close()
+        }
+
     }
 }

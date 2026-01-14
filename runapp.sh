@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 #
-# Copyright 2022-2024 by E. A. Graham, Jr.
+# Copyright 2022-2026 by E. A. Graham, Jr.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ RUNTHIS="-jar $JAR"
 ARGS="-ea"
 # Uncomment to get debugging
 ARGS="$ARGS -agentlib:jdwp=transport=dt_socket,server=y,suspend=$SUSPEND,address=*:5005"
+# Java 25
+ARGS="$ARGS --enable-native-access=ALL-UNNAMED"
 # Uncomment to get remote monitoring
 #ARGS="$ARGS -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=8080"
 #ARGS="$ARGS  -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"

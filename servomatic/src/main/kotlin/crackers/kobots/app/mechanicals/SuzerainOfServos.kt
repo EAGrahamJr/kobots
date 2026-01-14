@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,7 +116,7 @@ object SuzerainOfServos : SequenceExecutor("Suzie", AppCommon.mqttClient), AppCo
     }
 
     val fingers: ServoLinearActuator by lazy {
-        hat.getServo(3, ServoTrim.MG90S, 0).let { servo -> ServoLinearActuator(servo, 0f, 150f) }
+        ServoLinearActuator(hat.getServo(3, ServoTrim.MG90S, 0), 0f, 150f)
     }
 
     // technically not a servo

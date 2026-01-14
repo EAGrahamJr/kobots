@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 
 plugins {
-    kotlin("jvm") version "2.2.0"
     `kotlin-dsl`
 }
 
@@ -25,8 +24,9 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.0")
     implementation("com.gradleup.shadow:shadow-gradle-plugin:9.0.0-rc2")
-    implementation("org.jmailen.gradle:kotlinter-gradle:5.0.2")
+//    implementation("org.jmailen.gradle:kotlinter-gradle:5.2.0")
     implementation("crackers.buildstuff:crackers-gradle-plugins:1.3.0")
+    implementation("com.github.ben-manes:gradle-versions-plugin:0.53.0")
 }

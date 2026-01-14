@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,128 +16,57 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.Jimmy.crickitNeoPixel
-import crackers.kobots.app.Jimmy.sunAzimuth
-import crackers.kobots.app.Jimmy.sunElevation
-import crackers.kobots.app.Jimmy.wavyThing
-import crackers.kobots.devices.lighting.WS2811
-import crackers.kobots.parts.ORANGISH
-import crackers.kobots.parts.app.KobotSleep
-import crackers.kobots.parts.colorIntervalFromHSB
-import crackers.kobots.parts.movement.ActionSequence
-import crackers.kobots.parts.movement.ActionSpeed
-import crackers.kobots.parts.movement.DefaultActionSpeed
-import crackers.kobots.parts.movement.sequence
-import org.slf4j.LoggerFactory
-import java.awt.Color
+import crackers.kobots.app.Jimmy.rotorH
+import crackers.kobots.app.Jimmy.rotorV
+import crackers.kobots.parts.movement.async.EventBus
+import crackers.kobots.parts.movement.async.KobotsEvent
+import crackers.kobots.parts.movement.async.sceneBuilder
+import kotlinx.coroutines.runBlocking
+import java.lang.Thread.sleep
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
+
+const val RUN_STUFF = "RUN_STUFF"
 
 /**
  * Ibid
  */
 object CannedSequences {
-    val goFast =
-        object : ActionSpeed {
-            override val millis = 0L
-        }
 
-    var lightsOn = false
-    val home =
-        sequence {
-            name = "Home"
+    class MoveMessage(
+        val runThis: () -> Unit,
+    ) : KobotsEvent {
+        override val name = RUN_STUFF
+    }
 
-            action {
-                execute {
-                    if (!lightsOn && crickitNeoPixel[7].color != Color.RED) {
-                        crickitNeoPixel + WS2811.PixelColor(ORANGISH, brightness = .1f)
-                        lightsOn = true
-                    }
-                    lightsOn
-                }
+    fun wave_420() {
+        val upScene = sceneBuilder {
+            rotorV smoothly {
+                angle = 180
+                duration = 4.seconds
             }
-
-//            this append VeryDumbThermometer.home
-
-            action {
-                sunElevation rotate 0
-                sunAzimuth rotate 0
-                wavyThing rotate 0
-            }
-            action {
-                execute {
-                    crickitNeoPixel + Color.BLACK
-                    true
-                }
+            rotorH withSoftLanding {
+                startDelay = 500.milliseconds
+                angle = 180
+                duration = 2.5.seconds
             }
         }
-
-    val resetHome =
-        sequence {
-            name = "Reset Sun Azimuth"
-            action {
-                sunElevation rotate 0
-                sunAzimuth rotate 0
+        val downScene = sceneBuilder {
+            rotorV smoothly {
+                angle = 0
+                duration = 4.seconds
             }
-            action {
-                execute {
-                    sunAzimuth.apply {
-                        reset()
-                        release()
-                    }
-                    true
-                }
+            rotorH withSoftLanding {
+                angle = 0
+                duration = 2.seconds
             }
         }
-
-    val holySpit =
-        sequence {
-            name = "Holy Spit!"
-            action {
-                wavyThing rotate 90
-                requestedSpeed = DefaultActionSpeed.VERY_FAST
-                execute {
-                    crickitNeoPixel[0, 7] =
-                        colorIntervalFromHSB(0f, 359f, 8)
-                            .map { WS2811.PixelColor(it, brightness = .02f) }
-                    true
-                }
-            }
-            action {
-                execute {
-                    KobotSleep.seconds(15)
-                    true
-                }
-            }
-            action {
-                wavyThing rotate 0
-                execute {
-                    crickitNeoPixel + Color.BLACK
-                    true
-                }
-            }
+        runBlocking {
+            EventBus.publish(MoveMessage {
+                upScene.play()
+                sleep(500.milliseconds.inWholeMilliseconds)
+                downScene.play()
+            })
         }
-
-    const val AZIMUTH_OFFSET = 15
-
-    fun setSun(
-        azimuth: Int,
-        elevation: Int,
-    ): ActionSequence =
-        (azimuth + AZIMUTH_OFFSET).let { az ->
-            if (elevation < 0 || az >= Jimmy.ABSOLUTE_AZIMUTH_LIMIT) {
-                home
-            } else {
-                run {
-                    LoggerFactory.getLogger("Orrery").warn("Setting $az, $elevation")
-                    sequence {
-                        name = "Set Sun"
-                        action {
-                            sunAzimuth rotate az
-                            sunElevation rotate elevation
-                        }
-                    }
-                }
-            }
-        }
-
-    fun setWavy(target: Float) = sequence { action { wavyThing rotate target.toInt() } }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,10 @@ import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
 import crackers.kobots.parts.enumValue
 import crackers.kobots.parts.movement.ActionSequence
 import crackers.kobots.parts.movement.SequenceRequest
+import org.slf4j.LoggerFactory
 import crackers.kobots.app.mechanicals.SuzerainOfServos as Suzi
+
+private val logger = LoggerFactory.getLogger("Servomatic")
 
 /**
  * TODO fill this in

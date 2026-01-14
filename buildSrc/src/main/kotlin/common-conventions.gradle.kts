@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,10 @@ import crackers.buildstuff.semver.SimpleSemverVersion
 
 plugins {
     kotlin("jvm")
-    id("org.jmailen.kotlinter")
+//    id("org.jmailen.kotlinter")
     idea
     id("crackers.buildstuff.simple-semver")
+    id("com.github.ben-manes.versions")
 }
 
 repositories {
@@ -29,8 +30,8 @@ repositories {
 }
 
 dependencies {
-    testImplementation("io.kotest:kotest-runner-junit5:5.6.2")
-    testImplementation("io.mockk:mockk:1.13.5")
+    testImplementation("io.kotest:kotest-runner-junit5:6.0.3")
+    testImplementation("io.mockk:mockk:1.14.5")
 }
 
 group = "crackers.kobots"
@@ -43,15 +44,15 @@ kotlin {
     jvmToolchain(21)
 }
 
-kotlinter {
+//kotlinter {
 //    ignoreFailures = true
 //    disabledRules = arrayOf("no-wildcard-imports")
-}
+//}
 
 tasks {
     check {
 //        dependsOn("installKotlinterPrePushHook")
-        dependsOn("formatKotlin")
+//        dependsOn("formatKotlin")
     }
     test {
         useJUnitPlatform()

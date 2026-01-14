@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,7 +143,11 @@ object ArmMonitor : AppCommon.Startable {
                                 screenOn = true
                                 actuatorToIndicator.values.forEach { it.drawStatic() }
                             }
-                            actuatorToIndicator.forEach { cFunc, widget -> widget.updateValue(cFunc.invoke().toInt()) }
+                            actuatorToIndicator.forEach { (cFunc, widget) ->
+                                widget.updateValue(
+                                    cFunc.invoke().toInt()
+                                )
+                            }
                             screen.display(image)
                         }
                     }
@@ -152,7 +156,7 @@ object ArmMonitor : AppCommon.Startable {
     }
 
     private fun LimitedRotator.percentage(): Int {
-        val scope = physicalRange.endInclusive - physicalRange.first
+        val scope = physicalRange.last - physicalRange.first
         return (current.toFloat() * 100f / scope).roundToInt().coerceIn(0, 100)
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,23 +18,17 @@ package crackers.kobots.app.enviro
 
 // import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.AppCommon
-import crackers.kobots.app.AppCommon.ignoreErrors
-import crackers.kobots.app.AppCommon.whileRunning
 import crackers.kobots.app.CannedSequences
-import crackers.kobots.app.Jimmy
-import crackers.kobots.parts.movement.ActionSequence
-import crackers.kobots.parts.movement.SequenceRequest
-import crackers.kobots.parts.scheduleAtFixedRate
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.math.roundToInt
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
+import kotlin.system.exitProcess
 
 /*
  * Central control, of a sorts.
  */
 object DieAufseherin : AppCommon.Startable {
+    private val logger = LoggerFactory.getLogger("DieAufseherin")
+
     // system-wide "wat the hell is going on" stuff
     enum class SystemMode {
         IDLE,
@@ -47,68 +41,44 @@ object DieAufseherin : AppCommon.Startable {
     var currentMode: SystemMode
         get() = theMode.get()
         set(v) {
-//            logger.info("System mode changed to $v")
             theMode.set(v)
-//            if (v == SystemMode.IDLE) resetThings()
         }
 
     enum class BrainzActions {
-        HOME,
-        SAY_HI,
         STOP,
-        CLUCK,
-        RANDOM_EYES,
-        RESET,
-        THERMO_RESET,
+        THAT_TIME,
     }
 
-    private val logger = LoggerFactory.getLogger("DieAufseherin")
 
     // rock 'n' roll ================================================================================================
 
-    override fun start() {
-        localStuff()
-        mqttStuff()
-        HAStuff.start()
-    }
 
     override fun stop() {
-//        noodSwitch.handleCommand("OFF")
-//        rosetteStrand.handleCommand("OFF")
+        // TODO: anything?
     }
 
-    private fun localStuff() {
-        AppCommon.hasskClient.run {
-            val block = {
-                val elevation =
-                    sensor("sun_solar_elevation")
-                        .state()
-                        .state
-                        .toFloat()
-                        .roundToInt()
-                val azimuth =
-                    sensor("sun_solar_azimuth")
-                        .state()
-                        .state
-                        .toFloat()
-                        .roundToInt()
-                logger.debug("elevation: $elevation, azimuth: $azimuth")
-                CannedSequences.setSun(azimuth, elevation)?.let { seq -> jimmy(seq) }
-            }
-            AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
-                whileRunning { ignoreErrors(block, true) }
-            }
-        }
-    }
-
-    private fun mqttStuff() {
-        with(AppCommon.mqttClient) {
-            startAliveCheck()
-        }
-    }
-
-    private fun jimmy(sequence: ActionSequence) {
-        Jimmy.handleRequest(SequenceRequest(sequence))
+    override fun start() {
+//        AppCommon.hasskClient.run {
+//            val block = {
+//                val elevation =
+//                    sensor("sun_solar_elevation")
+//                        .state()
+//                        .state
+//                        .toFloat()
+//                        .roundToInt()
+//                val azimuth =
+//                    sensor("sun_solar_azimuth")
+//                        .state()
+//                        .state
+//                        .toFloat()
+//                        .roundToInt()
+//                logger.debug("elevation: $elevation, azimuth: $azimuth")
+//                CannedSequences.setSun(azimuth, elevation).let { seq -> jimmy(seq) }
+//            }
+//            AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
+//                whileRunning { ignoreErrors(block, true) }
+//            }
+//        }
     }
 
     internal fun actionTime(payload: BrainzActions?) {
@@ -116,14 +86,13 @@ object DieAufseherin : AppCommon.Startable {
         when (payload) {
             BrainzActions.STOP -> {
                 currentMode = SystemMode.IDLE
-                Jimmy.stop()
-                AppCommon.applicationRunning = false
+                exitProcess(0)
             }
 
-            BrainzActions.HOME -> jimmy(CannedSequences.home)
-            BrainzActions.RESET -> jimmy(CannedSequences.resetHome)
-            BrainzActions.SAY_HI -> jimmy(CannedSequences.holySpit)
-            BrainzActions.THERMO_RESET -> jimmy(VeryDumbThermometer.reset)
+            BrainzActions.THAT_TIME -> {
+                CannedSequences.wave_420()
+            }
+
             else -> logger.warn("Unknown command: $payload")
         }
     }

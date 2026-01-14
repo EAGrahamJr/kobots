@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import kotlin.time.Duration.Companion.milliseconds
  * Handles a bunch of different servos for various things. Everything should have an HA interface.
  */
 
-val logger = LoggerFactory.getLogger("Servomatic")
+private val logger = LoggerFactory.getLogger("Servomatic")
 
 // because we might be doing something else?
 enum class SystemState {

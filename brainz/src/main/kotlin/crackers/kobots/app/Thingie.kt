@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,8 @@ import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.convenientShutdownHook
 import crackers.kobots.app.AppCommon.convenientStartupHook
 import crackers.kobots.app.AppCommon.executor
-import crackers.kobots.app.display.DisplayDos
-import crackers.kobots.app.display.LargerMonitor
-import crackers.kobots.app.display.VerticalStatusDisplay
 import crackers.kobots.app.enviro.DieAufseherin
-import crackers.kobots.app.enviro.Sensei
+import crackers.kobots.app.enviro.HAStuff
 import crackers.kobots.devices.expander.I2CMultiplexer
 import org.slf4j.LoggerFactory
 import java.time.LocalTime
@@ -33,14 +30,12 @@ import kotlin.concurrent.thread
 import kotlin.system.exitProcess
 
 // shared devices
-
 internal lateinit var multiplexor: I2CMultiplexer
 
 private val logger = LoggerFactory.getLogger("BRAINZ")
 
-private val displaysNotUsed = listOf(DisplayDos, VerticalStatusDisplay, LargerMonitor)
-private val startables = listOf(Sensei, Jimmy, DieAufseherin)
-private val stoppables = listOf(Sensei, DieAufseherin, Jimmy)
+private val startables = listOf(Jimmy, DieAufseherin, HAStuff)
+private val stoppables = listOf(HAStuff, DieAufseherin, Jimmy)
 private val stopFlag = AtomicBoolean(false)
 
 /**
@@ -51,22 +46,19 @@ fun main(args: Array<String>? = null) {
     // NOTE: this requires a diozero daemon running on the remote pi and the diozero remote jar in the classpath
     if (args?.isNotEmpty() == true) System.setProperty(REMOTE_PI, args[0])
 
-//    multiplexor = I2CMultiplexer()
     // start all the things to be started
     startables.convenientStartupHook()
 
     // and then we wait and stop
     Runtime.getRuntime().addShutdownHook(thread(start = false, block = ::stopAll))
     AppCommon.awaitTermination()
-    logger.warn("Exiting")
-
-    stopAll()
     logger.warn("Shutdown")
     exitProcess(0)
 }
 
 private fun stopAll() {
     if (stopFlag.compareAndSet(false, true)) {
+        logger.warn("Exiting")
         stoppables.convenientShutdownHook(true)
         executor.shutdownNow()
         if (::multiplexor.isInitialized) multiplexor.close()

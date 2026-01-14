@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ dependencies {
     implementation("crackers.kobots:kobots-devices:$DEVICES_VER") {
         exclude(group = "ch.qos.logback")
     }
-    implementation("org.tinylog:tinylog-api-kotlin:2.6.2")
-    implementation("org.tinylog:tinylog-impl:2.6.2")
-    implementation("org.tinylog:slf4j-tinylog:2.6.2")
+    implementation("org.tinylog:tinylog-api-kotlin:2.8.0-M1")
+    implementation("org.tinylog:tinylog-impl:2.8.0-M1")
+    implementation("org.tinylog:slf4j-tinylog:2.8.0-M1")
 }

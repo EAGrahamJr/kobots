@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,10 +24,11 @@ dependencies {
     implementation("crackers.kobots:kobots-parts:$PARTS_VER")
 
     implementation("org.eclipse.paho:org.eclipse.paho.mqttv5.client:1.2.5")
-    implementation("org.json:json:20231013")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
+    implementation("org.json:json:20250517")
     // more HA craziness
     implementation("crackers.automation:hassk:0+")
-    implementation("com.typesafe:config:1.4.2")
+    implementation("com.typesafe:config:1.4.5")
 }
 
 tasks {
@@ -53,21 +54,17 @@ tasks {
     /**
      * Deploy said shadow-jar to a remote Pi for runtime fun
      */
-    create("deployApp") {
+    register<Exec>("deployApp") {
         dependsOn(":${project.name}:shadowJar")
-        doLast {
-            val sshTarget = System.getProperty("remote", "marvin.local")
-            val name = project.ext.get("jar.name").toString()
+        val sshTarget = System.getProperty("remote", "marvin.local")
+        val name = project.ext.get("jar.name").toString()
 
-            println("Sending $name to $sshTarget")
-            exec {
-                commandLine(
-                    "sh", "-c", """
-                scp build/libs/$name.jar $sshTarget:/home/crackers
-                scp ${rootDir}/*.sh $sshTarget:/home/crackers
-                """.trimIndent()
-                )
-            }
-        }
+        println("Sending $name to $sshTarget")
+        commandLine(
+            "sh", "-c", """
+        scp build/libs/$name.jar $sshTarget:/home/crackers
+        scp ${rootDir}/*.sh $sshTarget:/home/crackers
+        """.trimIndent()
+        )
     }
 }
