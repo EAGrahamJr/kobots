@@ -20,9 +20,10 @@ import com.diozero.api.ServoTrim
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.CannedSequences.MoveMessage
 import crackers.kobots.app.enviro.HAStuff
+import crackers.kobots.app.enviro.VeryDumbThermometer
 import crackers.kobots.devices.expander.CRICKITHat
 import crackers.kobots.parts.GOLDENROD
-import crackers.kobots.parts.movement.async.AsyncRotator.Companion.asyncServoRotator
+import crackers.kobots.parts.movement.async.AsyncServoRotator.Companion.asyncRotator
 import crackers.kobots.parts.movement.async.EventBus.subscribe
 import java.awt.Color
 import java.util.concurrent.atomic.AtomicBoolean
@@ -51,12 +52,12 @@ object Jimmy : AppCommon.Startable {
     private val servo3 by lazy { crickit.servo(3, ServoTrim.MG90S).apply { angle = 0f } }
 
     val rotorV by lazy {
-        servo1.asyncServoRotator().apply {
+        servo1.asyncRotator().apply {
             myLittleKillSwitch = { stopLatch.get() }
         }
     }
     val rotorH by lazy {
-        servo3.asyncServoRotator().apply {
+        servo3.asyncRotator().apply {
             myLittleKillSwitch = { stopLatch.get() }
         }
     }
@@ -74,6 +75,7 @@ object Jimmy : AppCommon.Startable {
                 if (!stopLatch.get()) postExecution()
             }
         }
+        VeryDumbThermometer.init(motorStepper, crickit.signalDigitalIn(1))
     }
 
     override fun stop() {

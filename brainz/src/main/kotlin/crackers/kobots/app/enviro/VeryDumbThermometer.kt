@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2024 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@ package crackers.kobots.app.enviro
 import com.diozero.api.DigitalInputDevice
 import com.diozero.devices.sandpit.motor.BasicStepperController.StepStyle
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
-import com.diozero.devices.sandpit.motor.StepperMotorInterface
 import crackers.kobots.app.AppCommon
-import crackers.kobots.parts.app.KobotSleep
-import crackers.kobots.parts.movement.BasicStepperRotator
-import crackers.kobots.parts.movement.action
-import crackers.kobots.parts.movement.sequence
+import crackers.kobots.app.Jimmy
+import crackers.kobots.parts.movement.async.AsyncStepperRotator
+import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import java.awt.Color
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * This is very silly - it's a stepper motor that rotates to reflect the temperature in the room. Each degree of
@@ -39,7 +39,7 @@ object VeryDumbThermometer {
     private val arcRange = (0..180)
 
     private lateinit var theStepper: BasicStepperMotor
-    private lateinit var thermoStepper: BasicStepperRotator
+    private lateinit var thermoStepper: AsyncStepperRotator
     private lateinit var limitSwitch: DigitalInputDevice
 
     fun init(
@@ -47,7 +47,9 @@ object VeryDumbThermometer {
         switch: DigitalInputDevice,
     ) {
         theStepper = stepper
-        thermoStepper = BasicStepperRotator(stepper, stepStyle = StepStyle.INTERLEAVE, stepsPerRotation = 4096)
+        thermoStepper = AsyncStepperRotator(stepper, stepsPerRotation = 4096, stepStyle = StepStyle.INTERLEAVE).apply {
+//            myLittleKillSwitch = { Jimmy.stopLatch.get() }
+        }
         limitSwitch = switch
 
         AppCommon.mqttClient.subscribeJSON("kobots_auto/office_enviro_temperature/state") { payload ->
@@ -70,43 +72,47 @@ object VeryDumbThermometer {
             true
         }
 
-    val home by lazy {
-        action { thermoStepper rotate 0 }
-    }
-    val reset by lazy {
-        sequence {
-            this append home
-            action {
-                execute {
-                    // backwards
-                    logger.info("Looking for switch")
-                    while (!limitSwitch.value) {
-                        theStepper.step(StepperMotorInterface.Direction.BACKWARD, StepStyle.INTERLEAVE)
-                    }
-                    // forwards
-                    logger.info("Get off my yard!")
-                    while (!limitSwitch.value) {
-                        theStepper.step(StepperMotorInterface.Direction.FORWARD, StepStyle.INTERLEAVE)
-                    }
-                    logger.info("Wee bit more")
-                    repeat(400) {
-                        theStepper.step(StepperMotorInterface.Direction.FORWARD, StepStyle.INTERLEAVE)
-                    }
-                    thermoStepper.release()
-                    thermoStepper.reset()
-                    getTemperatureNow()
-                }
-            }
-        }
-    }
+//    val home by lazy {
+//
+//    }
+//    val reset by lazy {
+//        sequence {
+//            this append home
+//            action {
+//                execute {
+//                    // backwards
+//                    logger.info("Looking for switch")
+//                    while (!limitSwitch.value) {
+//                        theStepper.step(StepperMotorInterface.Direction.BACKWARD, StepStyle.INTERLEAVE)
+//                    }
+//                    // forwards
+//                    logger.info("Get off my yard!")
+//                    while (!limitSwitch.value) {
+//                        theStepper.step(StepperMotorInterface.Direction.FORWARD, StepStyle.INTERLEAVE)
+//                    }
+//                    logger.info("Wee bit more")
+//                    repeat(400) {
+//                        theStepper.step(StepperMotorInterface.Direction.FORWARD, StepStyle.INTERLEAVE)
+//                    }
+//                    theStepper.release()
+//                    thermoStepper.reset()
+//                    getTemperatureNow()
+//                }
+//            }
+//        }
+//    }
 
     private fun setTemperature(temp: Float) {
         logger.info("Setting temp: {}", temp)
         val diff = (temp.coerceIn(degreesRange) - degreesRange.start) / degreesTotal
         val angle = (180 * diff).roundToInt()
-        while (!thermoStepper.rotateTo(angle)) {
-            KobotSleep.millis(10)
+        runBlocking {
+            thermoStepper.rotateAsync(
+                angle = angle,
+                time = 2.seconds
+            )
         }
-        thermoStepper.release()
+        theStepper.release()
+        Jimmy.statusPixel.fill(Color.BLACK)
     }
 }
