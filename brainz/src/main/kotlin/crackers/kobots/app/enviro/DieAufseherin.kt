@@ -19,9 +19,18 @@ package crackers.kobots.app.enviro
 // import crackers.kobots.app.display.DisplayDos
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.CannedSequences
+import crackers.kobots.app.CannedSequences.goHome
+import crackers.kobots.app.Jimmy.driveStepperRotator
+import crackers.kobots.app.Jimmy.rotorElevation
+import crackers.kobots.parts.movement.async.EventBus
+import crackers.kobots.parts.movement.async.sceneBuilder
+import crackers.kobots.parts.scheduleAtFixedRate
 import org.slf4j.LoggerFactory
+import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.system.exitProcess
+import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 /*
  * Central control, of a sorts.
@@ -42,11 +51,14 @@ object DieAufseherin : AppCommon.Startable {
         get() = theMode.get()
         set(v) {
             theMode.set(v)
+            logger.info("Current mode $currentMode")
         }
 
     enum class BrainzActions {
         STOP,
         THAT_TIME,
+        STEP_IT,
+        IN_THE_POOL,
     }
 
 
@@ -57,41 +69,61 @@ object DieAufseherin : AppCommon.Startable {
         // TODO: anything?
     }
 
+    private lateinit var orneryFuture: Future<*>
     override fun start() {
-//        AppCommon.hasskClient.run {
-//            val block = {
-//                val elevation =
-//                    sensor("sun_solar_elevation")
-//                        .state()
-//                        .state
-//                        .toFloat()
-//                        .roundToInt()
-//                val azimuth =
-//                    sensor("sun_solar_azimuth")
-//                        .state()
-//                        .state
-//                        .toFloat()
-//                        .roundToInt()
-//                logger.debug("elevation: $elevation, azimuth: $azimuth")
-//                CannedSequences.setSun(azimuth, elevation).let { seq -> jimmy(seq) }
-//            }
-//            AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
-//                whileRunning { ignoreErrors(block, true) }
-//            }
-//        }
+        AppCommon.hasskClient.run {
+            var lastAzimuth = 0
+            val block = suspend {
+                val elevation =
+                    sensor("sun_solar_elevation")
+                        .state()
+                        .state
+                        .toFloat()
+                        .roundToInt()
+                        .coerceIn(0, 180)
+                val azimuth =
+                    sensor("sun_solar_azimuth")
+                        .state()
+                        .state
+                        .toFloat()
+                        .roundToInt()
+                val corrected = if (azimuth > 320) 0 else (azimuth + 30).coerceIn(0, 320)
+                if (corrected != lastAzimuth) {
+                    logger.info("elevation: $elevation, azimuth: $azimuth (corrected :$corrected)")
+                    val move = sceneBuilder {
+                        rotorElevation smoothly {
+                            angle = elevation
+                            duration = 3.seconds
+                        }
+                        driveStepperRotator smoothly {
+                            angle = corrected
+                            duration = 3.seconds
+                        }
+                    }
+                    move()
+                    lastAzimuth = corrected
+                }
+            }
+            orneryFuture = AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
+                if (currentMode != SystemMode.SHUTDOWN)
+                    EventBus.publish(CannedSequences.MoveMessage(block))
+            }
+        }
     }
 
     internal fun actionTime(payload: BrainzActions?) {
         logger.info(payload.toString())
         when (payload) {
             BrainzActions.STOP -> {
-                currentMode = SystemMode.IDLE
-                exitProcess(0)
+                orneryFuture.cancel(false)
+                currentMode = SystemMode.SHUTDOWN
+                goHome()
+                AppCommon.applicationRunning = false
             }
 
-            BrainzActions.THAT_TIME -> {
-                CannedSequences.wave_420()
-            }
+            BrainzActions.THAT_TIME -> CannedSequences.wave_420()
+            BrainzActions.STEP_IT -> CannedSequences.frontThing()
+            BrainzActions.IN_THE_POOL -> CannedSequences.everybodyAllAtOnce()
 
             else -> logger.warn("Unknown command: $payload")
         }

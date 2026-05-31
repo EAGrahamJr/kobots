@@ -17,9 +17,11 @@
 package crackers.kobots.app.enviro
 
 import crackers.kobots.app.AppCommon
+import crackers.kobots.app.CannedSequences.rotatorGo
 import crackers.kobots.app.Jimmy
 import crackers.kobots.mqtt.homeassistant.*
 import crackers.kobots.parts.enumValue
+import crackers.kobots.parts.movement.async.EventBus.logger
 
 object HAStuff : AppCommon.Startable {
     val haIdentifier = DeviceIdentifier("Kobots", "BRAINZ")
@@ -44,6 +46,18 @@ object HAStuff : AppCommon.Startable {
             override fun currentState(): String = ""
         }
 
+    private val driveHandler = object : KobotNumberEntity.Companion.NumberHandler {
+        override fun currentState() = Jimmy.driveStepperRotator.current.toFloat()
+
+
+        override fun set(target: Float) {
+            logger.info("Moving drive to $target")
+            rotatorGo(Jimmy.driveStepperRotator, target.toInt())
+        }
+    }
+    private val azimuthMover =
+        KobotNumberEntity(driveHandler, "ozzy_move", "Azimuth", haIdentifier, max = 360, unitOfMeasurement = "deg")
+
 
     // Handle the on-board NeoPixel
     private val statusLight by lazy {
@@ -60,7 +74,7 @@ object HAStuff : AppCommon.Startable {
     }
 
     override fun start() {
-        listOf(selector, statusLight).forEach { it.start() }
+        listOf(selector, statusLight, azimuthMover).forEach { it.start() }
     }
 
     override fun stop() {
@@ -69,6 +83,6 @@ object HAStuff : AppCommon.Startable {
 
     internal fun updateEverything() {
         if (DieAufseherin.currentMode == DieAufseherin.SystemMode.IDLE) selector.setOption()
-        listOf(selector).forEach { it.sendCurrentState() }
+        listOf(selector, statusLight, azimuthMover).forEach { it.sendCurrentState() }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2025 by E. A. Graham, Jr.
+ * Copyright 2022-2026 by E. A. Graham, Jr.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package crackers.kobots.app.newarm
 
 import crackers.kobots.app.AppCommon
-import crackers.kobots.app.AppCommon.ignoreErrors
 import crackers.kobots.app.HAJunk
 import crackers.kobots.app.SystemState
 import crackers.kobots.app.mechanicals.I2CFactory
@@ -181,11 +180,11 @@ object Rooty : AppCommon.Startable {
         midY /= 5
 
         encoder.apply {
-            ignoreErrors({
-                             pixel.brightness = .1f
-                             pixel.fill(Color.YELLOW)
-                             clearInterrupts() // clear buffers
-                         })
+            runCatching {
+                pixel.brightness = .1f
+                pixel.fill(Color.YELLOW)
+                clearInterrupts() // clear buffers
+            }
         }
 
         future = AppCommon.executor.scheduleAtRate(30.milliseconds, ::clickOrTwist)
