@@ -78,25 +78,23 @@ object Jimmy : AppCommon.Startable {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
         }
     }
-    val rotorElevation by lazy {
+    val rotor4 by lazy {
         object : AsyncServoRotator(servo4, servoRange, servoRange) {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
         }
     }
 
-    // doesn't necessarily belong here, but sed here first
-    val toffle = VL6180X()
-
     class StopIt : Exception("Stop it!")
 
     val driveStepperRotator by lazy {
+        val toffle = VL6180X()
         val calibrationStop = {
             val range = toffle.range
-            (range < 15).also {
+            (range <= 15).also {
                 if (it) logger.error("Range trigger ${range}")
             }
         }
-        object : CalibratingRotator(driveStepper, calibrationStop, reversed = true, gearRatio = .5f) {
+        object : CalibratingRotator(driveStepper, calibrationStop, reversed = true, gearRatio = 3.57f) {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
             override suspend fun rotateAsync(angle: Int, time: Duration, easing: EasingFunction) {
                 runCatching {

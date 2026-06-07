@@ -20,10 +20,7 @@ package crackers.kobots.app.enviro
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.CannedSequences
 import crackers.kobots.app.CannedSequences.goHome
-import crackers.kobots.app.Jimmy.driveStepperRotator
-import crackers.kobots.app.Jimmy.rotorElevation
 import crackers.kobots.parts.movement.async.EventBus
-import crackers.kobots.parts.movement.async.sceneBuilder
 import crackers.kobots.parts.scheduleAtFixedRate
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Future
@@ -90,17 +87,17 @@ object DieAufseherin : AppCommon.Startable {
                 val corrected = if (azimuth > 320) 0 else (azimuth + 30).coerceIn(0, 320)
                 if (corrected != lastAzimuth) {
                     logger.info("elevation: $elevation, azimuth: $azimuth (corrected :$corrected)")
-                    val move = sceneBuilder {
-                        rotorElevation smoothly {
-                            angle = elevation
-                            duration = 3.seconds
-                        }
-                        driveStepperRotator smoothly {
-                            angle = corrected
-                            duration = 3.seconds
-                        }
-                    }
-                    move()
+//                    val move = sceneBuilder {
+//                        rotor4 smoothly {
+//                            angle = elevation
+//                            duration = 3.seconds
+//                        }
+//                        driveStepperRotator smoothly {
+//                            angle = corrected
+//                            duration = 3.seconds
+//                        }
+//                    }
+//                    move()
                     lastAzimuth = corrected
                 }
             }

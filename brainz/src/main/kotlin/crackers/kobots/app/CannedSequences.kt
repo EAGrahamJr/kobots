@@ -19,7 +19,7 @@ package crackers.kobots.app
 import crackers.kobots.app.Jimmy.driveStepperRotator
 import crackers.kobots.app.Jimmy.motorStepperRotator
 import crackers.kobots.app.Jimmy.rotor3
-import crackers.kobots.app.Jimmy.rotorElevation
+import crackers.kobots.app.Jimmy.rotor4
 import crackers.kobots.app.Jimmy.rotorH
 import crackers.kobots.app.Jimmy.rotorV
 import crackers.kobots.parts.movement.async.AsyncRotator
@@ -65,7 +65,7 @@ object CannedSequences {
             angle = 0
             duration = 2.seconds
         }
-        rotorElevation withSoftLanding {
+        rotor4 withSoftLanding {
             angle = 0
             duration = 2.seconds
         }
@@ -150,8 +150,16 @@ object CannedSequences {
                 angle = 180
                 duration = 4.seconds
             }
-            motorStepperRotator withSoftLanding {
-                angle = 180
+            rotor4 smoothly {
+                angle = 135
+                duration = 4.seconds
+            }
+//            motorStepperRotator withSoftLanding {
+//                angle = 180
+//                duration = 10.seconds
+//            }
+            driveStepperRotator withSoftLanding {
+                angle = 90
                 duration = 10.seconds
             }
         }
