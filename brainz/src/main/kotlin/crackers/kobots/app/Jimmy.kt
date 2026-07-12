@@ -94,7 +94,7 @@ object Jimmy : AppCommon.Startable {
                 if (it) logger.error("Range trigger ${range}")
             }
         }
-        object : CalibratingRotator(driveStepper, calibrationStop, reversed = true, gearRatio = 3.57f) {
+        object : CalibratingRotator(driveStepper, calibrationStop, reversed = true, gearRatio = 1.0f / 3.57f) {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
             override suspend fun rotateAsync(angle: Int, time: Duration, easing: EasingFunction) {
                 runCatching {

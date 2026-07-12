@@ -24,8 +24,8 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.10")
-    implementation("com.gradleup.shadow:shadow-gradle-plugin:9.0.0-rc2")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.0")
+    implementation("com.gradleup.shadow:shadow-gradle-plugin:9.4.2")
 //    implementation("org.jmailen.gradle:kotlinter-gradle:5.2.0")
     implementation("crackers.buildstuff:crackers-gradle-plugins:1.3.0")
     implementation("com.github.ben-manes:gradle-versions-plugin:0.53.0")
