@@ -46,6 +46,7 @@ object HAStuff : AppCommon.Startable {
             override fun currentState(): String = ""
         }
 
+    // stepper(s)
     private val driveHandler = object : KobotNumberEntity.Companion.NumberHandler {
         override fun currentState() = Jimmy.driveStepperRotator.current.toFloat()
 
@@ -63,7 +64,7 @@ object HAStuff : AppCommon.Startable {
     private val statusLight by lazy {
         KobotRGBLight(
             "status_light",
-            object : PixelBufController(Jimmy.statusPixel, offset = 0, count = 1) {
+            object : PixelBufController(Jimmy.neoPixel, offset = 1, count = 1) {
                 override fun set(command: LightCommand) {
                     runCatching { super.set(command) }
                 }

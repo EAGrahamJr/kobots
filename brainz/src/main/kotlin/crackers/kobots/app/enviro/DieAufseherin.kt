@@ -20,14 +20,10 @@ package crackers.kobots.app.enviro
 import crackers.kobots.app.AppCommon
 import crackers.kobots.app.CannedSequences
 import crackers.kobots.app.CannedSequences.goHome
-import crackers.kobots.parts.movement.async.EventBus
-import crackers.kobots.parts.scheduleAtFixedRate
 import org.slf4j.LoggerFactory
 import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.math.roundToInt
-import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 
 /*
  * Central control, of a sorts.
@@ -86,7 +82,7 @@ object DieAufseherin : AppCommon.Startable {
                         .roundToInt()
                 val corrected = if (azimuth > 320) 0 else (azimuth + 30).coerceIn(0, 320)
                 if (corrected != lastAzimuth) {
-                    logger.info("elevation: $elevation, azimuth: $azimuth (corrected :$corrected)")
+//                    logger.info("elevation: $elevation, azimuth: $azimuth (corrected :$corrected)")
 //                    val move = sceneBuilder {
 //                        rotor4 smoothly {
 //                            angle = elevation
@@ -101,10 +97,10 @@ object DieAufseherin : AppCommon.Startable {
                     lastAzimuth = corrected
                 }
             }
-            orneryFuture = AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
-                if (currentMode != SystemMode.SHUTDOWN)
-                    EventBus.publish(CannedSequences.MoveMessage(block))
-            }
+//            orneryFuture = AppCommon.executor.scheduleAtFixedRate(30.seconds, 5.minutes) {
+//                if (currentMode != SystemMode.SHUTDOWN)
+//                    EventBus.publish(CannedSequences.MoveMessage(block))
+//            }
         }
     }
 
@@ -112,7 +108,9 @@ object DieAufseherin : AppCommon.Startable {
         logger.info(payload.toString())
         when (payload) {
             BrainzActions.STOP -> {
-                orneryFuture.cancel(false)
+                if (::orneryFuture.isInitialized) {
+                    orneryFuture.cancel(false)
+                }
                 currentMode = SystemMode.SHUTDOWN
                 goHome()
                 AppCommon.applicationRunning = false

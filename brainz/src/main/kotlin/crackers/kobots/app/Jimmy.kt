@@ -17,14 +17,15 @@
 package crackers.kobots.app
 
 import com.diozero.api.ServoTrim
+import com.diozero.devices.sandpit.motor.BasicStepperController
 import com.diozero.devices.sandpit.motor.BasicStepperMotor
 import crackers.kobots.app.enviro.HAStuff
 import crackers.kobots.devices.expander.CRICKITHat
+import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.devices.sensors.VL6180X
 import crackers.kobots.parts.GOLDENROD
 import crackers.kobots.parts.PURPLE
 import crackers.kobots.parts.movement.async.AsyncServoRotator
-import crackers.kobots.parts.movement.async.AsyncStepperRotator
 import crackers.kobots.parts.movement.async.EasingFunction
 import crackers.kobots.parts.movement.async.EventBus.subscribe
 import kotlinx.coroutines.runBlocking
@@ -35,7 +36,6 @@ import java.awt.Color
 import java.lang.System.err
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import crackers.kobots.app.enviro.DieAufseherin as DA
 
 
@@ -49,27 +49,30 @@ object Jimmy : AppCommon.Startable {
     private val stopLatch = AtomicBoolean(false)
     private val logger = LoggerFactory.getLogger("Jimmy")
 
-    //    val crickitNeoPixel by lazy { crickit.neoPixel(8).apply { brightness = .005f } }
-    val statusPixel by lazy { crickit.statusPixel() }
+    val neoPixel by lazy { crickit.neoPixel(16).apply { brightness = .005f } }
 
-    private val driveStepper by lazy { BasicStepperMotor(2084, crickit.unipolarStepperPort()) }
-    private val motorStepper by lazy { BasicStepperMotor(2048, crickit.motorStepperPort()) }
+    private val driveStepper by lazy { BasicStepperMotor(1024, crickit.unipolarStepperPort()) }
+//    private val motorStepper by lazy { BasicStepperMotor(2048, crickit.motorStepperPort()) }
 
-    private val servo1 by lazy { crickit.servo(1, ServoTrim.MG90S).apply { angle = 0f } }
-    private val servo2 by lazy { crickit.servo(2, ServoTrim.MG90S).apply { angle = 0f } }
+    private val cheapServoTrim = ServoTrim(500, 2500, 190L)
+
+    private val servo1 by lazy { crickit.servo(1, cheapServoTrim).apply { angle = 0f } }
+    private val servo2 by lazy { crickit.servo(2, cheapServoTrim).apply { angle = 0f } }
     private val servo3 by lazy { crickit.servo(3, ServoTrim.MG90S).apply { angle = 0f } }
     private val servo4 by lazy { crickit.servo(4, ServoTrim.MG90S).apply { angle = 0f } }
     private val servoRange = ServoTrim.MG90S.minAngle..ServoTrim.MG90S.maxAngle
 
     val runLatch = Mutex()
 
-    val rotorV by lazy {
-        object : AsyncServoRotator(servo1, servoRange, servoRange) {
+    val rotor1 by lazy {
+        val range = (0..45)
+        object : AsyncServoRotator(servo1, range, range) {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
         }
     }
-    val rotorH by lazy {
-        object : AsyncServoRotator(servo2, servoRange, servoRange) {
+    val rotor2 by lazy {
+        val range = (0..125)
+        object : AsyncServoRotator(servo2, range, range) {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
         }
     }
@@ -84,8 +87,6 @@ object Jimmy : AppCommon.Startable {
         }
     }
 
-    class StopIt : Exception("Stop it!")
-
     val driveStepperRotator by lazy {
         val toffle = VL6180X()
         val calibrationStop = {
@@ -94,7 +95,11 @@ object Jimmy : AppCommon.Startable {
                 if (it) logger.error("Range trigger ${range}")
             }
         }
-        object : CalibratingRotator(driveStepper, calibrationStop, reversed = true, gearRatio = 1.0f / 3.57f) {
+        object : CalibratingRotator(
+            driveStepper, calibrationStop,
+            gearRatio = 2.5f, // the omg how frickin' big is this thing turntable 40-90
+            stepStyle = BasicStepperController.StepStyle.DOUBLE,
+        ) {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
             override suspend fun rotateAsync(angle: Int, time: Duration, easing: EasingFunction) {
                 runCatching {
@@ -106,14 +111,16 @@ object Jimmy : AppCommon.Startable {
         }
     }
 
-    val motorStepperRotator by lazy {
-        AsyncStepperRotator(motorStepper, stepPause = 1.milliseconds, gearRatio = 0.3003003f)
-    }
+//    val motorStepperRotator by lazy {
+//        AsyncStepperRotator(motorStepper, stepPause = 1.milliseconds, gearRatio = 0.3003003f)
+//    }
 
     override fun start() {
-        crickit = CRICKITHat()
+        crickit = CRICKITHat().apply {
+            statusPixel().fill(Color.BLACK)
+        }
 
-        reCalibrate()
+//        reCalibrate()
 
         subscribe<CannedSequences.MoveMessage>(RUN_STUFF) { msg ->
             runLatch.withLock {
@@ -137,14 +144,15 @@ object Jimmy : AppCommon.Startable {
             runCatching {
                 driveStepper.release()
                 logger.info("Drive stepper released")
-                motorStepper.release()
+//                motorStepper.release()
                 logger.info("Motor stepper released")
             }.onFailure {
                 logger.error("Failed to release steppers", it)
             }
             runCatching {
-                statusPixel.fill(Color.BLACK)
-                logger.info("Status light off")
+                neoPixel.fill(Color.BLACK)
+                crickit.statusPixel().fill(Color.BLACK)
+                logger.info("Lights off")
             }.onFailure {
                 logger.error("Failed to kill light", it)
             }
@@ -157,36 +165,33 @@ object Jimmy : AppCommon.Startable {
     fun preExecution() {
         if (DA.currentMode == DA.SystemMode.SHUTDOWN) {
             runCatching {
-                statusPixel.brightness = .3f
-                statusPixel.fill(PURPLE)
+                neoPixel[0] = WS2811.PixelColor(PURPLE, brightness = NERMAL)
             }
         } else {
             DA.currentMode = DA.SystemMode.IN_MOTION
             runCatching {
-                statusPixel.brightness = .3f
-                statusPixel.fill(Color.GREEN)
+                neoPixel[0] = WS2811.PixelColor(Color.GREEN, brightness = NERMAL)
             }
         }
     }
 
     fun postExecution() {
         driveStepper.release()
-        motorStepper.release()
+//        motorStepper.release()
         if (DA.currentMode != DA.SystemMode.SHUTDOWN) {
             DA.currentMode = DA.SystemMode.IDLE
             HAStuff.updateEverything()
         }
 
         runCatching {
-            statusPixel.brightness = NERMAL
-            statusPixel.fill(GOLDENROD)
+            neoPixel[0] = WS2811.PixelColor(GOLDENROD, brightness = NERMAL)
         }
     }
 
     fun reCalibrate() = runBlocking {
         runLatch.withLock {
             driveStepper.release()
-            motorStepper.release()
+//            motorStepper.release()
             preExecution()
             driveStepperRotator.runCalibration()
             postExecution()

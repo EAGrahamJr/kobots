@@ -17,20 +17,20 @@
 package crackers.kobots.app
 
 import crackers.kobots.app.Jimmy.driveStepperRotator
-import crackers.kobots.app.Jimmy.motorStepperRotator
+import crackers.kobots.app.Jimmy.neoPixel
+import crackers.kobots.app.Jimmy.rotor1
+import crackers.kobots.app.Jimmy.rotor2
 import crackers.kobots.app.Jimmy.rotor3
 import crackers.kobots.app.Jimmy.rotor4
-import crackers.kobots.app.Jimmy.rotorH
-import crackers.kobots.app.Jimmy.rotorV
+import crackers.kobots.devices.lighting.WS2811
 import crackers.kobots.parts.movement.async.AsyncRotator
 import crackers.kobots.parts.movement.async.EventBus
 import crackers.kobots.parts.movement.async.KobotsEvent
 import crackers.kobots.parts.movement.async.sceneBuilder
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
-import java.lang.Thread.sleep
+import java.awt.Color
 import kotlin.math.abs
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 const val RUN_STUFF = "RUN_STUFF"
@@ -53,13 +53,13 @@ object CannedSequences {
     }
 
     private val home = sceneBuilder {
-        rotorV withSoftLanding {
+        rotor1 withSoftLanding {
+            angle = 0
+            duration = 2.seconds
+        }
+        rotor2 withSoftLanding {
             angle = 0
             duration = 3.seconds
-        }
-        rotorH withSoftLanding {
-            angle = 0
-            duration = 1.seconds
         }
         rotor3 withSoftLanding {
             angle = 0
@@ -69,10 +69,10 @@ object CannedSequences {
             angle = 0
             duration = 2.seconds
         }
-        motorStepperRotator withSoftLanding {
-            angle = 0
-            duration = 5.seconds
-        }
+//        motorStepperRotator withSoftLanding {
+//            angle = 0
+//            duration = 5.seconds
+//        }
         driveStepperRotator withSoftLanding {
             angle = 0
             duration = 5.seconds
@@ -87,71 +87,68 @@ object CannedSequences {
 
     fun wave_420() {
         val upScene = sceneBuilder {
-            rotorV smoothly {
-                angle = 180
-                duration = 4.seconds
+            val timed = 6.seconds
+            driveStepperRotator smoothly {
+                angle = 90
+                duration = timed
             }
-            rotorH withSoftLanding {
-                startDelay = 500.milliseconds
-                angle = 180
-                duration = 2.5.seconds
-            }
-        }
-        val downScene = sceneBuilder {
-            rotorV smoothly {
-                angle = 0
-                duration = 4.seconds
-            }
-            rotorH withSoftLanding {
-                angle = 0
+            rotor1 withSoftLaunch {
+                startDelay = 2.seconds
+                angle = 25
                 duration = 2.seconds
             }
+            rotor2 withSoftLanding {
+                startDelay = 3.seconds
+                angle = 90
+                duration = timed
+            }
+            rotor3 withSoftLanding {
+                startDelay = 4.seconds
+                angle = 90
+                duration = timed
+            }
+            rotor4 withSoftLaunch {
+                startDelay = 10.seconds
+                angle = 180
+                duration = 3.seconds
+            }
         }
+
         MoveMessage {
             upScene()
-            sleep(500.milliseconds.inWholeMilliseconds)
-            downScene()
+            neoPixel[8] = WS2811.PixelColor(Color.GREEN, brightness = 0.1f)
+            delay(2.seconds)
+            neoPixel[8] = Color.BLACK
+            home()
         }.publish()
     }
 
     fun frontThing() {
-        val testIt = sceneBuilder {
-            motorStepperRotator smoothly {
-                angle = 350
-                duration = 5.seconds
-            }
-        }
-        val parkIt = sceneBuilder {
-            motorStepperRotator withSoftLanding {
-                angle = 0
-                duration = 8.seconds
-            }
-        }
-        MoveMessage {
-            val elapsedMs = kotlin.system.measureTimeMillis { testIt() }
-            println("play took ${elapsedMs} ms")
-            sleep(500.milliseconds.inWholeMilliseconds)
-            parkIt()
-        }.publish()
+//        MoveMessage {
+//            val elapsedMs = kotlin.system.measureTimeMillis { testIt() }
+//            println("play took ${elapsedMs} ms")
+//            sleep(500.milliseconds.inWholeMilliseconds)
+//            parkIt()
+//        }.publish()
     }
 
     fun everybodyAllAtOnce() {
         val fullScene = sceneBuilder {
-            rotorV withSoftLaunch {
+            rotor1 withSoftLaunch {
                 angle = 90
                 duration = 6.seconds
             }
-            rotorH smoothly {
+            rotor2 smoothly {
                 startDelay = 1.seconds
                 angle = 90
                 duration = 3.seconds
             }
             rotor3 withSoftLanding {
-                angle = 180
+                angle = 110
                 duration = 4.seconds
             }
             rotor4 smoothly {
-                angle = 135
+                angle = 90
                 duration = 4.seconds
             }
 //            motorStepperRotator withSoftLanding {
@@ -167,7 +164,6 @@ object CannedSequences {
             fullScene()
             delay(2.seconds)
             home()
-            motorStepperRotator.release()
         }.publish()
     }
 
