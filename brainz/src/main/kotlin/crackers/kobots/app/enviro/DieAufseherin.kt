@@ -52,6 +52,7 @@ object DieAufseherin : AppCommon.Startable {
         THAT_TIME,
         STEP_IT,
         IN_THE_POOL,
+        SCENE_THING,
     }
 
 
@@ -116,10 +117,10 @@ object DieAufseherin : AppCommon.Startable {
                 AppCommon.applicationRunning = false
             }
 
-            BrainzActions.THAT_TIME -> CannedSequences.wave_420()
+            BrainzActions.THAT_TIME -> CannedSequences.wave420()
             BrainzActions.STEP_IT -> CannedSequences.frontThing()
             BrainzActions.IN_THE_POOL -> CannedSequences.everybodyAllAtOnce()
-
+            BrainzActions.SCENE_THING -> CannedSequences.movementThing()
             else -> logger.warn("Unknown command: $payload")
         }
     }

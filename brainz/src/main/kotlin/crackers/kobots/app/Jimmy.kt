@@ -26,8 +26,9 @@ import crackers.kobots.devices.sensors.VL6180X
 import crackers.kobots.parts.GOLDENROD
 import crackers.kobots.parts.PURPLE
 import crackers.kobots.parts.movement.async.AsyncServoRotator
-import crackers.kobots.parts.movement.async.EasingFunction
+import crackers.kobots.parts.movement.async.AsyncStepperRotator
 import crackers.kobots.parts.movement.async.EventBus.subscribe
+import crackers.kobots.parts.movement.async.runCalibration
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -35,7 +36,7 @@ import org.slf4j.LoggerFactory
 import java.awt.Color
 import java.lang.System.err
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import crackers.kobots.app.enviro.DieAufseherin as DA
 
 
@@ -51,7 +52,7 @@ object Jimmy : AppCommon.Startable {
 
     val neoPixel by lazy { crickit.neoPixel(16).apply { brightness = .005f } }
 
-    private val driveStepper by lazy { BasicStepperMotor(1024, crickit.unipolarStepperPort()) }
+    private val driveStepper by lazy { BasicStepperMotor(2048, crickit.unipolarStepperPort()) }
 //    private val motorStepper by lazy { BasicStepperMotor(2048, crickit.motorStepperPort()) }
 
     private val cheapServoTrim = ServoTrim(500, 2500, 190L)
@@ -60,54 +61,43 @@ object Jimmy : AppCommon.Startable {
     private val servo2 by lazy { crickit.servo(2, cheapServoTrim).apply { angle = 0f } }
     private val servo3 by lazy { crickit.servo(3, ServoTrim.MG90S).apply { angle = 0f } }
     private val servo4 by lazy { crickit.servo(4, ServoTrim.MG90S).apply { angle = 0f } }
-    private val servoRange = ServoTrim.MG90S.minAngle..ServoTrim.MG90S.maxAngle
 
     val runLatch = Mutex()
 
     val rotor1 by lazy {
-        val range = (0..45)
+        val range = (0..75)
         object : AsyncServoRotator(servo1, range, range) {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
         }
     }
     val rotor2 by lazy {
-        val range = (0..125)
+        val range = (0..145)
         object : AsyncServoRotator(servo2, range, range) {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
         }
     }
     val rotor3 by lazy {
-        object : AsyncServoRotator(servo3, servoRange, servoRange) {
+        val range = (0..125)
+        object : AsyncServoRotator(servo3, range, range) {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
         }
     }
     val rotor4 by lazy {
+        val servoRange = ServoTrim.MG90S.minAngle..ServoTrim.MG90S.maxAngle
         object : AsyncServoRotator(servo4, servoRange, servoRange) {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
         }
     }
 
+    val rotors by lazy{
+      listOf(rotor1,rotor2, rotor3, rotor4)
+    }
+
+    val toffle = VL6180X()
+
     val driveStepperRotator by lazy {
-        val toffle = VL6180X()
-        val calibrationStop = {
-            val range = toffle.range
-            (range <= 15).also {
-                if (it) logger.error("Range trigger ${range}")
-            }
-        }
-        object : CalibratingRotator(
-            driveStepper, calibrationStop,
-            gearRatio = 2.5f, // the omg how frickin' big is this thing turntable 40-90
-            stepStyle = BasicStepperController.StepStyle.DOUBLE,
-        ) {
+        object : AsyncStepperRotator(driveStepper, gearRatio = 1.6f, stepPause = 1.milliseconds, stepStyle = BasicStepperController.StepStyle.MICROSTEP) {
             override suspend fun myLittleKillSwitch() = stopLatch.get()
-            override suspend fun rotateAsync(angle: Int, time: Duration, easing: EasingFunction) {
-                runCatching {
-                    super.rotateAsync(angle, time, easing)
-                }.onFailure {
-                    logger.error(it.localizedMessage)
-                }
-            }
         }
     }
 
@@ -116,6 +106,7 @@ object Jimmy : AppCommon.Startable {
 //    }
 
     override fun start() {
+        // you can only do this once if you use the neopixel due to memory mapping on the CRICKITa
         crickit = CRICKITHat().apply {
             statusPixel().fill(Color.BLACK)
         }
@@ -151,7 +142,6 @@ object Jimmy : AppCommon.Startable {
             }
             runCatching {
                 neoPixel.fill(Color.BLACK)
-                crickit.statusPixel().fill(Color.BLACK)
                 logger.info("Lights off")
             }.onFailure {
                 logger.error("Failed to kill light", it)
@@ -193,7 +183,13 @@ object Jimmy : AppCommon.Startable {
             driveStepper.release()
 //            motorStepper.release()
             preExecution()
-            driveStepperRotator.runCalibration()
+            driveStepperRotator.runCalibration {
+                val range = toffle.range
+                (range <= 15).also {
+                    if (it) logger.error("Range trigger ${range}")
+                }
+            }
+
             postExecution()
         }
     }

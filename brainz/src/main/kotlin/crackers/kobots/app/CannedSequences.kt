@@ -75,7 +75,7 @@ object CannedSequences {
 //        }
         driveStepperRotator withSoftLanding {
             angle = 0
-            duration = 5.seconds
+            duration = 2.seconds
         }
     }
 
@@ -85,37 +85,50 @@ object CannedSequences {
         }
     }
 
-    fun wave_420() {
-        val upScene = sceneBuilder {
-            val timed = 6.seconds
+    fun wave420() {
+        val turnMe = sceneBuilder {
             driveStepperRotator smoothly {
                 angle = 90
-                duration = timed
+                duration = 2.seconds // going to be longer than that
             }
+        }
+
+        val upScene = sceneBuilder {
+            val d = 2.seconds
+            defaultDuration = d
             rotor1 withSoftLaunch {
-                startDelay = 2.seconds
                 angle = 25
-                duration = 2.seconds
             }
             rotor2 withSoftLanding {
-                startDelay = 3.seconds
-                angle = 90
-                duration = timed
+                angle = rotor2.physicalRange.last
             }
             rotor3 withSoftLanding {
-                startDelay = 4.seconds
-                angle = 90
-                duration = timed
+                angle = 45
             }
             rotor4 withSoftLaunch {
-                startDelay = 10.seconds
+                startDelay = d
                 angle = 180
                 duration = 3.seconds
+                endDelay = d
+            }
+        }
+
+        val helloScene = sceneBuilder {
+            defaultDuration = 1.seconds
+            repeat(3) {
+                rotor4 withSoftLanding {
+                    angle = 0
+                }
+                rotor4 withSoftLanding {
+                    angle = 90
+                }
             }
         }
 
         MoveMessage {
+            turnMe()
             upScene()
+            helloScene()
             neoPixel[8] = WS2811.PixelColor(Color.GREEN, brightness = 0.1f)
             delay(2.seconds)
             neoPixel[8] = Color.BLACK
@@ -135,16 +148,16 @@ object CannedSequences {
     fun everybodyAllAtOnce() {
         val fullScene = sceneBuilder {
             rotor1 withSoftLaunch {
-                angle = 90
+                angle = 45
                 duration = 6.seconds
             }
             rotor2 smoothly {
                 startDelay = 1.seconds
-                angle = 90
+                angle = 145
                 duration = 3.seconds
             }
             rotor3 withSoftLanding {
-                angle = 110
+                angle = 90
                 duration = 4.seconds
             }
             rotor4 smoothly {
@@ -157,7 +170,7 @@ object CannedSequences {
 //            }
             driveStepperRotator withSoftLanding {
                 angle = 90
-                duration = 10.seconds
+                duration = 5.seconds
             }
         }
         MoveMessage {
@@ -165,6 +178,74 @@ object CannedSequences {
             delay(2.seconds)
             home()
         }.publish()
+    }
+
+    fun movementThing() {
+        val twoSec = 2.seconds
+
+        val setup = sceneBuilder {
+            defaultDuration = 1.seconds
+            rotor1 moveTo {
+                angle = 0
+            }
+            rotor2 moveTo {
+                angle = rotor2.physicalRange.last
+            }
+        }
+
+        val curtainUp = sceneBuilder {
+            defaultDuration = twoSec
+            rotor1 withSoftLaunch {
+                angle = rotor1.physicalRange.last
+            }
+            rotor2 withSoftLanding {
+                angle = 0
+            }
+        }
+
+        val spotlightTime = 3.seconds
+        val spotlighSweep1 = sceneBuilder {
+            defaultDuration = spotlightTime
+            rotor1 withSoftLaunch {
+                angle = 35
+            }
+            rotor2 withSoftLanding {
+                angle = 135
+            }
+        }
+        val spotlighSweep2 = sceneBuilder {
+            defaultDuration = spotlightTime
+            rotor1 withSoftLaunch {
+                angle = rotor1.physicalRange.last
+            }
+            rotor2 withSoftLanding {
+                angle = 45
+            }
+        }
+        val beDone = sceneBuilder {
+            defaultDuration = 2.seconds
+            rotor1 moveTo {
+                angle = rotor1.physicalRange.last
+            }
+            rotor2 moveTo {
+                angle = rotor2.physicalRange.last
+            }
+        }
+
+        MoveMessage {
+            +setup
+            +curtainUp
+            delay(5.seconds)
+            repeat(3) {
+                +spotlighSweep1
+                delay(twoSec)
+                +spotlighSweep2
+            }
+            +beDone
+            delay(twoSec)
+            home()
+        }.publish()
+
     }
 
     fun rotatorGo(whichRotator: AsyncRotator, whereTo: Int) {

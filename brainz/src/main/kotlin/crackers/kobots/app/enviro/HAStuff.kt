@@ -57,8 +57,15 @@ object HAStuff : AppCommon.Startable {
         }
     }
     private val azimuthMover =
-        KobotNumberEntity(driveHandler, "ozzy_move", "Azimuth", haIdentifier, max = 360, unitOfMeasurement = "deg")
-
+        KobotNumberEntity(
+            driveHandler,
+            "ozzy_move",
+            "Azimuth",
+            haIdentifier,
+            min = 0,
+            max = 360,
+            unitOfMeasurement = "deg"
+        )
 
     // Handle the on-board NeoPixel
     private val statusLight by lazy {
@@ -74,8 +81,30 @@ object HAStuff : AppCommon.Startable {
         )
     }
 
+    private lateinit var everything: List<AbstractKobotEntity>
+
     override fun start() {
-        listOf(selector, statusLight, azimuthMover).forEach { it.start() }
+        // set up all 4 servos based on their max physical abilities
+        val servoMovers = Jimmy.rotors.mapIndexed { index, servo ->
+            val handler = object : KobotNumberEntity.Companion.NumberHandler {
+                override fun currentState(): Float = servo.current.toFloat()
+                override fun set(target: Float) {
+                    rotatorGo(servo, target.toInt())
+                }
+            }
+            KobotNumberEntity(
+                handler,
+                "arm_${index}",
+                "Arm ${index + 1}",
+                haIdentifier,
+                min = 0,
+                max = servo.physicalRange.last,
+                unitOfMeasurement = "deg"
+            )
+        }
+
+        everything = servoMovers + listOf(selector, statusLight, azimuthMover)
+        everything.forEach { it.start() }
     }
 
     override fun stop() {
@@ -84,6 +113,6 @@ object HAStuff : AppCommon.Startable {
 
     internal fun updateEverything() {
         if (DieAufseherin.currentMode == DieAufseherin.SystemMode.IDLE) selector.setOption()
-        listOf(selector, statusLight, azimuthMover).forEach { it.sendCurrentState() }
+        everything.forEach { it.sendCurrentState() }
     }
 }
