@@ -23,6 +23,9 @@ else
 fi
 
 JAVA="/home/crackers/java"
+if [ ! -f "$JAVA" ]; then
+    JAVA="/usr/bin/java"
+fi
 JAR="/home/crackers/$1.jar"
 LOG="/home/crackers/$1.log"
 RUNTHIS="-jar $JAR"
