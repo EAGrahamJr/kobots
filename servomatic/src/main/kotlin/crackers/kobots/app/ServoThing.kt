@@ -18,18 +18,11 @@ package crackers.kobots.app
 
 import crackers.kobots.app.AppCommon.REMOTE_PI
 import crackers.kobots.app.AppCommon.mqttClient
-import crackers.kobots.app.mechanicals.Jeep
 import crackers.kobots.app.mechanicals.SuzerainOfServos
-import crackers.kobots.app.newarm.ArmMonitor
-import crackers.kobots.app.newarm.Rooty
-import crackers.kobots.devices.set
-import crackers.kobots.parts.off
-import crackers.kobots.parts.sleep
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import kotlin.system.exitProcess
-import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Handles a bunch of different servos for various things. Everything should have an HA interface.
@@ -66,16 +59,8 @@ fun main(args: Array<String>?) {
     Runtime.getRuntime().addShutdownHook(thread(start = false, block = ::stopEverything))
 
     SuzerainOfServos.start()
-    ArmMonitor.start()
     HAJunk.start()
-//    Rooty.start()
     mqttClient.startAliveCheck()
-
-    repeat(3) {
-        Jeep.noodleLamp set .5f
-        250.milliseconds.sleep()
-        Jeep.noodleLamp set off
-    }
     AppCommon.awaitTermination()
     exitProcess(0)
 }
@@ -88,9 +73,6 @@ fun stopEverything() {
     HAJunk.stop()
     SuzerainOfServos.stop()
     systemState = SystemState.SHUTDOWN
-
-    ArmMonitor.stop()
-    Rooty.stop()
 
     AppCommon.executor.shutdownNow()
     logger.warn("Servomatic exit")

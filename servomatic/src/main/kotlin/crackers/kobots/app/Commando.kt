@@ -16,35 +16,28 @@
 
 package crackers.kobots.app
 
-import crackers.kobots.app.newarm.Predestination
 import crackers.kobots.mqtt.homeassistant.KobotSelectEntity
 import crackers.kobots.parts.enumValue
-import crackers.kobots.parts.movement.ActionSequence
-import crackers.kobots.parts.movement.SequenceRequest
+import crackers.kobots.parts.movement.async.sceneBuilder
+import kotlinx.coroutines.delay
 import org.slf4j.LoggerFactory
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import crackers.kobots.app.mechanicals.SuzerainOfServos as Suzi
 
 private val logger = LoggerFactory.getLogger("Servomatic")
 
-/**
- * TODO fill this in
- */
 object Commando : KobotSelectEntity.Companion.SelectHandler {
     enum class Command {
         IDLE,
+        SIMPLE,
         STOP,
-        HOME,
-        SAY_HI,
-        CRA_CRAY,
-        FOUR_TWENTY,
-        GUARD,
     }
 
     override val options = Command.entries.map { it.name }.sorted()
 
-    fun sendItHome() = suzi(Predestination.homeSequence)
 
-    private fun suzi(sequence: ActionSequence) = Suzi.handleRequest(SequenceRequest(sequence))
+    private fun suzi(act: suspend () -> Unit) = Suzi.executeAct(act)
 
     override fun executeOption(select: String) {
         val selected = enumValue<Command>(select)
@@ -59,12 +52,43 @@ object Commando : KobotSelectEntity.Companion.SelectHandler {
                 AppCommon.applicationRunning = false
             }
 
-            Command.HOME -> sendItHome()
+            Command.SIMPLE -> {
+                suzi {
+                    sceneBuilder {
+                        defaultDuration = 2.seconds
+                        Suzi.servos[6] smoothly {
+                            startDelay = 1500.milliseconds
+                            angle = 90
+                            duration = 1.seconds
+                        }
+                        Suzi.servos[2] withSoftLanding {
+                            angle = 90
+                        }
+                        Suzi.servos[5] withSoftLanding {
+                            angle = 90
+                        }
+                        Suzi.servos[1] withSoftLanding {
+                            startDelay = 50.milliseconds
+                            angle = 90
+                        }
+                        Suzi.servos[4] withSoftLanding {
+                            startDelay = 50.milliseconds
+                            angle = 90
+                        }
+                        Suzi.servos[0] withSoftLanding {
+                            startDelay = 100.milliseconds
+                            angle = 90
+                        }
+                        Suzi.servos[3] withSoftLanding {
+                            startDelay = 100.milliseconds
+                            angle = 90
+                        }
+                    }()
+                    delay(5.seconds)
+                    Suzi.home()
+                }
+            }
 
-            Command.SAY_HI -> suzi(Predestination.sayHi)
-            Command.CRA_CRAY -> suzi(Predestination.craCraSequence())
-            Command.FOUR_TWENTY -> suzi(Predestination.fourTwenty)
-            Command.GUARD -> suzi(Predestination.attackMode)
 
             else -> logger.warn("No clue what to do with $select")
         }
