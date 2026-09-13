@@ -30,6 +30,8 @@ repositories {
 }
 
 dependencies {
+    implementation("crackers.kobots:kobots-parts:$PARTS_VER")
+
     testImplementation("io.kotest:kotest-runner-junit5:6.0.3")
     testImplementation("io.mockk:mockk:1.14.5")
 }
@@ -41,7 +43,7 @@ val semver: Provider<SimpleSemverVersion> by project
 version = semver.get().toString()
 
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(17)
 }
 
 //kotlinter {

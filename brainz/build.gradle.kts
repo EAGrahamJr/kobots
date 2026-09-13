@@ -24,3 +24,6 @@ project.ext.set("jar.name", "brainz")
 application {
     mainClass.set("crackers.kobots.app.ThingieKt")
 }
+kotlin {
+    jvmToolchain(21)
+}
